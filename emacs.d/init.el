@@ -47,6 +47,9 @@
 ; Blinking cursor is annoying
 (blink-cursor-mode 0)
 
+; Do not create back-up files
+(setq make-backup-files nil)
+
 ; Global keys
 
 (global-set-key [(control x) (control c)] (defun dont-kill-emacs() (interactive) (message "Use C-x c to leave")))
