@@ -60,3 +60,4 @@
 (global-set-key [(pause)] 'kill-this-buffer)
 (global-set-key [(scroll-lock)] 'kill-this-buffer)
 (global-set-key [(control tab)] 'other-window)
+(global-set-key [(control z)] 'undo)

@@ -10,3 +10,4 @@ ln -s emacs.d ~/.emacs.d
 - *Ctrl-x c*: leave emacs (the default Ctrl-x Ctrl-c is disabled on purpose)
 - *Pause* or *ScrLk*: kill current buffer
 - *Ctrl-Tab*: switch to other window
+- *Ctrl-z*: undo last edit
