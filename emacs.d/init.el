@@ -1,3 +1,6 @@
+; Enable stuff
+(ido-mode t)
+
 ; I like a dark background
 (custom-set-variables
  '(frame-background-mode 'dark))
