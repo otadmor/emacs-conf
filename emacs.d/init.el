@@ -40,3 +40,6 @@
   (newline)
   (insert ";;")
   (newline))
+
+; Blinking cursor is annoying
+(blink-cursor-mode 0)
