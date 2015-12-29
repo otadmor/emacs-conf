@@ -51,3 +51,5 @@
 
 (global-set-key [(control x) (control c)] (defun dont-kill-emacs() (interactive) (message "Use C-x c to leave")))
 (global-set-key [(control x) (c)] 'save-buffers-kill-emacs)
+(global-set-key [(pause)] 'kill-this-buffer)
+(global-set-key [(scroll-lock)] 'kill-this-buffer)
