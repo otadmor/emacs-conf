@@ -29,3 +29,14 @@
 
 ; The tool-bar takes precious space. Remove it!
 (tool-bar-mode -1)
+
+; I prefer a custom greeting on the scratch buffer
+(setq inhibit-splash-screen t)
+(save-excursion
+  (switch-to-buffer "*scratch*")
+  (insert ";;")
+  (newline)
+  (insert ";; Welcome h4x0r !!!")
+  (newline)
+  (insert ";;")
+  (newline))
