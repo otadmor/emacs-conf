@@ -26,3 +26,6 @@
 ; I like white cursor and mouse
 (set-cursor-color "white")
 (set-mouse-color "white")
+
+; The tool-bar takes precious space. Remove it!
+(tool-bar-mode -1)
