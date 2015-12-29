@@ -50,6 +50,9 @@
 ; Do not create back-up files
 (setq make-backup-files nil)
 
+; Clean-up trailing whitespace on save
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+
 ; Global keys
 
 (global-set-key [(control x) (control c)] (defun dont-kill-emacs() (interactive) (message "Use C-x c to leave")))
