@@ -5,3 +5,6 @@ My personal Emacs configuration
 mv ~/.emacs.d{,.orig} || true
 ln -s emacs.d ~/.emacs.d
 ```
+## Keys
+### Global Keys
+- *Ctrl-x c*: leave emacs (the default Ctrl-x Ctrl-c is disabled on purpose)
