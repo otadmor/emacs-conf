@@ -61,3 +61,4 @@
 (global-set-key [(scroll-lock)] 'kill-this-buffer)
 (global-set-key [(control tab)] 'other-window)
 (global-set-key [(control z)] 'undo)
+(global-set-key [f5] 'delete-other-windows)

@@ -11,3 +11,4 @@ ln -s emacs.d ~/.emacs.d
 - *Pause* or *ScrLk*: kill current buffer
 - *Ctrl-Tab*: switch to other window
 - *Ctrl-z*: undo last edit
+- *f5*: maximize window to frame
