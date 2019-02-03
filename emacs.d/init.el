@@ -95,8 +95,13 @@
 
 (setq global-mark-ring-max 1000)
 
-; display stuff
+;; scroll one line at a time (less "jumpy" than defaults)
+(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
+(setq mouse-wheel-progressive-speed 1) ;; don't accelerate scrolling
+(setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
+(setq scroll-step 1) ;; keyboard scroll one line at a time
 
+; display stuff
 (save-excursion
   (switch-to-buffer "*scratch*")
   (insert ";;")
@@ -201,6 +206,9 @@
 (setq comint-password-prompt-regexp
       (concat comint-password-prompt-regexp
               "\\|^Password for \\\\'.*\\\\':\\s *\\'"))
+(setq comint-password-prompt-regexp
+      (concat comint-password-prompt-regexp
+              "\\|^.*\\\\' password:\\s *\\'"))
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
 (add-hook 'comint-output-filter-functions 'ansi-color-process-output)
 (add-hook 'gdb-mode-hook 'ansi-color-for-comint-mode-on)
@@ -419,10 +427,10 @@
 ;(global-set-key [(meta h)] 'ahg-status)
 (global-set-key [(meta h)] 'magit-status)
 
-(require 'ascope)
-(global-set-key [(meta f9)] 'ascope-find-this-text-stringy)
-(global-set-key [(control f3)] 'ascope-find-global-definition)
-(global-set-key [(control f4)] 'ascope-find-this-symbol)
+;(require 'ascope)
+;(global-set-key [(meta f9)] 'ascope-find-this-text-stringy)
+;(global-set-key [(control f3)] 'ascope-find-global-definition)
+;(global-set-key [(control f4)] 'ascope-find-this-symbol)
 ; (global-set-key [(control f5)] 'ascope-find-functions-calling-this-function)
 ; (global-set-key [(control f6)] 'ascope-find-called-functions)
 ; (global-set-key [(control f7)] 'ascope-find-files-including-file)
