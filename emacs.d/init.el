@@ -254,7 +254,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi company-jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (smex flx-ido pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi company-jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -440,13 +440,12 @@
 (require 'jss) ; remote js debugger
 (require 'winstack)
 (require 'simple)
-
 (defun push-mark-hook(orig-fun &rest args)
   (progn
     (apply orig-fun args)
-    (message "got %S" args)
-      (winstack-push)))
+    (when (not (minibufferp)) (winstack-push))))
 (advice-add 'push-mark :around #'push-mark-hook)
+
 ; combine-after-change-calls
 
 (global-set-key [(control meta left)] 'winstack-pop)
@@ -526,3 +525,12 @@
 
 (require 'bash-completion)
 (bash-completion-setup)
+
+
+(require 'flx-ido)
+(ido-mode 1)
+(ido-everywhere 1)
+(flx-ido-mode 1)
+;; disable ido faces to see flx highlights.
+(setq ido-enable-flex-matching t)
+(setq ido-use-faces nil)
