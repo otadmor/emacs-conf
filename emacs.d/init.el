@@ -255,7 +255,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (smex flx-ido pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi company-jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (neotree smex flx-ido pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi company-jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -533,3 +533,5 @@
 ;; disable ido faces to see flx highlights.
 (setq ido-enable-flex-matching t)
 (setq ido-use-faces nil)
+
+(global-set-key (kbd "C-e") 'neotree-toggle)
