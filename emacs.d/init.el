@@ -193,14 +193,19 @@
 (global-set-key [(scroll-lock)] 'kill-this-buffer)
 ;(global-set-key [f8] 'gud-gdb)
 
-
 (global-set-key [(meta left)] 'backward-sexp)
 (global-set-key [(meta right)] 'forward-sexp)
-(global-set-key [(meta shift left)] 'backward-sexp-mark)
-(global-set-key [(meta shift right)] 'forward-sexp-mark)
+;(global-set-key [(meta shift left)] 'backward-sexp-mark)
+;(global-set-key [(meta shift right)] 'forward-sexp-mark)
 
 ;(global-set-key [(control meta left)] 'next-buffer)
 ;(global-set-key [(control meta right)] 'previous-buffer)
+
+(global-set-key [(control meta left)] 'windmove-left)
+(global-set-key [(control meta right)] 'windmove-right)
+(global-set-key [(control meta up)] 'windmove-up)
+(global-set-key [(control meta down)] 'windmove-down)
+
 
 (require 'redo+)
 (global-set-key [(control z)] 'undo)
@@ -455,8 +460,8 @@
 
 ; combine-after-change-calls
 
-(global-set-key [(control meta left)] 'winstack-pop)
-(global-set-key [(control meta right)] 'winstack-next)
+(global-set-key [(control meta p)] 'winstack-pop)
+(global-set-key [(control meta n)] 'winstack-next)
 
 ;(global-set-key (kbd "<kp-add>") 'winstack-next)
 ;(global-set-key (kbd "<S-return>") 'winstack-goto-def-and-push)
