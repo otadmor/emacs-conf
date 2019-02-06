@@ -230,7 +230,14 @@
 
 
 (require 'shell-ext) ; for f2 to create a new shell window
-(global-set-key [(control t)] 'shell)
+(defun old-shell() (interactive)
+       (let (
+             (pyb (car (get-buffers-with-major-mode 'shell-mode)))
+             )
+         (if (eq pyb nil)
+             (new-shell)
+           (switch-to-buffer pyb))))
+(global-set-key [(control t)] 'old-shell)
 (global-set-key [(meta \\)] 'shell-change-to-current-dir)
 (global-set-key [(control shift t)] 'new-shell)
 (global-set-key [(meta f2)] 'shell-command-on-region-inplace)
