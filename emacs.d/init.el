@@ -220,6 +220,9 @@
               "\\|^Password for \\\\'.*\\\\':\\s *\\'"))
 (setq comint-password-prompt-regexp
       (concat comint-password-prompt-regexp
+              "\\|^Password for '.*':\s+"))
+(setq comint-password-prompt-regexp
+      (concat comint-password-prompt-regexp
               "\\|^.*\\\\' password:\\s *\\'"))
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
 (add-hook 'comint-output-filter-functions 'ansi-color-process-output)
