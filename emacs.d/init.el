@@ -485,10 +485,37 @@
 ; switch to the interpreter after executing code
 (setq py-split-window-on-execute nil)
 (setq py-switch-buffers-on-execute-p nil)
+(setq py-shell-prompt-read-only nil)
 ; don't split windows
 (py-split-window-on-execute-off)
 ; try to automagically figure out indentation
 ;(setq py-smart-indentation t)
+
+
+(defun py--send-string-return-output (strg &optional process msg)
+  "Send STRING to PROCESS and return output.
+
+When MSG is non-nil messages the first line of STRING.  Return
+the output."
+  (let ((process (or process (get-buffer-process (py-shell)))))
+    (with-current-buffer (process-buffer process)
+      (let* ((erg "")
+	     (comint-preoutput-filter-functions
+	      (append comint-preoutput-filter-functions
+		      '(ansi-color-filter-apply
+			(lambda (strg)
+			  (progn (setq erg (concat erg strg)) ""))))))
+	(py-send-string strg process)
+	(accept-process-output process 5)
+	(sit-for 0.1 t)
+	(when (and erg (not (string= "" erg)))
+	  (setq erg
+		(replace-regexp-in-string
+		 (format "[ \n]*%s[ \n]*" py-fast-filter-re)
+		 "" erg)))
+	;; (sit-for 0.1 t)
+	erg))))
+
 
 (put 'erase-buffer 'disabled nil)
 
