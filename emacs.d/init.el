@@ -168,7 +168,7 @@
 (global-set-key [f9] 'compile)
 
 (require 'grep)
-(global-set-key [(control f9)] (defun my-grep() (interactive) (rgrep (grep-read-regexp) "*" default-directory nil)))
+(global-set-key [(control f)] (defun my-grep() (interactive) (rgrep (grep-read-regexp) "*" default-directory nil)))
 (global-set-key [f4] 'next-error)
 (global-set-key [(shift f4)] 'previous-error)
 (global-set-key [f1] 'manual-entry)
@@ -230,9 +230,9 @@
 
 
 (require 'shell-ext) ; for f2 to create a new shell window
-(global-set-key [(f2)] 'shell)
+(global-set-key [(control t)] 'shell)
 (global-set-key [(meta \\)] 'shell-change-to-current-dir)
-(global-set-key [(control f2)] 'new-shell)
+(global-set-key [(control shift t)] 'new-shell)
 (global-set-key [(meta f2)] 'shell-command-on-region-inplace)
 
 (require 'column-marker)
