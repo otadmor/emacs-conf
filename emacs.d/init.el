@@ -114,6 +114,7 @@
 
 (setenv "PAGER" "cat")
 
+(setq server-inside-emacs-client nil)
 ; patches the call at server.el:1237
 (defun server-create-window-system-frame-hook(orig-fun &rest args)
   (let (
@@ -121,6 +122,7 @@
         (frame-display (frame-parameter (selected-frame) 'display))
         (other-arguments (cdr-safe args))
         )
+  (setq server-inside-emacs-client t)
 ;  (message "Create server params: %S, frame params: %S" args frame-display)
 ;  (message "CAR %S is iq %S" expected-display (string-equal (car-safe args) "localhost:current"))
 ;  (message "CDR %S" other-arguments)
@@ -152,8 +154,12 @@
 (require 'cl) ; required for defun*
 
 (global-set-key [(control x) (control c)] (defun dont-kill-emacs() (interactive) (message "Use C-x c to leave")))
-;(global-set-key [(control x) (c)] 'save-buffers-kill-emacs)
-(global-set-key [(control x) (c)] 'delete-frame)
+
+(require 'server)
+(defun exit-emacs-or-close-frame() (interactive)
+       (if server-inside-emacs-client (delete-frame) (save-buffers-kill-emacs)))
+
+(global-set-key [(control x) (c)] 'exit-emacs-or-close-frame)
 ;(global-set-key [(control a)] 'mark-whole-buffer)
 ;(global-set-key [(control b)] 'ido-switch-buffer)
 ;(global-set-key [(control f)] 'find-file)
