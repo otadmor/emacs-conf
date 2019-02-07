@@ -587,4 +587,4 @@ the output."
 (global-set-key (kbd "C-e") 'neotree-toggle)
 
 
-(require 'company-python-shell)
+(require 'company-py-shell)

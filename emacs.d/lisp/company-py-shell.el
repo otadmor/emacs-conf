@@ -77,4 +77,4 @@
 (add-to-list 'company-backends 'company-python-shell)
 (define-key py-python-shell-mode-map (kbd "TAB") 'company-python-shell)
 (setq py-ipython-command-args "--simple-prompt --nosep")
-(provide 'company-python-shell)
+(provide 'company-py-shell)
