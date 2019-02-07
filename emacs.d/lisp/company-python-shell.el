@@ -1,5 +1,6 @@
 (require 'cl-lib)
 (require 'python-mode)
+(require 'company)
 
 (defun company-python-shell-prefix()
   (and (eq major-mode 'py-python-shell-mode)
