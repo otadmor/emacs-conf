@@ -276,7 +276,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (neotree smex flx-ido pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi company-jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (company-anaconda neotree smex flx-ido pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -439,8 +439,9 @@
 
 
 (with-eval-after-load 'magit-mode (define-key magit-mode-map [(control tab)] 'other-window))
-;(add-hook 'after-init-hook 'global-company-mode)
-;(global-set-key [(tab)] 'company-complete)
+(add-hook 'after-init-hook 'global-company-mode)
+
+(global-set-key (kbd "C-SPC") 'company-complete)
 
 ;(global-set-key [(f2)] 'gud-break)
 
@@ -517,6 +518,7 @@ the output."
 	erg))))
 
 
+
 (put 'erase-buffer 'disabled nil)
 
 
@@ -583,3 +585,6 @@ the output."
 (setq ido-use-faces nil)
 
 (global-set-key (kbd "C-e") 'neotree-toggle)
+
+
+(require 'company-python-shell)
