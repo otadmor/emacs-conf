@@ -441,7 +441,16 @@
 (with-eval-after-load 'magit-mode (define-key magit-mode-map [(control tab)] 'other-window))
 (add-hook 'after-init-hook 'global-company-mode)
 
+(defun complete-or-indent ()
+    (interactive)
+    (if (company-manual-begin)
+        (company-complete-common)
+      (indent-according-to-mode)))
+;(global-set-key [(tab)] 'complete-or-indent)
+
+(require 'shell)
 (global-set-key (kbd "C-SPC") 'company-complete)
+(define-key shell-mode-map "\t" 'company-complete)
 
 ;(global-set-key [(f2)] 'gud-break)
 
