@@ -88,9 +88,8 @@
 
 (global-hi-lock-mode 1)
 
-(ido-mode t)
-(icomplete-mode t)
-(ido-everywhere 1)
+(ivy-mode t)
+;(icomplete-mode t)
 
 (fset 'yes-or-no-p 'y-or-n-p)
 
@@ -276,7 +275,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (company-anaconda neotree smex flx-ido pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (company-anaconda neotree smex pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -585,13 +584,6 @@ the output."
 
 (require 'bash-completion)
 (bash-completion-setup)
-
-
-(require 'flx-ido)
-(flx-ido-mode 1)
-;; disable ido faces to see flx highlights.
-(setq ido-enable-flex-matching t)
-(setq ido-use-faces nil)
 
 (global-set-key (kbd "C-e") 'neotree-toggle)
 
