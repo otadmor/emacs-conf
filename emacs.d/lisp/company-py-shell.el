@@ -2,8 +2,9 @@
 (require 'python-mode)
 (require 'company)
 
-(defun company-python-shell-prefix()
+(defun company-py-shell-prefix()
   (and (eq major-mode 'py-python-shell-mode)
+;       (not (string-prefix-p "..." (thing-at-point 'line 1)))
        (let* ((exception-buffer (current-buffer))
               (pos (copy-marker (point)))
               (pps (parse-partial-sexp (or (ignore-errors (overlay-end comint-last-prompt-overlay))(line-beginning-position)) (point)))
@@ -25,7 +26,7 @@
          word)))
 
 
-(defun company-python-shell-candidates(arg)
+(defun company-py-shell-candidates(arg)
   (message "completing %S" arg)
   (setq py-last-window-configuration
         (current-window-configuration))
@@ -64,17 +65,15 @@
         (nconc completion filenames))))))
 
 
-(defun company-python-shell (command &optional arg &rest ignored)
+(defun company-py-shell (command &optional arg &rest ignored)
   (interactive (list 'interactive))
   (cl-case command
-    (interactive (company-begin-backend 'company-python-shell))
-    (prefix (company-python-shell-prefix))
-    (candidates (company-python-shell-candidates arg))))
+    (interactive (company-begin-backend 'company-py-shell))
+    (prefix (company-py-shell-prefix))
+    (candidates (company-py-shell-candidates arg))))
 
 (defun py-shell-complete(&optional shell beg end word) (interactive)
-       (company-python-shell-candidates (company-python-shell-prefix)))
+       (company-py-shell-candidates (company-py-shell-prefix)))
 
-(add-to-list 'company-backends 'company-python-shell)
-(define-key py-python-shell-mode-map (kbd "TAB") 'company-python-shell)
 (setq py-ipython-command-args "--simple-prompt --nosep")
 (provide 'company-py-shell)
