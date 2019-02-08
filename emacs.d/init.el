@@ -90,7 +90,8 @@
 
 (ivy-mode t)
 ;(icomplete-mode t)
-
+(setq ivy-use-virtual-buffers t
+            ivy-count-format "%d/%d ")
 (fset 'yes-or-no-p 'y-or-n-p)
 
 (setq global-mark-ring-max 1000)
@@ -275,7 +276,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (company-irony company-anaconda neotree smex pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (swiper company-irony company-anaconda neotree smex pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -435,6 +436,29 @@
 
 
 (with-eval-after-load 'magit-mode (define-key magit-mode-map [(control tab)] 'other-window))
+(setq magit-completing-read-function 'ivy-completing-read)
+(setq ivy-use-virtual-buffers t)
+
+
+(defun new-shell-with-dir(dir)
+  (message "Opening shell on %S" dir)
+  (let (
+        (b (generate-new-buffer "*shell*"))
+        )
+    (switch-to-buffer b)
+    (setq default-directory dir)
+    (shell b)))
+(defun ivy-shell ()
+  (interactive)
+  (let (
+        (dir ivy--directory)
+        )
+    (ivy-set-action 'new-shell-with-dir)
+    (setq ivy-last ())
+    (setq ivy-exit nil)
+    (exit-minibuffer)))
+(define-key ivy-minibuffer-map [(control t)] 'ivy-shell)
+(define-key ivy-minibuffer-map [(control shift t)] 'ivy-shell)
 
 (add-hook 'after-init-hook 'global-company-mode)
 
