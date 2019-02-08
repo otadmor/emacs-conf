@@ -434,25 +434,39 @@
                     (xwidget-webkit-browse-url url)))
 
 
-
-
-
 (with-eval-after-load 'magit-mode (define-key magit-mode-map [(control tab)] 'other-window))
+
 (add-hook 'after-init-hook 'global-company-mode)
 
-(defun complete-or-indent ()
-    (interactive)
-    (if (company-manual-begin)
-        (company-complete-common)
-      (indent-according-to-mode)))
-;(global-set-key [(tab)] 'complete-or-indent)
+; (defun complete-or-indent ()
+;     (interactive)
+;     (if (company-manual-begin)
+;         (company-complete-common)
+;       (indent-according-to-mode)))
+; ;(global-set-key [(tab)] 'complete-or-indent)
+
 (require 'company)
-(require 'shell)
 (global-set-key (kbd "C-SPC") 'company-complete)
+
 (require 'company-irony)
 (eval-after-load 'company
   '(add-to-list 'company-backends 'company-irony))
-(define-key shell-mode-map "\t" 'company-complete)
+
+(require 'company-py-shell)
+(eval-after-load 'company
+  '(add-to-list 'company-backends 'company-py-shell))
+;;(define-key py-python-shell-mode-map [(tab)] 'company-py-shell)
+(defun py-shell-complete-hook(orig-fun &rest args)
+  (company-complete))
+(advice-add 'py-shell-complete :around #'py-shell-complete-hook)
+
+
+;;(require 'cc-mode)
+;;(define-key c-mode-map  [(tab)] 'company-complete)
+;;(define-key c++-mode-map  [(tab)] 'company-complete)
+
+; (require 'shell)
+; (define-key shell-mode-map [(tab)] 'company-complete)
 
 ;(global-set-key [(f2)] 'gud-break)
 
@@ -589,6 +603,3 @@ the output."
 (bash-completion-setup)
 
 (global-set-key (kbd "C-e") 'neotree-toggle)
-
-
-(require 'company-py-shell)
