@@ -275,7 +275,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (company-anaconda neotree smex pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (company-irony company-anaconda neotree smex pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -446,9 +446,12 @@
         (company-complete-common)
       (indent-according-to-mode)))
 ;(global-set-key [(tab)] 'complete-or-indent)
-
+(require 'company)
 (require 'shell)
 (global-set-key (kbd "C-SPC") 'company-complete)
+(require 'company-irony)
+(eval-after-load 'company
+  '(add-to-list 'company-backends 'company-irony))
 (define-key shell-mode-map "\t" 'company-complete)
 
 ;(global-set-key [(f2)] 'gud-break)
