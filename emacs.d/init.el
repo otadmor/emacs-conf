@@ -274,7 +274,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (swiper company-irony company-anaconda neotree smex pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers python-mode jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (eyebrowse python-mode swiper company-irony company-anaconda neotree smex pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -432,6 +432,20 @@
                     (other-window 1)
                     (xwidget-webkit-browse-url url)))
 
+
+(require 'eyebrowse)
+(define-key eyebrowse-mode-map (kbd "M-1") 'eyebrowse-switch-to-window-config-1)
+(define-key eyebrowse-mode-map (kbd "M-2") 'eyebrowse-switch-to-window-config-2)
+(define-key eyebrowse-mode-map (kbd "M-3") 'eyebrowse-switch-to-window-config-3)
+(define-key eyebrowse-mode-map (kbd "M-4") 'eyebrowse-switch-to-window-config-4)
+(define-key eyebrowse-mode-map (kbd "M-5") 'eyebrowse-switch-to-window-config-5)
+(define-key eyebrowse-mode-map (kbd "M-6") 'eyebrowse-switch-to-window-config-6)
+(define-key eyebrowse-mode-map (kbd "M-7") 'eyebrowse-switch-to-window-config-7)
+(define-key eyebrowse-mode-map (kbd "M-8") 'eyebrowse-switch-to-window-config-8)
+(define-key eyebrowse-mode-map (kbd "M-9") 'eyebrowse-switch-to-window-config-9)
+(define-key eyebrowse-mode-map (kbd "M-0") 'eyebrowse-switch-to-window-config-0)
+(eyebrowse-mode t)
+(setq eyebrowse-new-workspace t)
 
 (with-eval-after-load 'magit-mode (define-key magit-mode-map [(control tab)] 'other-window))
 (setq magit-completing-read-function 'ivy-completing-read)
