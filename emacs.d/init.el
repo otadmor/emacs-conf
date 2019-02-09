@@ -265,8 +265,6 @@
 (advice-add 'gud-gdb-marker-filter :around #'gud-gdb-marker-filter-hook)
 
 
-
-
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -479,18 +477,14 @@
 (require 'company-py-shell)
 (eval-after-load 'company
   '(add-to-list 'company-backends 'company-py-shell))
-;;(define-key py-python-shell-mode-map [(tab)] 'company-py-shell)
-(defun py-shell-complete-hook(orig-fun &rest args)
-  (company-complete))
-(advice-add 'py-shell-complete :around #'py-shell-complete-hook)
 
 
 ;;(require 'cc-mode)
 ;;(define-key c-mode-map  [(tab)] 'company-complete)
 ;;(define-key c++-mode-map  [(tab)] 'company-complete)
 
-; (require 'shell)
-; (define-key shell-mode-map [(tab)] 'company-complete)
+;; (require 'shell)
+;; (define-key shell-mode-map [(tab)] 'company-complete)
 
 ;(global-set-key [(f2)] 'gud-break)
 
@@ -585,7 +579,16 @@ the output."
         (when (eq major-mode find-major-mode)
           (push buf major-mode-buffers))))))
 
-(defun new-python() (interactive) (switch-to-buffer (python)))
+
+(defun new-python() (interactive)
+       (let (
+              (buffer (python :fast nil))
+              )
+         (let (
+               (proc (get-buffer-process (get-buffer buffer)))
+               )
+           (py-send-string py-shell-completion-setup-code proc))
+         (switch-to-buffer buffer)))
 (defun old-python() (interactive)
        (let (
              (pyb (car (get-buffers-with-major-mode 'py-python-shell-mode)))
