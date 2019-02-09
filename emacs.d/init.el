@@ -274,7 +274,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (eyebrowse python-mode swiper company-irony company-anaconda neotree smex pungi bash-completion perspeen multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (persp-mode python-mode swiper company-irony company-anaconda neotree smex pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -432,20 +432,6 @@
                     (other-window 1)
                     (xwidget-webkit-browse-url url)))
 
-
-(require 'eyebrowse)
-(define-key eyebrowse-mode-map (kbd "M-1") 'eyebrowse-switch-to-window-config-1)
-(define-key eyebrowse-mode-map (kbd "M-2") 'eyebrowse-switch-to-window-config-2)
-(define-key eyebrowse-mode-map (kbd "M-3") 'eyebrowse-switch-to-window-config-3)
-(define-key eyebrowse-mode-map (kbd "M-4") 'eyebrowse-switch-to-window-config-4)
-(define-key eyebrowse-mode-map (kbd "M-5") 'eyebrowse-switch-to-window-config-5)
-(define-key eyebrowse-mode-map (kbd "M-6") 'eyebrowse-switch-to-window-config-6)
-(define-key eyebrowse-mode-map (kbd "M-7") 'eyebrowse-switch-to-window-config-7)
-(define-key eyebrowse-mode-map (kbd "M-8") 'eyebrowse-switch-to-window-config-8)
-(define-key eyebrowse-mode-map (kbd "M-9") 'eyebrowse-switch-to-window-config-9)
-(define-key eyebrowse-mode-map (kbd "M-0") 'eyebrowse-switch-to-window-config-0)
-(eyebrowse-mode t)
-(setq eyebrowse-new-workspace t)
 
 (with-eval-after-load 'magit-mode (define-key magit-mode-map [(control tab)] 'other-window))
 (setq magit-completing-read-function 'ivy-completing-read)
@@ -633,8 +619,7 @@ the output."
 (global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
 
 
-;(require 'perspeen)
-;(setq perspeen-keymap-prefix (kbd "C-c C-'"))
+
 (add-hook 'python-mode-hook 'jedi:setup)
 (setq jedi:complete-on-dot t)                 ; optional
 (global-set-key [(control meta j)] 'jedi:goto-definition)
@@ -644,3 +629,32 @@ the output."
 (bash-completion-setup)
 
 (global-set-key (kbd "C-e") 'neotree-toggle)
+
+(require 'persp-mode)
+(with-eval-after-load "persp-mode-autoloads"
+  (setq wg-morph-on nil)
+  ;; switch off the animation of restoring window configuration
+  (add-hook 'after-init-hook #'(lambda () (persp-mode 1))))
+
+(global-set-key (kbd "M-1") (defun perspsw1() (interactive) (persp-switch "1")))
+(global-set-key (kbd "M-2") (defun perspsw2() (interactive) (persp-switch "2")))
+(global-set-key (kbd "M-3") (defun perspsw3() (interactive) (persp-switch "3")))
+(global-set-key (kbd "M-4") (defun perspsw4() (interactive) (persp-switch "4")))
+(global-set-key (kbd "M-5") (defun perspsw5() (interactive) (persp-switch "5")))
+(global-set-key (kbd "M-6") (defun perspsw6() (interactive) (persp-switch "6")))
+(global-set-key (kbd "M-7") (defun perspsw7() (interactive) (persp-switch "7")))
+(global-set-key (kbd "M-8") (defun perspsw8() (interactive) (persp-switch "8")))
+(global-set-key (kbd "M-9") (defun perspsw9() (interactive) (persp-switch "9")))
+(global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
+
+(perspsw1)
+(perspsw2)
+(perspsw3)
+(perspsw4)
+(perspsw5)
+(perspsw6)
+(perspsw7)
+(perspsw8)
+(perspsw9)
+(perspsw0)
+(perspsw1)
