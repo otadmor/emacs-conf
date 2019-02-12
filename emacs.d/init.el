@@ -705,10 +705,6 @@ the output."
 
 
 (require 'persp-mode)
-(with-eval-after-load "persp-mode-autoloads"
-  (setq wg-morph-on nil)
-  ;; switch off the animation of restoring window configuration
-  (add-hook 'after-init-hook #'(lambda () (persp-mode 1))))
 
 (global-set-key (kbd "M-1") (defun perspsw1() (interactive) (persp-switch "1")))
 (global-set-key (kbd "M-2") (defun perspsw2() (interactive) (persp-switch "2")))
@@ -721,14 +717,44 @@ the output."
 (global-set-key (kbd "M-9") (defun perspsw9() (interactive) (persp-switch "9")))
 (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
 
+(with-eval-after-load "persp-mode"
+  (with-eval-after-load "ivy"
+    (add-hook 'ivy-ignore-buffers
+              #'(lambda (b)
+                  (when persp-mode
+                    (let ((persp (get-current-persp)))
+                      (if persp
+                          (not (persp-contain-buffer-p b persp))
+                        nil)))))
+
+    (setq ivy-sort-functions-alist
+          (append ivy-sort-functions-alist
+                  '((persp-kill-buffer   . nil)
+                    (persp-remove-buffer . nil)
+                    (persp-add-buffer    . nil)
+                    (persp-switch        . nil)
+                    (persp-window-switch . nil)
+                    (persp-frame-switch  . nil))))))
+
+(with-eval-after-load "persp-mode-autoloads"
+  (setq wg-morph-on nil)
+  ;; switch off the animation of restoring window configuration
+  (add-hook 'after-init-hook
+            #'(lambda ()
+                (progn
+                  (persp-mode 1)
+                  ))))
+
+(add-to-list 'speedbar-frame-parameters (cons 'persp-ignore-wconf t))
+
 (perspsw1)
-(perspsw2)
-(perspsw3)
-(perspsw4)
-(perspsw5)
-(perspsw6)
-(perspsw7)
-(perspsw8)
-(perspsw9)
-(perspsw0)
-(perspsw1)
+;                  (perspsw2)
+;                  (perspsw3)
+;                  (perspsw4)
+;                  (perspsw5)
+;                  (perspsw6)
+;                  (perspsw7)
+;                  (perspsw8)
+;                  (perspsw9)
+;                  (perspsw0)
+;                  (perspsw1)
