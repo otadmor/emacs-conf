@@ -641,14 +641,16 @@ the output."
 (require 'bash-completion)
 (bash-completion-setup)
 
+(setq helm-alive-p nil) ; fix sr-speedbur bug
 (require 'sr-speedbar)
 (sr-speedbar-refresh-turn-off)
 (defun sr-speedbar-find-window-buffer()
-  (setq sr-speedbar-window (get-buffer-window sr-speedbar-buffer-name 'visi=
-ble))
+  (setq sr-speedbar-window (get-buffer-window sr-speedbar-buffer-name 'visible))
   (if sr-speedbar-window
       (setq speedbar-buffer (window-buffer sr-speedbar-window))
       (setq speedbar-buffer nil)))
+
+(setq sr-speedbar-right-side t)
 
 (defun sr-speedbar-get-window ()
   "Get `sr-speedbar' window."
@@ -660,16 +662,14 @@ ble))
           (new-window (split-window
                        current-window
                        (if sr-speedbar-right-side
-                           (- (sr-speedbar-current-window-take-width) sr-sp=
-eedbar-width)
+                           (- (sr-speedbar-current-window-take-width current-window) sr-speedbar-width)
                          sr-speedbar-width)
                        t))
           )
     ;; Select split window.
       (setq sr-speedbar-window
             (if sr-speedbar-right-side
-                ;; Select right window when `sr-speedbar-right-side' is ena=
-ble.
+                ;; Select right window when `sr-speedbar-right-side' is enable.
                 new-window
               ;; Otherwise select left widnow.
               current-window)))))
