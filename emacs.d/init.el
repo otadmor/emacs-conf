@@ -78,6 +78,7 @@
 (setq show-paren-delay 0)
 (show-paren-mode)
 
+(setq select-enable-clipboard t)
 
 (setq c-basic-offset 4)
 
