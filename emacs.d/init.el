@@ -435,20 +435,41 @@
 
 (with-eval-after-load 'magit-mode (define-key magit-mode-map [(control tab)] 'other-window))
 (setq magit-completing-read-function 'ivy-completing-read)
+
 (setq ivy-use-virtual-buffers t)
+(setq ivy-wrap t)
+(setq ivy-auto-select-single-candidate t)
+(setq ivy-do-completion-in-region nil) ; we have company
 
-
-(defun ivy-shell ()
+(defun switch-to-minibuffer ()
+  "Switch to minibuffer window."
   (interactive)
-  (let (
-        (dir ivy--directory)
-        )
-    (ivy-set-action 'new-shell-with-dir)
-    (setq ivy-last ())
-    (setq ivy-exit nil)
-    (exit-minibuffer)))
-(define-key ivy-minibuffer-map [(control t)] 'ivy-shell)
-(define-key ivy-minibuffer-map [(control shift t)] 'ivy-shell)
+  (if (active-minibuffer-window)
+      (select-window (active-minibuffer-window))
+    (error "Minibuffer is not active")))
+(defun ivy-shell() (interactive)
+       ;;  (ivy-exit-with-action2 'new-shell-with-dir))
+       (let (
+             (window (ivy-state-window ivy-last))
+             (buffer (new-shell-with-dir ivy--directory))
+             )
+         (message "to window %S" window)
+         (set-window-buffer window buffer)
+         (switch-to-minibuffer)
+         (minibuffer-keyboard-quit)))
+
+
+
+(defun ivy-shell() (interactive)
+       (setq ivy-inhibit-action t)
+       (ivy-exit-with-action 'new-shell-with-dir))
+
+
+(ivy-add-actions
+ t
+ `(("t" ivy-shell "shell")))
+(define-key ivy-minibuffer-map (kbd "C-d") #'ivy-immediate-done)
+(define-key ivy-minibuffer-map (kbd "RET") #'ivy-alt-done)
 
 (add-hook 'after-init-hook 'global-company-mode)
 
