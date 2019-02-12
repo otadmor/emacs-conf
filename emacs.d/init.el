@@ -448,22 +448,32 @@
   (if (active-minibuffer-window)
       (select-window (active-minibuffer-window))
     (error "Minibuffer is not active")))
-(defun ivy-shell() (interactive)
-       ;;  (ivy-exit-with-action2 'new-shell-with-dir))
-       (let (
-             (window (ivy-state-window ivy-last))
-             (buffer (new-shell-with-dir ivy--directory))
-             )
-         (message "to window %S" window)
-         (set-window-buffer window buffer)
-         (switch-to-minibuffer)
-         (minibuffer-keyboard-quit)))
 
+;(setq ivy-magic-slash-non-match-action nil)
 
+(defun ivy-shell ()
+  (interactive)
+  (if ivy--directory
+      (ivy-quit-and-run
+       (switch-to-buffer (new-shell-with-dir ivy--directory)))
+    (user-error
+     "Not completing files currently")))
 
-(defun ivy-shell() (interactive)
-       (setq ivy-inhibit-action t)
-       (ivy-exit-with-action 'new-shell-with-dir))
+(defun ivy-magit-status ()
+  (interactive)
+  (if ivy--directory
+      (ivy-quit-and-run
+       (magit-status ivy--directory))
+    (user-error
+     "Not completing files currently")))
+
+(defun ivy-python ()
+  (interactive)
+  (if ivy--directory
+      (ivy-quit-and-run
+       (new-python-in-dir ivy--directory))
+    (user-error
+     "Not completing files currently")))
 
 
 (ivy-add-actions
@@ -471,6 +481,9 @@
  `(("t" ivy-shell "shell")))
 (define-key ivy-minibuffer-map (kbd "C-d") #'ivy-immediate-done)
 (define-key ivy-minibuffer-map (kbd "RET") #'ivy-alt-done)
+(define-key ivy-minibuffer-map [(control t)] 'ivy-shell)
+(define-key ivy-minibuffer-map [(control p)] 'ivy-python)
+(define-key ivy-minibuffer-map [(control h)] 'ivy-magit-status)
 
 (add-hook 'after-init-hook 'global-company-mode)
 
@@ -593,6 +606,17 @@ the output."
         (when (eq major-mode find-major-mode)
           (push buf major-mode-buffers))))))
 
+(defun new-python-in-dir(dir) (interactive)
+  (let (
+        (b (generate-new-buffer "*python*"))
+        )
+    (switch-to-buffer b)
+    (setq default-directory dir)
+    (python :fast nil :buffer (buffer-name b) :shell (py-choose-shell nil nil))
+    (let (
+          (proc (get-buffer-process (get-buffer b)))
+          )
+      (py-send-string py-shell-completion-setup-code proc))))
 
 (defun new-python() (interactive)
        (let (
@@ -718,7 +742,7 @@ the output."
 (global-set-key (kbd "M-9") (defun perspsw9() (interactive) (persp-switch "9")))
 (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
 
-(setq persp-autokill-buffer-on-remove nil)
+;(setq persp-autokill-buffer-on-remove nil)
 (setq persp-auto-resume-time 0.1)
 
 (with-eval-after-load "persp-mode"
