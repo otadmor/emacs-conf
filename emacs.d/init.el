@@ -274,7 +274,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (persp-mode python-mode swiper company-irony company-anaconda neotree pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (persp-mode python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -641,7 +641,68 @@ the output."
 (require 'bash-completion)
 (bash-completion-setup)
 
-(global-set-key (kbd "C-e") 'neotree-toggle)
+(require 'sr-speedbar)
+(sr-speedbar-refresh-turn-off)
+(defun sr-speedbar-find-window-buffer()
+  (setq sr-speedbar-window (get-buffer-window sr-speedbar-buffer-name 'visi=
+ble))
+  (if sr-speedbar-window
+      (setq speedbar-buffer (window-buffer sr-speedbar-window))
+      (setq speedbar-buffer nil)))
+
+(defun sr-speedbar-get-window ()
+  "Get `sr-speedbar' window."
+  (let (
+        (current-window (frame-root-window))
+        )
+    (let (
+          ;; Get split new window.
+          (new-window (split-window
+                       current-window
+                       (if sr-speedbar-right-side
+                           (- (sr-speedbar-current-window-take-width) sr-sp=
+eedbar-width)
+                         sr-speedbar-width)
+                       t))
+          )
+    ;; Select split window.
+      (setq sr-speedbar-window
+            (if sr-speedbar-right-side
+                ;; Select right window when `sr-speedbar-right-side' is ena=
+ble.
+                new-window
+              ;; Otherwise select left widnow.
+              current-window)))))
+
+(defun sr-speedbar-exist-p-hook(orig-fun &rest args)
+  (sr-speedbar-find-window-buffer)
+  (apply orig-fun args)
+  ;(get-buffer-window sr-speedbar-buffer-name 'visible)
+  )
+(advice-add 'sr-speedbar-exist-p :around #'sr-speedbar-exist-p-hook)
+
+(defun sr-speedbar-navigate() (interactive)
+  (let (
+        (root-dir (read-directory-name "Navigate Speedbar: "))
+        )
+    (with-temp-buffer
+      (setq default-directory root-dir)
+      (speedbar-refresh))
+    root-dir))
+
+(add-hook 'speedbar-reconfigure-keymaps-hook
+          '(lambda ()
+             (define-key speedbar-mode-map (kbd "<backspace>") 'speedbar-up-directory)
+             (define-key speedbar-mode-map [right] 'speedbar-flush-expand-line)
+             (define-key speedbar-mode-map [left] 'speedbar-contract-line)
+             (define-key speedbar-mode-map [M-up] 'speedbar-restricted-prev)
+             (define-key speedbar-mode-map [M-down] 'speedbar-restricted-next)
+             (define-key speedbar-mode-map [up] 'speedbar-prev)
+             (define-key speedbar-mode-map [down] 'speedbar-next)
+             (define-key speedbar-mode-map (kbd "M-g") 'sr-speedbar-navigate)
+             ))
+(global-set-key (kbd "C-e") 'sr-speedbar-toggle)
+
 
 (require 'persp-mode)
 (with-eval-after-load "persp-mode-autoloads"
