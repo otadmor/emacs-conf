@@ -2,9 +2,14 @@
 (require 'shell)
 (require 'comint)
 
+; (defvar complete-server-regexp
+;   (concat "^" (regexp-quote "___EPCCompletionServer_PORT=") "\\([[:xdigit:]]+\\)\n$")
+;   "How the port of `completion' the server is shown to the screen ")
+
 (defvar complete-server-regexp
-  (concat "^" (regexp-quote "___EPCCompletionServer_PORT=") "\\([[:xdigit:]]+\\)\n$")
+  (concat (regexp-quote "___EPCCompletionServer_PORT=") "\\([[:xdigit:]]+\\)\n")
   "How the port of `completion' the server is shown to the screen ")
+
 
 (setq mngr-complete-epc nil)
 
@@ -16,7 +21,7 @@
   )
 
 (defun fire-exit-hook(orig-fun &rest args)
-  (condition-case err 
+  (condition-case err
       (apply orig-fun args)
     (error (epc:log "Error on exit-hooks : %S / " err mngr)))
   (disconnect-completion-server)
@@ -37,7 +42,7 @@
               (cur-conn-name (epc:connection-name (epc:manager-connection mngr)))
               )
           (if (string= cur-conn-name conn-name)
-              (condition-case err 
+              (condition-case err
                   (epc:manager-fire-exit-hook mngr)
                 (error (epc:log "Error on exit-hooks : %S / " err mngr)))))))))
 (advice-add 'epc:process-sentinel :around #'process-sentinel-hook)
@@ -64,6 +69,8 @@
     (setq-local mngr-complete-epc mngr)
     (epc:manager-add-exit-hook mngr 'disconnect-completion-server)))
 
+
+
 (defun completion--comint-output-filter (string)
   (save-match-data
     (when (not
@@ -79,12 +86,17 @@
                      (new-output-chunk (buffer-substring-no-properties start end))
                      )
                  (when (string-match complete-server-regexp new-output-chunk)
-                   (let (
-                         (server-port   (match-string 1 new-output-chunk))
-                         )
                      (when server-port
-                       (connect-completion-server server-port)
-                       (delete-region start end)))))))))))
+                       (delete-region start end))))))))
+    (when (string-match complete-server-regexp string)
+      (let (
+            (server-port   (match-string 1 string))
+            )
+        (when server-port
+          (connect-completion-server server-port)
+          (concat
+           (substring-no-properties string 0 (match-beginning 0))
+           (substring-no-properties string (match-end 0) nil)))))))
 
 (add-hook 'comint-output-filter-functions 'completion--comint-output-filter nil nil)
 
@@ -114,7 +126,7 @@
           (let (
                 ;;; TODO - for some reason epc-complete runs twice,
                 ;; which is very expensive.
-                (completions (epc-complete to-complete)) 
+                (completions (epc-complete to-complete))
                 )
             (when completions
               (list start end completions ())
@@ -125,4 +137,3 @@
 (add-hook 'comint-dynamic-complete-functions 'epc-completion-at-point nil nil)
 
 (provide 'completion-epc)
-

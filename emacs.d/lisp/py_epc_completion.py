@@ -38,13 +38,17 @@ class PythonModeCompletionServer(EPCCompletionServer):
             pass
         return tuple(completions)
 
-rpc_complete_server = PythonModeCompletionServer()
-rpc_complete_server.print_port()  # needed for Emacs client
-rpc_complete_thread = threading.Thread(
-    target=rpc_complete_server.serve_forever,
-    name='PythonModeCompletionServer')
-rpc_complete_thread.setDaemon(True)
-rpc_complete_thread.start()
-
 def __COMPLETER_all_completions(to_complete):
     return rpc_complete_server.complete(to_complete)
+
+def main():
+    rpc_complete_server = PythonModeCompletionServer()
+    rpc_complete_server.print_port()  # needed for Emacs client
+    rpc_complete_thread = threading.Thread(
+        target=rpc_complete_server.serve_forever,
+        name='PythonModeCompletionServer')
+    rpc_complete_thread.setDaemon(True)
+    rpc_complete_thread.start()
+
+if os.environ["TERM"] == "dumb":
+    main()
