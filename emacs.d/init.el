@@ -438,14 +438,6 @@
 (setq ivy-use-virtual-buffers t)
 
 
-(defun new-shell-with-dir(dir)
-  (message "Opening shell on %S" dir)
-  (let (
-        (b (generate-new-buffer "*shell*"))
-        )
-    (switch-to-buffer b)
-    (setq default-directory dir)
-    (shell b)))
 (defun ivy-shell ()
   (interactive)
   (let (

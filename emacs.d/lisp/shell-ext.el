@@ -6,7 +6,15 @@
         (b (generate-new-buffer "*shell*"))
         )
     (switch-to-buffer b)
-    (shell b)))
+    (shell b) b))
+
+(defun new-shell-with-dir(dir)
+  (message "Opening shell on %S" dir)
+  (let (
+        (b (generate-new-buffer "*shell*"))
+        )
+    (setq default-directory dir)
+    (shell b) b))
 
 (defun shell-command-on-region-inplace ()
   (interactive)
