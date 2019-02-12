@@ -718,6 +718,9 @@ the output."
 (global-set-key (kbd "M-9") (defun perspsw9() (interactive) (persp-switch "9")))
 (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
 
+(setq persp-autokill-buffer-on-remove nil)
+(setq persp-auto-resume-time 0.1)
+
 (with-eval-after-load "persp-mode"
   (with-eval-after-load "ivy"
     (add-hook 'ivy-ignore-buffers
@@ -744,18 +747,8 @@ the output."
             #'(lambda ()
                 (progn
                   (persp-mode 1)
+                  (run-at-time "1 sec" nil 'perspsw1)
                   ))))
 
 (add-to-list 'speedbar-frame-parameters (cons 'persp-ignore-wconf t))
 
-(perspsw1)
-;                  (perspsw2)
-;                  (perspsw3)
-;                  (perspsw4)
-;                  (perspsw5)
-;                  (perspsw6)
-;                  (perspsw7)
-;                  (perspsw8)
-;                  (perspsw9)
-;                  (perspsw0)
-;                  (perspsw1)
