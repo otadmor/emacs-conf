@@ -169,7 +169,8 @@
 (global-set-key [f9] 'compile)
 
 (require 'grep)
-(global-set-key [(control f)] (defun my-grep() (interactive) (rgrep (grep-read-regexp) "*" default-directory nil)))
+(defun nice-rgrep() (interactive) (grep-compute-defaults) (rgrep (grep-read-regexp) "*" default-directory nil))
+(global-set-key [(control f)] 'nice-rgrep)
 (global-set-key [f4] 'next-error)
 (global-set-key [(shift f4)] 'previous-error)
 (global-set-key [f1] 'manual-entry)
@@ -488,6 +489,32 @@
 (define-key ivy-minibuffer-map (kbd "C-r") 'ivy-previous-line)
 (define-key ivy-minibuffer-map (kbd "C-d") 'ivy-occur)
 (define-key ivy-minibuffer-map (kbd "C-w") 'ivy-yank-word)
+; (defvar ivy-grep-map
+;   (let ((map (make-sparse-keymap)))
+;     (define-key map (kbd "C-d") 'ivy-occur)
+;     map)
+;   "Keymap used in the minibuffer.")
+; (defun ivy-grep ()
+;   (interactive)
+;   (unless (featurep 'ivy)
+;     (require 'ivy))
+;   (let* ((keyword (read-string "Keyword:")))
+;     (ivy-read
+;      (format "Grep at %s:" default-directory)
+;      (split-string (shell-command-to-string (format "grep -rsnI %s ." keyword)) "\n" t)
+;      :keymap ivy-grep-map
+;      :action (lambda (val)
+;                (let* ((lst (split-string val ":"))
+;                       (linenum (string-to-number (cadr lst))))
+;                  ;; open file
+;                  (find-file (car lst))
+;                  ;; goto line if line number exists
+;                  (when (and linenum (> linenum 0))
+;                    (goto-char (point-min))
+;                    (forward-line (1- linenum))))))))
+
+; (global-set-key [(control f)] 'ivy-grep)
+
 
 (add-hook 'after-init-hook 'global-company-mode)
 
