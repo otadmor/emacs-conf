@@ -486,6 +486,7 @@
 (define-key ivy-minibuffer-map [(meta h)] 'ivy-magit-status)
 (global-set-key (kbd "C-s") 'swiper)
 (define-key ivy-minibuffer-map (kbd "C-r") 'ivy-previous-line)
+(define-key ivy-minibuffer-map (kbd "C-d") 'ivy-occur)
 (define-key ivy-minibuffer-map (kbd "C-w") 'ivy-yank-word)
 
 (add-hook 'after-init-hook 'global-company-mode)
