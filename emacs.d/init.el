@@ -867,7 +867,7 @@ the output."
 (setq persp-auto-save-opt 1)
 (setq persp-nil-hidden t)
 (setq persp-nil-name "nil")
-(setq persp-add-buffer-on-after-change-major-mode t)
+(setq persp-add-buffer-on-after-change-major-mode 'free)
 
 ; (with-eval-after-load "persp"
 ;   (setq persp-filter-save-buffers-functions (list #'(lambda (b) nil)))
