@@ -39,7 +39,10 @@ class PythonModeCompletionServer(EPCCompletionServer):
         return tuple(completions)
 
 def __COMPLETER_all_completions(to_complete):
-    return rpc_complete_server.complete(to_complete)
+    try:
+        return rpc_complete_server.complete(to_complete)
+    except:
+        return []
 
 def main():
     rpc_complete_server = PythonModeCompletionServer()
