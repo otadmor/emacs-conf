@@ -276,7 +276,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (sr-speedbar persp-mode python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (counsel sr-speedbar persp-mode python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -486,6 +486,9 @@
 (define-key ivy-minibuffer-map [(control p)] 'ivy-python)
 (define-key ivy-minibuffer-map [(meta h)] 'ivy-magit-status)
 (global-set-key (kbd "C-s") 'swiper)
+(global-set-key (kbd "C-r") 'swiper)
+(global-set-key (kbd "C-x C-f") 'counsel-find-file)
+(global-set-key (kbd "M-x") 'counsel-M-x)
 (define-key ivy-minibuffer-map (kbd "C-r") 'ivy-previous-line)
 (define-key ivy-minibuffer-map (kbd "C-d") 'ivy-occur)
 (define-key ivy-minibuffer-map (kbd "C-w") 'ivy-yank-word)
