@@ -484,6 +484,9 @@
 (define-key ivy-minibuffer-map [(control t)] 'ivy-shell)
 (define-key ivy-minibuffer-map [(control p)] 'ivy-python)
 (define-key ivy-minibuffer-map [(control h)] 'ivy-magit-status)
+;(global-set-key (kbd "C-s") 'swiper)
+;(define-key ivy-minibuffer-map (kbd "C-r") 'brds/swiper-backward)
+;(define-key ivy-minibuffer-map (kbd "C-w") 'ivy-yank-word)
 
 (add-hook 'after-init-hook 'global-company-mode)
 
@@ -744,8 +747,12 @@ the output."
 
 ;(setq persp-autokill-buffer-on-remove nil)
 (setq persp-auto-resume-time 0.1)
-
+(setq persp-auto-save-fname "autosave")
+(setq persp-auto-save-opt 1)
+(setq persp-nil-hidden t)
+(setq persp-nil-name "nil")
 (with-eval-after-load "persp-mode"
+  (set-persp-parameter 'dont-save-to-file t nil)
   (with-eval-after-load "ivy"
     (add-hook 'ivy-ignore-buffers
               #'(lambda (b)

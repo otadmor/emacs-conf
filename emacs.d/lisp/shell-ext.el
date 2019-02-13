@@ -13,6 +13,7 @@
   (let (
         (b (generate-new-buffer "*shell*"))
         )
+    (switch-to-buffer b)
     (setq default-directory dir)
     (shell b) b))
 
