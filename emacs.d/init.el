@@ -695,10 +695,72 @@ the output."
 (add-hook 'shell-mode-hook 'track-shell-directory/procfs)
 
 (require 'multiple-cursors)
+
+(defun set-multiple-cursors-mode() (interactive) (multiple-cursors-mode 1))
+;(define-globalized-minor-mode global-multiple-cursors-mode multiple-cursors-mode 'set-multiple-cursors-mode)
+;(global-multiple-cursors-mode)
+;(add-hook 'after-init-hook 'global-multiple-cursors-mode)
 (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
 (global-set-key (kbd "C->") 'mc/mark-next-like-this)
 (global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
 
+
+; (defun swiper-mc ()
+;   (interactive)
+;   (unless (require 'multiple-cursors nil t)
+;     (error "multiple-cursors isn't installed"))
+;   (let ((cands (nreverse ivy--old-cands)))
+;     (unless (string= ivy-text "")
+;       (ivy-set-action
+;        (lambda (_)
+;          (let (cand)
+;            (while (setq cand (pop cands))
+;              (swiper--action cand)
+;              (when cands
+;                (mc/create-fake-cursor-at-point))))
+;          (mc/maybe-multiple-cursors-mode)))
+;       (setq ivy-exit 'done)
+;       (exit-minibuffer))))
+                                        ; kill-ring-yank-pointer
+
+
+(global-set-key (kbd "C-<insert>") (defun ed/copy(beg end) (interactive "r")
+                                          (kill-ring-save beg end)
+                                          (setq killed-rectangle ())
+                                          )) ; (mc/remove-fake-cursors)
+(global-set-key (kbd "S-<insert>") (defun ed/paste() (interactive) (message "ed/paste") (yank) (yank-rectangle)))
+(global-set-key (kbd "S-<delete>") (defun ed/cut(beg end) (interactive "r")
+                                          (kill-region beg end)
+                                          (setq killed-rectangle ())
+                                          ))
+
+
+(defun mc/make-a-note-of-the-command-being-run-hook(orig-fun &rest args)
+  (let (
+        (res (apply orig-fun args))
+        )
+    (kill-new "")
+    res
+    )
+)
+(advice-add 'mc/make-a-note-of-the-command-being-run :around #'mc/make-a-note-of-the-command-being-run-hook)
+
+(defun mc/execute-this-command-for-all-cursors-hook(orig-fun &rest args)
+  (let (
+        (res (apply orig-fun args))
+        )
+    (mc--maybe-set-killed-rectangle)
+    res
+    )
+)
+(advice-add 'mc/execute-this-command-for-all-cursors :around #'mc/execute-this-command-for-all-cursors-hook)
+
+; (mc--maybe-set-killed-rectangle)
+(define-key mc/keymap (kbd "C-<insert>") (defun mc/copy(beg end) (interactive "r") (kill-ring-save beg end)))
+(define-key mc/keymap (kbd "S-<insert>") (defun mc/paste() (interactive) (yank) (yank-rectangle))); this should run once if the amount of cursors is equal to the amount of line in the rectangle
+(define-key mc/keymap (kbd "S-<delete>") (defun mc/cut(beg end) (interactive "r") (kill-region beg end)))
+
+(define-key mc/keymap (kbd "<return>") nil)
 
 
 (add-hook 'python-mode-hook 'jedi:setup)
