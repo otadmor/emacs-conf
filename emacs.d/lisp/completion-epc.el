@@ -100,6 +100,14 @@
 
 (add-hook 'comint-output-filter-functions 'completion--comint-output-filter nil nil)
 
+(defun epc-complete-deferred (to-complete)
+  ;(message "Try to complete %S" to-complete)
+  (when mngr-complete-epc
+    (condition-case nil
+        (epc:call-deferred mngr-complete-epc 'complete to-complete)
+        (error (progn (message "error in completion server") (disconnect-completion-server) nil)))))
+
+
 (defun epc-complete (to-complete)
   ;(message "Try to complete %S" to-complete)
   (when mngr-complete-epc
@@ -109,6 +117,46 @@
               )
           ;(message "Return : %S" completions)
           completions
+          )
+      (error (progn (message "error in completion server") (disconnect-completion-server) nil)))
+    ))
+
+
+(defun epc-symbol (candidate)
+  ;(message "Try to complete %S" to-complete)
+  (when mngr-complete-epc
+    (condition-case nil
+        (let (
+              (symbol (epc:call-sync mngr-complete-epc 'symbol candidate))
+              )
+          ;(message "Return : %S" completions)
+          symbol
+          )
+      (error (progn (message "error in completion server") (disconnect-completion-server) nil)))
+    ))
+
+(defun epc-meta (candidate)
+  ;(message "Try to complete %S" to-complete)
+  (when mngr-complete-epc
+    (condition-case nil
+        (let (
+              (meta (epc:call-sync mngr-complete-epc 'meta candidate))
+              )
+          ;(message "Return : %S" completions)
+          meta
+          )
+      (error (progn (message "error in completion server") (disconnect-completion-server) nil)))
+    ))
+
+(defun epc-doc (candidate)
+  ;(message "Try to complete %S" to-complete)
+  (when mngr-complete-epc
+    (condition-case nil
+        (let (
+              (doc (epc:call-sync mngr-complete-epc 'doc candidate))
+              )
+          ;(message "Return : %S" completions)
+          doc
           )
       (error (progn (message "error in completion server") (disconnect-completion-server) nil)))
     ))

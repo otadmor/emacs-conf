@@ -1,3 +1,9 @@
+def __COMPLETER_all_completions(to_complete):
+    try:
+        return rpc_complete_server.complete(to_complete)
+    except:
+        return []
+
 import os
 import sys
 import threading
@@ -8,6 +14,28 @@ import sys
 import readline
 import rlcompleter
 readline.set_completer(rlcompleter.Completer().complete)
+
+def get_func_signature(d):
+    symbol = d.func_name
+    args = d.func_code.co_varnames[:d.func_code.co_argcount]
+    defaults = d.func_defaults
+    if defaults is not None:
+        dl = len(defaults)
+        desc = "%s(%s)" % (symbol, ', '.join(args[:-dl] + tuple("%s=%r" % x for x in zip(args[-dl:], defaults))))
+    else:
+        desc = "%s(%s)" % (symbol, ', '.join(args))
+    return desc
+
+def find_obj(symbol):
+    ss = symbol.split(".")
+    if len(ss) == 0:
+        raise AttributeError("No name")
+    n = ss[0]
+    gg  = readline.get_completer().im_self.namespace
+    if n not in gg:
+        raise AttributeError(n)
+    d = reduce(lambda d, s: getattr(d, s), ss[1:], gg[n])
+    return d
 
 class EPCCompletionServer(EPCServer):
     def __init__(self, address='localhost', port=0, *args, **kargs):
@@ -24,6 +52,21 @@ class EPCCompletionServer(EPCServer):
         EPCServer.print_port(self, stream)
 
 class PythonModeCompletionServer(EPCCompletionServer):
+    def __init__(self, *args, **kargs):
+        EPCCompletionServer.__init__(self, *args, **kargs)
+
+        def meta(*cargs, **ckargs):
+            return self.meta(*cargs, **ckargs)
+        self.register_function(meta)
+
+        def symbol(*cargs, **ckargs):
+            return self.symbol(*cargs, **ckargs)
+        self.register_function(symbol)
+
+        def doc(*cargs, **ckargs):
+            return self.doc(*cargs, **ckargs)
+        self.register_function(doc)
+
     def complete(self, *to_complete):
         text = ''.join(list(to_complete))
         completions = []
@@ -33,18 +76,47 @@ class PythonModeCompletionServer(EPCCompletionServer):
                 res = readline.get_completer()(text, i)
                 if not res: break
                 i += 1
-                completions.append(res)
+                docstr = self.doc(res)
+                metastr = self.meta(res)
+                symbolstr = self.symbol(res)
+
+                completions.append({
+                    'word' : res,
+                    'doc' : docstr,
+                    'description' : metastr,
+                    'symbol' : symbolstr,
+                })
         except:
             pass
-        return tuple(completions)
+        return completions
 
-def __COMPLETER_all_completions(to_complete):
-    try:
-        return rpc_complete_server.complete(to_complete)
-    except:
-        return []
+    def meta(self, *candidate):
+        return ""
 
-def main():
+    def symbol(self, *candidate):
+        symbol = ''.join(list(candidate))
+        if symbol.endswith("("):
+            symbol = symbol[:-1]
+        try:
+            d = find_obj(symbol)
+        except AttributeError:
+            return ""
+        if isinstance(d, type(lambda:None)):
+            return get_func_signature(d)
+        else:
+            return ""
+
+    def doc(self, *candidate):
+        symbol = ''.join(list(candidate))
+        if symbol.endswith("("):
+            symbol = symbol[:-1]
+        try:
+            d = find_obj(symbol)
+        except AttributeError:
+            return ""
+        return d.__doc__
+
+def py_shell_completion_main():
     rpc_complete_server = PythonModeCompletionServer()
     rpc_complete_server.print_port()  # needed for Emacs client
     rpc_complete_thread = threading.Thread(
@@ -54,4 +126,4 @@ def main():
     rpc_complete_thread.start()
 
 if os.environ["TERM"] == "dumb":
-    main()
+    py_shell_completion_main()
