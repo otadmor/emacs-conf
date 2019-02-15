@@ -548,9 +548,6 @@
   '(add-to-list 'company-backends 'company-irony))
 
 (require 'company-py-shell)
-(eval-after-load 'company
-  '(add-to-list 'company-backends 'company-py-shell))
-
 
 ;;(require 'cc-mode)
 ;;(define-key c-mode-map  [(tab)] 'company-complete)

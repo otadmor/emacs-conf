@@ -1,3 +1,4 @@
+;;;  -*- lexical-binding: t -*-
 (require 'epc)
 (require 'shell)
 (require 'comint)
@@ -12,6 +13,7 @@
 
 
 (setq mngr-complete-epc nil)
+(make-local-variable 'mngr-complete-epc)
 
 (defun disconnect-completion-server()
   (when mngr-complete-epc
@@ -161,6 +163,29 @@
       (error (progn (message "error in completion server") (disconnect-completion-server) nil)))
     ))
 
+(defun completion-epc-collect-candidates (completion)
+  "Return a candidate from a COMPLETION reply."
+  (if (string-or-null-p completion)
+      completion
+    (let ((candidate (plist-get completion :word)))
+      (when candidate
+        (put-text-property 0 1 :doc (plist-get completion :doc) candidate)
+        (put-text-property 0 1 :symbol (plist-get completion :symbol) candidate)
+        (put-text-property 0 1 :description (plist-get completion :description) candidate)
+        candidate))))
+
+(defun completion-epc-candidates(prefix)
+  (epc-complete prefix))
+
+(defun completion-epc-complete-deferred(prefix)
+  (cons :async
+        (lambda (callback)
+          (deferred:nextc
+            (epc-complete-deferred prefix)
+            (lambda (reply)
+              (let ((candidates (mapcar 'completion-epc-collect-candidates reply)))
+                (funcall callback candidates)))))))
+
 (defun epc-completion-at-point ()
   (when (comint--match-partial-filename)
     (let (
@@ -183,5 +208,29 @@
 ; hook both, just in case it runs without or with shell
 (add-hook 'shell-dynamic-complete-functions 'epc-completion-at-point nil nil)
 (add-hook 'comint-dynamic-complete-functions 'epc-completion-at-point nil nil)
+
+(require 'cl-lib)
+(require 'company)
+
+(defun epc-completion-add(prefix-cb)
+  (let (
+        (completion-func
+         (lambda (command &optional arg &rest ignored)
+           (interactive (list 'interactive))
+           (cl-case command
+             (interactive (company-begin-backend 'completion-func))
+             (prefix (funcall prefix-cb))
+             (candidates (completion-epc-complete-deferred arg))
+             (meta (get-text-property 0 :description arg))
+             (doc-buffer (company-doc-buffer (get-text-property 0 :doc arg)))
+             (annotation (format "[%s]" (get-text-property 0 :symbol arg)))
+             (location nil)
+             (sorted t))
+           ))
+        )
+    (eval-after-load 'company '(add-to-list 'company-backends completion-func))))
+
+(epc-completion-add
+ (lambda () (and (eq major-mode 'fundamental-mode) (company-grab-symbol))))
 
 (provide 'completion-epc)

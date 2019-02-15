@@ -1,5 +1,3 @@
-;;;  -*- lexical-binding: t -*-
-(require 'cl-lib)
 (require 'company)
 
 (require 'completion-epc)
@@ -33,54 +31,10 @@
               (word (buffer-substring-no-properties beg end)))
          word)))
 
-(defun company-py-shell-collect-candidates (completion)
-  "Return a candidate from a COMPLETION reply."
-  (let ((candidate (plist-get completion :word)))
-    (when candidate
-      (put-text-property 0 1 :doc (plist-get completion :doc) candidate)
-      (put-text-property 0 1 :symbol (plist-get completion :symbol) candidate)
-      (put-text-property 0 1 :description (plist-get completion :description) candidate)
-      candidate)))
-
-(defun company-py-shell-meta (candidate)
-  "Return company meta string for a CANDIDATE."
-  (get-text-property 0 :description candidate))
-
-(defun company-py-shell-symbol (candidate)
-  "Return company annotation string for a CANDIDATE."
-  (format "[%s]" (get-text-property 0 :symbol candidate)))
-
-(defun company-py-shell-doc (candidate)
-  "Return a company documentation buffer from a CANDIDATE."
-  (company-doc-buffer (get-text-property 0 :doc candidate)))
-
-
-(defun company-py-shell-candidates(prefix)
-  (epc-complete prefix))
-
-(defun company-py-shell-complete-deferred(prefix)
-  (cons :async
-        (lambda (callback)
-          (deferred:nextc
-            (epc-complete-deferred prefix)
-            (lambda (reply)
-              (let ((candidates (mapcar 'company-py-shell-collect-candidates reply)))
-                (funcall callback candidates)))))))
-
-(defun company-py-shell (command &optional arg &rest ignored)
-  (interactive (list 'interactive))
-  (cl-case command
-    (interactive (company-begin-backend 'company-py-shell))
-    (prefix (company-py-shell-prefix))
-    (candidates (company-py-shell-complete-deferred arg))
-    (meta (company-py-shell-meta arg))
-    (doc-buffer (company-py-shell-doc arg))
-    (annotation (company-py-shell-symbol arg))
-    (location nil)
-    (sorted t)))
+(epc-completion-add 'company-py-shell-prefix)
 
 (defun py-shell-complete-substitute(&optional shell beg end word) (interactive)
-       (company-py-shell-candidates (company-py-shell-prefix)))
+       (completion-epc-candidates (company-py-shell-prefix)))
 (defalias 'py-shell-complete 'py-shell-complete-substitute)
 
 (setq py-ipython-command-args "--simple-prompt --nosep")

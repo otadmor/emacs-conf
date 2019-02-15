@@ -67,28 +67,32 @@ class PythonModeCompletionServer(EPCCompletionServer):
             return self.doc(*cargs, **ckargs)
         self.register_function(doc)
 
+    def readline_complete(self, text):
+        i = 0
+        while True:
+            res = readline.get_completer()(text, i)
+            if not res: break
+            yield res
+            i += 1
+
+    def try_or_err(self, f, err):
+        try:
+            return f()
+        except Exception:
+            return err
+
     def complete(self, *to_complete):
         text = ''.join(list(to_complete))
-        completions = []
         try:
-            i = 0
-            while True:
-                res = readline.get_completer()(text, i)
-                if not res: break
-                i += 1
-                docstr = self.doc(res)
-                metastr = self.meta(res)
-                symbolstr = self.symbol(res)
-
-                completions.append({
-                    'word' : res,
-                    'doc' : docstr,
-                    'description' : metastr,
-                    'symbol' : symbolstr,
-                })
+            return [{
+                'word' : res,
+                'doc' : self.try_or_err(lambda:self.doc(res), "Error"),
+                'description' : self.try_or_err(lambda:self.meta(res), "Error"),
+                'symbol' : self.try_or_err(lambda:self.symbol(res), "Error"),
+            } for res in self.readline_complete(text)]
         except:
-            pass
-        return completions
+            import traceback; traceback.print_exc()
+            return []
 
     def meta(self, *candidate):
         return ""
