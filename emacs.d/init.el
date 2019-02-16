@@ -577,20 +577,8 @@
 (require 'jss) ; remote js debugger
 (require 'winstack)
 (require 'simple)
-(defun push-mark-hook(orig-fun &rest args)
-  (progn
-    (apply orig-fun args)
-    (when (not (minibufferp)) (winstack-push))))
-(advice-add 'push-mark :around #'push-mark-hook)
-
-; combine-after-change-calls
-
 (global-set-key [(control meta p)] 'winstack-pop)
 (global-set-key [(control meta n)] 'winstack-next)
-
-;(global-set-key (kbd "<kp-add>") 'winstack-next)
-;(global-set-key (kbd "<S-return>") 'winstack-goto-def-and-push)
-;(global-set-key (kbd "<kp-subtract>")      'winstack-pop)
 
 (require 'lk-file-search)
 

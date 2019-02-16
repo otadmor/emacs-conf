@@ -2,108 +2,229 @@
 (defvar winstack-stack '()
   "A Stack holding window states.
 Use `winstack-push' and
+
 `winstack-pop' to modify it.")
 (defvar winstack-future-stack '()
   "A Stack holding window states.
 Use `winstack-push' and
 `winstack-pop' to modify it.")
 
-(defun winstack-push(&optional my-window important)
-    (interactive)
-    (let (
-        (my-buffer (window-buffer my-window))
-        (my-point (window-point my-window))
+(require 'persp-mode nil t)
+
+(defun winstack-stack-push(item)
+  (if persp-mode
+      (progn
+        (when (not (persp-parameter 'winstack-stack))
+          (set-persp-parameter 'winstack-stack '()))
+        (let (
+              (ws (persp-parameter 'winstack-stack))
+              )
+          (push item ws)
+          (set-persp-parameter 'winstack-stack ws)))
+    (push item winstack-stack)))
+(defun winstack-stack-first()
+  (if persp-mode
+      (progn
+        (when (not (persp-parameter 'winstack-stack))
+          (set-persp-parameter 'winstack-stack '()))
+        (first (persp-parameter 'winstack-stack))
         )
-            (winstack-mypush my-buffer my-point important)
-    )
-)
+  (first winstack-stack)))
+(defun winstack-stack-pop()
+  (if persp-mode
+      (progn
+        (when (not (persp-parameter 'winstack-stack))
+          (set-persp-parameter 'winstack-stack '()))
+        (let (
+              (ws (persp-parameter 'winstack-stack))
+              )
+          (let (
+                (item (pop ws))
+                )
+            (set-persp-parameter 'winstack-stack ws)
+            item)))
+  (pop winstack-stack)))
+(defun winstack-stack-length()
+  (if persp-mode
+      (progn
+        (when (not (persp-parameter 'winstack-stack))
+          (set-persp-parameter 'winstack-stack '()))
+        (length (persp-parameter 'winstack-stack))
+        )
+  (length winstack-stack)))
+
+
+(defun winstack-future-stack-push(item)
+  (if persp-mode
+      (progn
+        (when (not (persp-parameter 'winstack-future-stack))
+          (set-persp-parameter 'winstack-future-stack '()))
+        (let (
+              (ws (persp-parameter 'winstack-future-stack))
+              )
+          (push item ws)
+          (set-persp-parameter 'winstack-future-stack ws)))
+    (push item winstack-future-stack)))
+(defun winstack-future-stack-first()
+  (if persp-mode
+      (progn
+        (when (not (persp-parameter 'winstack-future-stack))
+          (set-persp-parameter 'winstack-future-stack '()))
+        (first (persp-parameter 'winstack-future-stack))
+        )
+  (first winstack-future-stack)))
+(defun winstack-future-stack-pop()
+  (if persp-mode
+      (progn
+        (when (not (persp-parameter 'winstack-future-stack))
+          (set-persp-parameter 'winstack-future-stack '()))
+        (let (
+              (ws (persp-parameter 'winstack-future-stack))
+              )
+          (let (
+                (item (pop ws))
+                )
+            (set-persp-parameter 'winstack-future-stack ws)
+            item)))
+  (pop winstack-future-stack)))
+(defun winstack-future-stack-length()
+  (if persp-mode
+      (progn
+        (when (not (persp-parameter 'winstack-future-stack))
+          (set-persp-parameter 'winstack-future-stack '()))
+        (length (persp-parameter 'winstack-future-stack))
+        )
+  (length winstack-future-stack)))
+(defun winstack-future-stack-clear()
+  (if persp-mode
+      (set-persp-parameter 'winstack-future-stack '())
+  (length winstack-future-stack)))
+
+(setq in-winstack nil)
+
+(defun lock-winstack(orig-fun &rest args)
+  (let (
+        (res
+         (when (not in-winstack)
+           (setq in-winstack t)
+           (apply orig-fun args)))
+        )
+    (setq in-winstack nil) res))
+
+(defun winstack-push(&optional window important)
+  (let (
+        (buffer (window-buffer window))
+        (point (window-point window))
+        )
+    (when (not (minibufferp buffer))
+      (winstack-push-inner buffer point important))))
+(advice-add 'winstack-push :around #'lock-winstack)
+
+(defun same-buffer-point(o buffer point)
+  (and
+   (equal (second o) buffer)
+   (equal (third o) point)))
+
+(defun buffer-point-action(o buffer point important)
+  (if (not (same-buffer-point o buffer point))
+      0 ; put new
+    (if important
+    1 ; replace
+    2 ; do nothing
+    )))
 
 ; compare-window-configurations
-(defun winstack-mypush(my-buffer my-point &optional my-important)
+(defun winstack-push-inner(buffer point &optional important)
     "Push the current window state onto `winstack-stack'."
-    (interactive)
-    ;(message "items before push important %S" my-important)
-    ;(print-elements-of-list winstack-future-stack)
-    ;(message ",")
-    ;(print-elements-of-list winstack-stack)
-    (message "winstack-push %S, %S" my-buffer my-point)
-    (if (and
-            (equal (second winstack-stack) my-buffer)
-            (equal (third winstack-stack) my-point)
-        )
+    ;;(message "items before push important %S" my-important)
+    ;;(print-elements-of-list winstack-future-stack)
+    ;;(message ",")
+    ;;(print-elements-of-list winstack-stack)
+    ;; (message "winstack-push %S, %S" my-buffer my-point)
+    (cl-loop
+     repeat (winstack-future-stack-length) do
+     (let (
+           (future-item (winstack-future-stack-pop))
+           )
+       (let (
+           (future-important (first future-item))
+           )
+         (when future-important (winstack-stack-push future-item)))))
+    ;(winstack-future-stack-clear)
+    (let (
+          (action
+           (if (> (winstack-stack-length) 0)
+               (buffer-point-action (winstack-stack-first) buffer point important)
+             0)) ; put new
+          )
+      (if (= action 2) ; do nothing
         (progn
-;            (message "Current config already pushed %S" my-buffer)
-        )
+          ;; (message "Current config already pushed %S" my-buffer)
+          )
         (progn
-            (cl-loop repeat (/ (length winstack-future-stack) 3) do
-                (let (
-                    (orig-important (pop winstack-future-stack))
-                    (orig-buffer (pop winstack-future-stack))
-                    (orig-point (pop winstack-future-stack))
-                    )
-                        (if orig-important
-                            (progn
-                                (push orig-point winstack-stack)
-                                (push orig-buffer winstack-stack)
-                                (push orig-important winstack-stack)
-                            )
-                        )
-                )
+          (when (= action 1) ; replace - pop existing items
+              (winstack-stack-pop)
             )
-            (setq winstack-future-stack '())
-;            (push '('my-buffer . 'my-point) winstack-stack)
-            (push my-point winstack-stack)
-            (push my-buffer winstack-stack)
-            (push my-important winstack-stack)
-;            (message (concat "pushed " (number-to-string (length (window-list (selected-frame)))) " window state"))
+          (let (
+                (item '())
+                )
+            (push point item)
+            (push buffer item)
+            (push important item)
+            ;(message "winstack-push %S" item)
+            (winstack-stack-push item)
+            )
+          ;; (message (concat "pushed " (number-to-string (length (window-list (selected-frame)))) " window state"))
+          )
         )
+      )
+    ;;(message "items after push")
+    ;;(print-elements-of-list winstack-future-stack)
+    ;;(message ",")
+    ;;(print-elements-of-list winstack-stack)
     )
-    ;(message "items after push")
-    ;(print-elements-of-list winstack-future-stack)
-    ;(message ",")
-    ;(print-elements-of-list winstack-stack)
 
-)
 (defun print-elements-of-list (list)
   "Print each element of LIST on a line of its own."
   (while list
     (message "%S" (car list))
     (setq list (cdr list))))
 
+(defun jump-to-buffer-point(buffer point)
+  (if (buffer-live-p buffer)
+      (let (
+            (window (display-buffer buffer))
+            )
+        ;; (switch-to-buffer buffer)
+        (set-window-point window point))))
+
+(defun jump-to-item(item)
+  (let (
+        (buffer (second item))
+        (point (third item))
+        )
+    (jump-to-buffer-point buffer point)))
+
 (defun winstack-pop()
-    "Pop the last window state off `winstack-stack' and apply it. takes from old-stack and put in new-stack"
-    (interactive)
-;    (if gdb-source-window
-;        (winstack-push gdb-source-window t)
-;    )
+  "Pop the last window state off `winstack-stack' and apply it. takes from old-stack and put in new-stack"
+  (interactive)
+  (setq in-winstack t)
     ;(message "items before pop")
     ;(print-elements-of-list winstack-stack)
     ;(message ",")
     ;(print-elements-of-list winstack-future-stack)
-    (if (second winstack-stack) ; (and
-        ;
-        ;     (fourth winstack-stack)
-        ; )
-        (let (
-           (orig-important (pop winstack-stack))
-            (orig-buffer (pop winstack-stack))
-            (orig-point (pop winstack-stack))
+  (if (and (> (winstack-stack-length) 1))
+      (let (
+            (item (winstack-stack-pop))
             )
-                (push orig-point winstack-future-stack)
-                (push orig-buffer winstack-future-stack)
-                (push orig-important winstack-future-stack)
-                (let (
-                    (cur-important (first winstack-stack))
-                    (cur-buffer (second winstack-stack))
-                    (cur-point (third winstack-stack))
-                    )
-                        (let (
-                            (my-window (display-buffer cur-buffer))
-                            )
-                          (message "winstack-push %S, %S" cur-buffer cur-point)
-                                (set-window-point my-window cur-point)
-                        )
-                )
+        ;(message "winstack-pop future %S" item)
+        (winstack-future-stack-push item)
+        (let (
+              (current-item (winstack-stack-first))
+              )
+          ;(message "winstack-pop %S" current-item)
+          (jump-to-item current-item)
+          )
         )
     )
 ;    (message "items after pop")
@@ -111,57 +232,33 @@ Use `winstack-push' and
 ;    (message ",")
 ;    (print-elements-of-list winstack-future-stack)
 )
+;(advice-add 'winstack-pop :around #'lock-winstack)
 
 (defun winstack-next()
     "Pop the last window state off `winstack-stack' and apply it. takes from old-stack and put in new-stack"
     (interactive)
-    ;(message "items before next")
-    ;(print-elements-of-list winstack-future-stack)
-    ;(message ",")
-    ;(print-elements-of-list winstack-stack)
-    (if (second winstack-future-stack)
+    (setq in-winstack t)
+    ;;(message "items before next")
+    ;;(print-elements-of-list winstack-future-stack)
+    ;;(message ",")
+    ;; (print-elements-of-list winstack-future-stack)
+    (if (> (winstack-future-stack-length) 0)
         (let (
-            (orig-important (pop winstack-future-stack))
-            (orig-buffer (pop winstack-future-stack))
-            (orig-point (pop winstack-future-stack))
-            )
-                (push orig-point winstack-stack)
-                (push orig-buffer winstack-stack)
-                (push orig-important winstack-stack)
-                (let (
-                    (my-window (display-buffer orig-buffer))
-                    )
-                          (message "winstack-push %S, %S" orig-buffer orig-point)
-                        (set-window-point my-window orig-point)
-                )
-        )
-    )
+              (current-item (winstack-future-stack-pop))
+              )
+          (winstack-stack-push current-item)
+          ;(message "winstack-next %S" current-item)
+          (jump-to-item current-item)
+          )
+      )
 ;    (message "items after next")
 ;    (print-elements-of-list winstack-future-stack)
 ;    (message ",")
 ;    (print-elements-of-list winstack-stack)
 )
+;(advice-add 'winstack-next :around #'lock-winstack)
 
-;(defun winstack-pop()
-;    (interactive)
-;;    (let (
-;;        (res (winstack-mypop winstack-stack winstack-future-stack))
-;;        )
-;(winstack-mypop winstack-stack winstack-future-stack)
-;            (message "received %S" res)
-;            (setq winstack-stack (car res))
-;            (setq winstack-future-stack (cdr res))
-;;    )
-;)
-;(defun winstack-next()
-;    (interactive)
-;;    (let (
-;;        (res (winstack-mypop winstack-future-stack winstack-stack))
-;;        )
-;(winstack-mypop winstack-future-stack winstack-stack)
-;            (setq winstack-future-stack (car res))
-;            (setq winstack-stack (cdr res))
-;;    )
-;)
+(add-hook 'post-command-hook #'winstack-push)
+;(add-hook 'pre-command-hook 'winstack-push)
 
 (provide 'winstack)
