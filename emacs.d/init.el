@@ -288,7 +288,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (counsel sr-speedbar persp-mode python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (ag dumb-jump counsel sr-speedbar persp-mode python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -751,10 +751,10 @@ the output."
 
 (define-key mc/keymap (kbd "<return>") nil)
 
-
+(require 'jedi-core)
 (add-hook 'python-mode-hook 'jedi:setup)
 (setq jedi:complete-on-dot t)                 ; optional
-(global-set-key [(control meta j)] 'jedi:goto-definition)
+(define-key jedi-mode-map (kbd "M-C-j") 'jedi:goto-definition)
 
 
 (require 'bash-completion)
@@ -1022,3 +1022,7 @@ the output."
 
 (add-to-list 'speedbar-frame-parameters (cons 'persp-ignore-wconf t))
 
+(require 'dumb-jump)
+(global-set-key (kbd "M-C-j") 'dumb-jump-go)
+(global-set-key (kbd "M-C-q") 'dumb-jump-quick-look)
+(setq dumb-jump-selector 'ivy)
