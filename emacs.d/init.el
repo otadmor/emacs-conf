@@ -717,7 +717,7 @@ the output."
                                           (kill-ring-save beg end)
                                           (setq killed-rectangle ())
                                           )) ; (mc/remove-fake-cursors)
-(global-set-key (kbd "S-<insert>") (defun ed/paste() (interactive) (message "ed/paste") (yank) (yank-rectangle)))
+(global-set-key (kbd "S-<insert>") (defun ed/paste() (interactive) (yank) (yank-rectangle)))
 (global-set-key (kbd "S-<delete>") (defun ed/cut(beg end) (interactive "r")
                                           (kill-region beg end)
                                           (setq killed-rectangle ())
