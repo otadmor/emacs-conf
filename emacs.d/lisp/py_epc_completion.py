@@ -108,7 +108,10 @@ class PythonModeCompletionServer(EPCCompletionServer):
         if isinstance(d, type(lambda:None)):
             return get_func_signature(d)
         else:
-            return ""
+            t = "%r" % (d,)
+            if len(t) > 15:
+                t = t[:13] + "..."
+            return t
 
     def doc(self, *candidate):
         symbol = ''.join(list(candidate))
