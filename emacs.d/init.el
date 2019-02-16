@@ -820,7 +820,28 @@ the output."
              (define-key speedbar-mode-map [down] 'speedbar-next)
              (define-key speedbar-mode-map (kbd "M-g") 'sr-speedbar-navigate)
              ))
-(global-set-key (kbd "C-e") 'sr-speedbar-toggle)
+
+(setq speedbar-last-window nil)
+(defun sr-speedbar-toggle-keep-window ()
+  "Toggle sr-speedbar window.
+Toggle visibility of sr-speedbar by resizing
+the `sr-speedbar-window' to a minimal width
+or the last width when visible.
+Use this function to create or toggle visibility
+of a speedbar-window.  It will be created if necessary."
+  (interactive)
+  (if (sr-speedbar-exist-p)
+      (progn
+        (sr-speedbar-close)
+        (select-window speedbar-last-window)
+        (setq speedbar-last-window nil)
+        )
+    (progn
+      (sr-speedbar-open)
+      (setq speedbar-last-window (frame-selected-window))
+      (sr-speedbar-select-window)
+      )))
+(global-set-key (kbd "C-e") 'sr-speedbar-toggle-keep-window)
 
 
 (require 'persp-mode)
