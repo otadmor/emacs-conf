@@ -833,14 +833,14 @@ of a speedbar-window.  It will be created if necessary."
   (if (sr-speedbar-exist-p)
       (progn
         (sr-speedbar-close)
-        (select-window speedbar-last-window)
-        (setq speedbar-last-window nil)
-        )
+        (when
+            (window-live-p speedbar-last-window)
+          (select-window speedbar-last-window))
+        (setq speedbar-last-window nil))
     (progn
       (sr-speedbar-open)
       (setq speedbar-last-window (frame-selected-window))
-      (sr-speedbar-select-window)
-      )))
+      (sr-speedbar-select-window))))
 (global-set-key (kbd "C-e") 'sr-speedbar-toggle-keep-window)
 
 
