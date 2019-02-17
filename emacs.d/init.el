@@ -53,6 +53,8 @@
 (blink-cursor-mode -1)
 (delete-selection-mode 1)
 
+(global-eldoc-mode -1)
+
 ;; Speedbar settings
 (setq speedbar-default-position 'left)
 (setq speedbar-frame-parameters '((minibuffer . nil)
