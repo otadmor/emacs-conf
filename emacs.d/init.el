@@ -725,15 +725,18 @@ the output."
                                           (setq killed-rectangle ())
                                           ))
 
-
+(setq mc--fake-cursor-idx 0)
 (defun mc/make-a-note-of-the-command-being-run-hook(orig-fun &rest args)
   (let (
         (res (apply orig-fun args))
         )
-    (kill-new "")
+    ;(message "mc--this-command %S x %S" mc--this-command x)
+    (when (eq mc--this-command 'mc/copy)
+    ;  (message "got copy")
+      (setq mc--fake-cursor-idx (+ mc--fake-cursor-idx 1)))
     res
     )
-)
+  )
 (advice-add 'mc/make-a-note-of-the-command-being-run :around #'mc/make-a-note-of-the-command-being-run-hook)
 
 (defun mc/execute-this-command-for-all-cursors-hook(orig-fun &rest args)
@@ -741,10 +744,42 @@ the output."
         (res (apply orig-fun args))
         )
     (mc--maybe-set-killed-rectangle)
+    (when (eq mc--this-command 'mc/copy)
+   ;   (message "end copy")
+      (when (eq mc--fake-cursor-idx 0)
+        (kill-new "")
+        )
+      )
     res
     )
-)
+  )
 (advice-add 'mc/execute-this-command-for-all-cursors :around #'mc/execute-this-command-for-all-cursors-hook)
+
+(defun mc/execute-command-for-all-fake-cursors-hook(orig-fun &rest args)
+  (when (eq mc--this-command 'mc/copy)
+  ;      (message "before all fake copy")
+       ; (kill-new ""))
+      )
+ ;   (message "before all fakes")
+  (let (
+        (res (apply orig-fun args))
+        )
+;      (message "after all fakes")
+    (when (eq mc--this-command 'mc/copy)
+;        (message "after all fake copy")
+      )
+    (setq mc--fake-cursor-idx 0)
+    res
+    )
+  )
+(advice-add 'mc/execute-command-for-all-fake-cursors :around #'mc/execute-command-for-all-fake-cursors-hook)
+
+
+
+
+
+
+
 
 ; (mc--maybe-set-killed-rectangle)
 (define-key mc/keymap (kbd "C-<insert>") (defun mc/copy(beg end) (interactive "r") (kill-ring-save beg end)))
