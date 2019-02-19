@@ -719,21 +719,63 @@ the output."
                                           (kill-ring-save beg end)
                                           (setq killed-rectangle ())
                                           )) ; (mc/remove-fake-cursors)
-(global-set-key (kbd "S-<insert>") (defun ed/paste() (interactive) (yank) (yank-rectangle)))
+(global-set-key (kbd "S-<insert>") (defun ed/paste() (interactive)
+                                          (yank)
+                                          (yank-rectangle)
+                                          ))
 (global-set-key (kbd "S-<delete>") (defun ed/cut(beg end) (interactive "r")
                                           (kill-region beg end)
                                           (setq killed-rectangle ())
                                           ))
+(defun mc--maybe-set-killed-rectangle-other ()
+  "Add the latest kill-ring entry for each cursor to killed-rectangle.
+So you can paste it in later with `yank-rectangle'."
+  (let ((entries (let (mc/max-cursors) (mc--kill-ring-entries))))
+    (unless (mc--all-equal entries)
+      (setq killed-rectangle entries))))
 
 (setq mc--fake-cursor-idx 0)
 (defun mc/make-a-note-of-the-command-being-run-hook(orig-fun &rest args)
   (let (
         (res (apply orig-fun args))
         )
-    ;(message "mc--this-command %S x %S" mc--this-command x)
-    (when (eq mc--this-command 'mc/copy)
-    ;  (message "got copy")
-      (setq mc--fake-cursor-idx (+ mc--fake-cursor-idx 1)))
+;    (message "mc--this-command %S x %S" mc--this-command mc--fake-cursor-idx)
+    (when (eq mc--this-command 'mc/paste)
+;      (message "got paste")
+      (let (
+            (ns (mc/num-cursors))
+            )
+        (with-temp-buffer
+          (deactivate-mark t)
+;          (message "OK!")
+          (yank-rectangle)
+;          (message "DS")
+          (let (
+                (lcs (count-lines (point-min) (point-max)))
+                )
+;            (message "lcs %S ns %S" lcs ns)
+            (when (or
+                   (and (= lcs (- ns 1)) (= mc--fake-cursor-idx 0))
+                   (and (= lcs ns) (> mc--fake-cursor-idx 0))
+                   )
+;              (message "ok")
+              (let (
+                    (beg (line-beginning-position (+ mc--fake-cursor-idx 1)))
+                    (end (line-end-position (+ mc--fake-cursor-idx 1)))
+                    )
+;                (message "should paste one line each %S" (buffer-substring beg end))
+                )
+              )
+            )
+          )
+        )
+      )
+;     (when (eq mc--this-command 'mc/copy)
+;       (if (= mc--fake-cursor-idx 0)
+; ;          (kill-new "")
+;         )
+;       )
+    (setq mc--fake-cursor-idx (+ mc--fake-cursor-idx 1))
     res
     )
   )
@@ -743,11 +785,14 @@ the output."
   (let (
         (res (apply orig-fun args))
         )
-    (mc--maybe-set-killed-rectangle)
     (when (eq mc--this-command 'mc/copy)
-   ;   (message "end copy")
+;      (message "end copy")
       (when (eq mc--fake-cursor-idx 0)
+;        (message "end last copy %S" killed-rectangle)
+        (mc--maybe-set-killed-rectangle-other)
+;        (message "kill new %S" killed-rectangle)
         (kill-new "")
+;        (message "kill new2 %S" killed-rectangle)
         )
       )
     res
@@ -757,10 +802,9 @@ the output."
 
 (defun mc/execute-command-for-all-fake-cursors-hook(orig-fun &rest args)
   (when (eq mc--this-command 'mc/copy)
-  ;      (message "before all fake copy")
-       ; (kill-new ""))
+;    (message "before all fake copy")
       )
- ;   (message "before all fakes")
+;    (message "before all fakes")
   (let (
         (res (apply orig-fun args))
         )
@@ -776,12 +820,12 @@ the output."
 
 
 
+(defalias 'mc--maybe-set-killed-rectangle (defun mc--maybe-set-killed-rectangle-none() nil))
 
 
 
 
 
-; (mc--maybe-set-killed-rectangle)
 (define-key mc/keymap (kbd "C-<insert>") (defun mc/copy(beg end) (interactive "r") (kill-ring-save beg end)))
 (define-key mc/keymap (kbd "S-<insert>") (defun mc/paste() (interactive) (yank) (yank-rectangle))); this should run once if the amount of cursors is equal to the amount of line in the rectangle
 (define-key mc/keymap (kbd "S-<delete>") (defun mc/cut(beg end) (interactive "r") (kill-region beg end)))
