@@ -734,6 +734,7 @@ So you can paste it in later with `yank-rectangle'."
     (unless (mc--all-equal entries)
       (setq killed-rectangle entries))))
 
+(setq killed-rectangle-backup ())
 (setq mc--fake-cursor-idx 0)
 (defun mc/make-a-note-of-the-command-being-run-hook(orig-fun &rest args)
   (let (
@@ -745,28 +746,38 @@ So you can paste it in later with `yank-rectangle'."
       (let (
             (ns (mc/num-cursors))
             )
-        (with-temp-buffer
-          (deactivate-mark t)
-;          (message "OK!")
-          (yank-rectangle)
-;          (message "DS")
-          (let (
-                (lcs (count-lines (point-min) (point-max)))
-                )
-;            (message "lcs %S ns %S" lcs ns)
-            (when (or
-                   (and (= lcs (- ns 1)) (= mc--fake-cursor-idx 0))
-                   (and (= lcs ns) (> mc--fake-cursor-idx 0))
+        (let (
+              (yank-line
+               (with-temp-buffer
+                 (deactivate-mark t)
+                ; (message "OK!")
+                 (yank-rectangle)
+                 (goto-char (point-min))
+                 ; (message "DS")
+                 (let (
+                       (lcs (count-lines (point-min) (point-max)))
+                       )
+                   ; (message "lcs %S ns %S" lcs ns)
+                   (when (or
+                          (and (= lcs ns) (= mc--fake-cursor-idx 0))
+                          (and (= lcs (+ ns 1)) (> mc--fake-cursor-idx 0))
+                          )
+                     ; (message "ok")
+                     (let (
+                           (beg (line-beginning-position (+ mc--fake-cursor-idx 1)))
+                           (end (line-end-position (+ mc--fake-cursor-idx 1)))
+                           )
+                       (buffer-substring beg end)
+                       )
+                     )
                    )
-;              (message "ok")
-              (let (
-                    (beg (line-beginning-position (+ mc--fake-cursor-idx 1)))
-                    (end (line-end-position (+ mc--fake-cursor-idx 1)))
-                    )
-;                (message "should paste one line each %S" (buffer-substring beg end))
-                )
+                 )
+               )
               )
-            )
+;          (message "should paste one line each %S" yank-line)
+          (setq killed-rectangle-backup killed-rectangle)
+          (setq killed-rectangle ())
+          (kill-new yank-line)
           )
         )
       )
@@ -782,18 +793,38 @@ So you can paste it in later with `yank-rectangle'."
 (advice-add 'mc/make-a-note-of-the-command-being-run :around #'mc/make-a-note-of-the-command-being-run-hook)
 
 (defun mc/execute-this-command-for-all-cursors-hook(orig-fun &rest args)
+;  (message "before exec %S" mc--fake-cursor-idx)
+  (when (eq mc--this-command 'mc/paste)
+    (when (= mc--fake-cursor-idx 1)
+;      (message "restored rectangle %S" killed-rectangle-backup)
+      (setq killed-rectangle killed-rectangle-backup)
+      (setq killed-rectangle-backup ())
+      (kill-new "")
+      )
+    )
   (let (
         (res (apply orig-fun args))
         )
     (when (eq mc--this-command 'mc/copy)
 ;      (message "end copy")
-      (when (eq mc--fake-cursor-idx 0)
+      (when (= mc--fake-cursor-idx 0)
 ;        (message "end last copy %S" killed-rectangle)
         (mc--maybe-set-killed-rectangle-other)
 ;        (message "kill new %S" killed-rectangle)
         (kill-new "")
 ;        (message "kill new2 %S" killed-rectangle)
         )
+      )
+    (when (eq mc--this-command 'mc/paste)
+;      (message "aftetr exec %S" mc--fake-cursor-idx)
+      (when (> mc--fake-cursor-idx 0)
+;        (message "restored rectangle %S" killed-rectangle-backup)
+        (setq killed-rectangle killed-rectangle-backup)
+        (setq killed-rectangle-backup ())
+        (kill-new "")
+        )
+
+
       )
     res
     )
