@@ -246,15 +246,20 @@
 
 
 (require 'shell-ext) ; for f2 to create a new shell window
+(defun old-shell-with-dir(current-directory-path)
+  (let (
+        (shb (car (get-buffers-with-major-mode 'shell-mode)))
+        )
+    (if (eq shb nil)
+        (new-shell-with-dir current-directory-path)
+      (switch-to-buffer shb)
+      (end-of-buffer)
+      (insert-string "cd " )
+      (insert-string (shell-quote-argument current-directory-path))
+      (comint-send-input))
+    shb))
 (defun old-shell() (interactive)
-       (let (
-             (shb (car (get-buffers-with-major-mode 'shell-mode)))
-             )
-         (if (eq shb nil)
-             (new-shell)
-           (switch-to-buffer shb)
-           (shell-change-to-current-dir)
-           shb)))
+  (old-shell-with-dir (expand-file-name default-directory)))
 (global-set-key [(meta t)] 'old-shell)
 ; (global-set-key [(meta \\)] 'shell-change-to-current-dir)
 (global-set-key [(meta shift t)] 'new-shell)
@@ -468,11 +473,21 @@
 
 ;(setq ivy-magic-slash-non-match-action nil)
 
+
+
 (defun ivy-shell ()
   (interactive)
   (if ivy--directory
       (ivy-quit-and-run
-       (switch-to-buffer (new-shell-with-dir ivy--directory)))
+        (switch-to-buffer (old-shell-with-dir (expand-file-name ivy--directory))))
+    (user-error
+     "Not completing files currently")))
+
+(defun ivy-new-shell ()
+  (interactive)
+  (if ivy--directory
+      (ivy-quit-and-run
+        (switch-to-buffer (new-shell-with-dir (expand-file-name ivy--directory))))
     (user-error
      "Not completing files currently")))
 
@@ -492,13 +507,10 @@
     (user-error
      "Not completing files currently")))
 
-
-(ivy-add-actions
- t
- `(("t" ivy-shell "shell")))
 (define-key ivy-minibuffer-map (kbd "C-d") #'ivy-immediate-done)
 (define-key ivy-minibuffer-map (kbd "RET") #'ivy-alt-done)
 (define-key ivy-minibuffer-map [(meta t)] 'ivy-shell)
+(define-key ivy-minibuffer-map [(meta shift t)] 'ivy-new-shell)
 (define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
 (define-key ivy-minibuffer-map [(meta h)] 'ivy-magit-status)
 (global-set-key (kbd "C-s") 'swiper)
