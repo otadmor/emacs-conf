@@ -715,16 +715,6 @@ the output."
                                         ; kill-ring-yank-pointer
 
 
-(global-set-key (kbd "C-<insert>") (defun ed/copy(beg end) (interactive "r")
-                                          (kill-ring-save beg end)
-                                          )) ; (mc/remove-fake-cursors)
-(global-set-key (kbd "S-<insert>") (defun ed/paste() (interactive)
-                                          (yank)
-                                          ))
-(global-set-key (kbd "S-<delete>") (defun ed/cut(beg end) (interactive "r")
-                                          (kill-region beg end)
-                                          ))
-
 (defun mc--maybe-set-killed-region ()
   "Add the latest kill-ring entry for each cursor to killed-rectangle.
 So you can paste it in later with `yank-rectangle'."
@@ -857,15 +847,10 @@ So you can paste it in later with `yank-rectangle'."
 (defalias 'mc--maybe-set-killed-rectangle (defun mc--maybe-set-killed-rectangle-none() (kill-new (join-killed-rectangle))))
 
 (push 'mc--create-order-id mc/cursor-specific-vars)
-
-
-
-
-(define-key mc/keymap (kbd "C-<insert>") (defun mc/copy(beg end) (interactive "r") (kill-ring-save beg end)))
-(define-key mc/keymap (kbd "S-<insert>") (defun mc/paste() (interactive) (yank))); this should run once if the amount of cursors is equal to the amount of line in the rectangle
-(define-key mc/keymap (kbd "S-<delete>") (defun mc/cut(beg end) (interactive "r") (kill-region beg end)))
-
 (define-key mc/keymap (kbd "<return>") nil)
+
+
+
 
 (require 'jedi-core)
 (add-hook 'python-mode-hook 'jedi:setup)
