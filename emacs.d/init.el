@@ -724,11 +724,6 @@ the output."
 (global-set-key (kbd "S-<delete>") (defun ed/cut(beg end) (interactive "r")
                                           (kill-region beg end)
                                           ))
-; (defun mc--maybe-set-killed-region ()
-;   "Add the latest kill-ring entry for each cursor to killed-rectangle.
-; So you can paste it in later with `yank-rectangle'."
-;   (let ((entries (let (mc/max-cursors) (mc--kill-ring-entries))))
-;       (kill-new (string-join entries "\n"))))
 
 (defun mc--maybe-set-killed-region ()
   "Add the latest kill-ring entry for each cursor to killed-rectangle.
@@ -741,28 +736,6 @@ So you can paste it in later with `yank-rectangle'."
    "Set the INDEX th element of SEQ to NEWVAL.
  SEQ __is__ modified."
    (setcar (nthcdr index seq) newval))
-
-(defun mc/make-a-note-of-the-command-being-run-hook(orig-fun &rest args)
- ; (message "pre before exec %S" mc--fake-cursor-idx)
-  (let (
-        (res (apply orig-fun args))
-        )
-   ; (message "post before exec %S" mc--fake-cursor-idx)
-    res
-    )
-  )
-(advice-add 'mc/make-a-note-of-the-command-being-run :around #'mc/make-a-note-of-the-command-being-run-hook)
-
-(defun mc/execute-this-command-for-all-cursors-hook(orig-fun &rest args)
-  ; (message "pre after exec %S" mc--fake-cursor-idx)
-  (let (
-        (res (apply orig-fun args))
-        )
-    ; (message "post after exec %S" mc--fake-cursor-idx)
-    res
-    )
-  )
-(advice-add 'mc/execute-this-command-for-all-cursors :around #'mc/execute-this-command-for-all-cursors-hook)
 
 (defun mc/execute-command-for-all-fake-cursors-hook(orig-fun &rest args)
   (setq mc--fake-cursor-idx 0)
