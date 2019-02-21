@@ -5,10 +5,12 @@
       '(
         backward-sexp
         forward-sexp
+        indent-for-tab-command
         kill-region
         mc/copy
         mc/cut
         mc/paste
+        my-comment-or-uncomment-region
         overwrite-mode
         swiper
         ))

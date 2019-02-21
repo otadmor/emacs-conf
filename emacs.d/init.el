@@ -969,6 +969,7 @@ of a speedbar-window.  It will be created if necessary."
 ;               (persp-add-buffer persp-shared-buffers)))
 
 (with-eval-after-load "persp-mode"
+  (setq wg-morph-on nil)
   (set-persp-parameter 'dont-save-to-file t nil)
   (with-eval-after-load "ivy"
     (add-hook 'ivy-ignore-buffers
@@ -986,17 +987,19 @@ of a speedbar-window.  It will be created if necessary."
                     (persp-add-buffer    . nil)
                     (persp-switch        . nil)
                     (persp-window-switch . nil)
-                    (persp-frame-switch  . nil))))))
+                    (persp-frame-switch  . nil)))))
 
-(with-eval-after-load "persp-mode-autoloads"
-  (setq wg-morph-on nil)
   ;; switch off the animation of restoring window configuration
   (add-hook 'after-init-hook
             #'(lambda ()
                 (progn
                   (persp-mode 1)
                   (run-at-time "1 sec" nil 'perspsw1)
-                  ))))
+                  )))
+  )
+
+(with-eval-after-load "persp-mode-autoloads"
+)
 
 (add-to-list 'speedbar-frame-parameters (cons 'persp-ignore-wconf t))
 
