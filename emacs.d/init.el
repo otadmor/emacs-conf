@@ -717,131 +717,73 @@ the output."
 
 (global-set-key (kbd "C-<insert>") (defun ed/copy(beg end) (interactive "r")
                                           (kill-ring-save beg end)
-                                          (setq killed-rectangle ())
                                           )) ; (mc/remove-fake-cursors)
 (global-set-key (kbd "S-<insert>") (defun ed/paste() (interactive)
                                           (yank)
-                                          (yank-rectangle)
                                           ))
 (global-set-key (kbd "S-<delete>") (defun ed/cut(beg end) (interactive "r")
                                           (kill-region beg end)
-                                          (setq killed-rectangle ())
                                           ))
-(defun mc--maybe-set-killed-rectangle-other ()
+; (defun mc--maybe-set-killed-region ()
+;   "Add the latest kill-ring entry for each cursor to killed-rectangle.
+; So you can paste it in later with `yank-rectangle'."
+;   (let ((entries (let (mc/max-cursors) (mc--kill-ring-entries))))
+;       (kill-new (string-join entries "\n"))))
+
+(defun mc--maybe-set-killed-region ()
   "Add the latest kill-ring entry for each cursor to killed-rectangle.
 So you can paste it in later with `yank-rectangle'."
   (let ((entries (let (mc/max-cursors) (mc--kill-ring-entries))))
-    (unless (mc--all-equal entries)
-      (setq killed-rectangle entries))))
+      (setq killed-rectangle entries)))
 
-(setq killed-rectangle-backup ())
 (setq mc--fake-cursor-idx 0)
+(defun set-nth (index seq newval)
+   "Set the INDEX th element of SEQ to NEWVAL.
+ SEQ __is__ modified."
+   (setcar (nthcdr index seq) newval))
+
 (defun mc/make-a-note-of-the-command-being-run-hook(orig-fun &rest args)
+ (message "pre before exec %S" mc--fake-cursor-idx)
   (let (
         (res (apply orig-fun args))
         )
-;    (message "mc--this-command %S x %S" mc--this-command mc--fake-cursor-idx)
-    (when (eq mc--this-command 'mc/paste)
-;      (message "got paste")
-      (let (
-            (ns (mc/num-cursors))
-            )
-        (let (
-              (yank-line
-               (with-temp-buffer
-                 (deactivate-mark t)
-                ; (message "OK!")
-                 (yank-rectangle)
-                 (goto-char (point-min))
-                 ; (message "DS")
-                 (let (
-                       (lcs (count-lines (point-min) (point-max)))
-                       )
-                   ; (message "lcs %S ns %S" lcs ns)
-                   (when (or
-                          (and (= lcs ns) (= mc--fake-cursor-idx 0))
-                          (and (= lcs (+ ns 1)) (> mc--fake-cursor-idx 0))
-                          )
-                     ; (message "ok")
-                     (let (
-                           (beg (line-beginning-position (+ mc--fake-cursor-idx 1)))
-                           (end (line-end-position (+ mc--fake-cursor-idx 1)))
-                           )
-                       (buffer-substring beg end)
-                       )
-                     )
-                   )
-                 )
-               )
-              )
-;          (message "should paste one line each %S" yank-line)
-          (setq killed-rectangle-backup killed-rectangle)
-          (setq killed-rectangle ())
-          (kill-new yank-line)
-          )
-        )
-      )
-;     (when (eq mc--this-command 'mc/copy)
-;       (if (= mc--fake-cursor-idx 0)
-; ;          (kill-new "")
-;         )
-;       )
-    (setq mc--fake-cursor-idx (+ mc--fake-cursor-idx 1))
+   (message "post before exec %S" mc--fake-cursor-idx)
     res
     )
   )
 (advice-add 'mc/make-a-note-of-the-command-being-run :around #'mc/make-a-note-of-the-command-being-run-hook)
 
 (defun mc/execute-this-command-for-all-cursors-hook(orig-fun &rest args)
-;  (message "before exec %S" mc--fake-cursor-idx)
-  (when (eq mc--this-command 'mc/paste)
-    (when (= mc--fake-cursor-idx 1)
-;      (message "restored rectangle %S" killed-rectangle-backup)
-      (setq killed-rectangle killed-rectangle-backup)
-      (setq killed-rectangle-backup ())
-      (kill-new "")
-      )
-    )
+  ; (setq mc--fake-cursor-idx 0)
+  (message "pre after exec %S" mc--fake-cursor-idx)
   (let (
         (res (apply orig-fun args))
         )
-    (when (eq mc--this-command 'mc/copy)
-;      (message "end copy")
-      (when (= mc--fake-cursor-idx 0)
-;        (message "end last copy %S" killed-rectangle)
-        (mc--maybe-set-killed-rectangle-other)
-;        (message "kill new %S" killed-rectangle)
-        (kill-new "")
-;        (message "kill new2 %S" killed-rectangle)
-        )
-      )
-    (when (eq mc--this-command 'mc/paste)
-;      (message "aftetr exec %S" mc--fake-cursor-idx)
-      (when (> mc--fake-cursor-idx 0)
-;        (message "restored rectangle %S" killed-rectangle-backup)
-        (setq killed-rectangle killed-rectangle-backup)
-        (setq killed-rectangle-backup ())
-        (kill-new "")
-        )
-
-
-      )
+    (message "post after exec %S" mc--fake-cursor-idx)
     res
     )
   )
 (advice-add 'mc/execute-this-command-for-all-cursors :around #'mc/execute-this-command-for-all-cursors-hook)
 
 (defun mc/execute-command-for-all-fake-cursors-hook(orig-fun &rest args)
-  (when (eq mc--this-command 'mc/copy)
-;    (message "before all fake copy")
-      )
-;    (message "before all fakes")
+  (setq mc--fake-cursor-idx 0)
+  (setq killed-rectangle '())
+  (message "before all fakes %S" mc--fake-cursor-idx)
   (let (
         (res (apply orig-fun args))
         )
-;      (message "after all fakes")
-    (when (eq mc--this-command 'mc/copy)
-;        (message "after all fake copy")
+    (message "after all fakes %S" mc--fake-cursor-idx)
+    (let (
+          (id (- (mc/num-cursors) mc--fake-cursor-idx 1))
+          )
+      (when (= id 0) ; must be 0 after iterating over all the cursors
+        (let (
+              (killed-region (car kill-ring))
+              )
+          (message "update: killed rectangle id %S with %S" id killed-region)
+          (push killed-region killed-rectangle)
+          )
+        )
       )
     (setq mc--fake-cursor-idx 0)
     res
@@ -849,16 +791,135 @@ So you can paste it in later with `yank-rectangle'."
   )
 (advice-add 'mc/execute-command-for-all-fake-cursors :around #'mc/execute-command-for-all-fake-cursors-hook)
 
+(defun mc/execute-command-for-fake-cursor-hook(orig-fun &rest args)
+  (let (
+        (res (apply orig-fun args))
+        )
+    ;(setq mc--fake-cursor-idx 0)
+    (setq mc--fake-cursor-idx (+ mc--fake-cursor-idx 1))
+    res
+    )
+  )
+(advice-add 'mc/execute-command-for-fake-cursor :around #'mc/execute-command-for-fake-cursor-hook)
 
 
-(defalias 'mc--maybe-set-killed-rectangle (defun mc--maybe-set-killed-rectangle-none() nil))
+(defun multiple-cursors-init-kill-buffer()
+  (let (
+        (killed-region (nth 0 killed-rectangle))
+        )
+    (message "init: killed region %S" killed-region)
+    (when killed-region
+      (message "init: old kill ring for %S is %S" 0 kill-ring)
+      (push killed-region kill-ring)
+      ; (setq kill-ring (append kill-ring (list killed-region)))
+      (setq kill-ring-yank-pointer kill-ring)
+      (message "init: new kill ring for %S is %S" 0 kill-ring)
+      )
+    )
+  )
+(add-hook 'multiple-cursors-mode-enabled-hook 'multiple-cursors-init-kill-buffer)
+
+(defun mc/reset-overlay-kill-ring (overlay killed-region)
+  (when killed-region
+    (let (
+          (overlay-kill-ring (list killed-region))
+          (cursor-kill-ring (overlay-get overlay 'kill-ring))
+          )
+      (message "create: old kill ring %S" cursor-kill-ring)
+      (overlay-put overlay 'kill-ring overlay-kill-ring)
+      (overlay-put overlay 'kill-ring-yank-pointer overlay-kill-ring)
+      (message "create: new kill ring %S" (overlay-get overlay 'kill-ring))
+      )
+    )
+  )
+
+(defun mc/create-fake-cursor-at-point-hook(orig-fun &rest args)
+  (let (
+        (id (- (mc/num-cursors) mc--fake-cursor-idx))
+        (killed-rectangle-size (length killed-rectangle))
+        (overlay (apply orig-fun args))
+        )
+    (if (car args)
+        (message "has id for %S" id)
+      (if (= id 0)
+          ; (let (
+          ;       (killed-region (car kill-ring))
+          ;       )
+          ;   (message "update: killed rectangle id %S with %S" id killed-region)
+          ;   (push killed-region killed-rectangle)
+          ;   )
+          (message "not updating killed rectangle for id %S" id)
+
+        (let (
+              (killed-region
+               (if (and (< id killed-rectangle-size) (>= id 0))
+                   (nth id killed-rectangle) ""))
+              )
+          (message "create: killed region for id %S < %S is %S" id killed-rectangle-size killed-region)
+          (mc/reset-overlay-kill-ring overlay killed-region)
+          )
+        )
+      )
+    overlay
+    )
+  )
+(advice-add 'mc/create-fake-cursor-at-point :around 'mc/create-fake-cursor-at-point-hook)
+
+
+; (defun mc/for-each-cursor-ordered-hook(orig-fun &rest forms)
+;   ; (setq mc--fake-cursor-idx 0)
+;   (message "mc/for-each-cursor-ordered-hook")
+;   (apply orig-fun
+;          (lambda (cursor)
+;              ; (setq mc--fake-cursor-idx (+ mc--fake-cursor-idx 1))
+;              (message "idx is now %S" mc--fake-cursor-idx)
+;              ,@forms
+;              )
+;          )
+;   )
+; (advice-add 'mc/for-each-cursor-ordered :around 'mc/for-each-cursor-ordered-hook)
+
+; (defun mc/for-each-fake-cursor-hook(orig-fun &rest forms)
+;   ; (setq mc--fake-cursor-idx 0)
+;   (message "mc/for-each-fake-cursor-hook")
+;   (apply orig-fun
+;          (lambda (cursor)
+;              ; (setq mc--fake-cursor-idx (+ mc--fake-cursor-idx 1))
+;              (message "idx is now %S" mc--fake-cursor-idx)
+;              ,@forms
+;              )
+;          )
+;   )
+; (advice-add 'mc/for-each-fake-cursor :around 'mc/for-each-fake-cursor-hook)
+
+(defalias 'mc/for-each-fake-cursor-hook 'mc/for-each-cursor-ordered)
+
+(defun mc/execute-command-hook(orig-fun &rest args)
+  (let (
+        (id (- (mc/num-cursors) mc--fake-cursor-idx))
+        (res (apply orig-fun args))
+        )
+    (let (
+          (killed-region (car kill-ring))
+          )
+      (message "update: killed rectangle id %S with %S" id killed-region)
+      (push killed-region killed-rectangle)
+      )
+    )
+  )
+(advice-add 'mc/execute-command :around 'mc/execute-command-hook)
+
+(defun join-killed-rectangle()
+  (string-join killed-rectangle "\n"))
+
+(defalias 'mc--maybe-set-killed-rectangle (defun mc--maybe-set-killed-rectangle-none() (kill-new (join-killed-rectangle))))
 
 
 
 
 
 (define-key mc/keymap (kbd "C-<insert>") (defun mc/copy(beg end) (interactive "r") (kill-ring-save beg end)))
-(define-key mc/keymap (kbd "S-<insert>") (defun mc/paste() (interactive) (yank) (yank-rectangle))); this should run once if the amount of cursors is equal to the amount of line in the rectangle
+(define-key mc/keymap (kbd "S-<insert>") (defun mc/paste() (interactive) (yank))); this should run once if the amount of cursors is equal to the amount of line in the rectangle
 (define-key mc/keymap (kbd "S-<delete>") (defun mc/cut(beg end) (interactive "r") (kill-region beg end)))
 
 (define-key mc/keymap (kbd "<return>") nil)
