@@ -184,7 +184,7 @@
 
 (require 'grep)
 (defun nice-rgrep() (interactive) (grep-compute-defaults) (rgrep (grep-read-regexp) "*" default-directory nil))
-(global-set-key [(control f)] 'nice-rgrep)
+(global-set-key [(meta f)] 'nice-rgrep)
 (global-set-key [f4] 'next-error)
 (global-set-key [(shift f4)] 'previous-error)
 (global-set-key [f1] 'manual-entry)
@@ -248,15 +248,17 @@
 (require 'shell-ext) ; for f2 to create a new shell window
 (defun old-shell() (interactive)
        (let (
-             (pyb (car (get-buffers-with-major-mode 'shell-mode)))
+             (shb (car (get-buffers-with-major-mode 'shell-mode)))
              )
-         (if (eq pyb nil)
+         (if (eq shb nil)
              (new-shell)
-           (switch-to-buffer pyb))))
-(global-set-key [(control t)] 'old-shell)
-(global-set-key [(meta \\)] 'shell-change-to-current-dir)
-(global-set-key [(control shift t)] 'new-shell)
-(global-set-key [(meta f2)] 'shell-command-on-region-inplace)
+           (switch-to-buffer shb)
+           (shell-change-to-current-dir)
+           shb)))
+(global-set-key [(meta t)] 'old-shell)
+; (global-set-key [(meta \\)] 'shell-change-to-current-dir)
+(global-set-key [(meta shift t)] 'new-shell)
+; (global-set-key [(meta f2)] 'shell-command-on-region-inplace)
 
 (require 'column-marker)
 ;(require 'commenting) ; adds my-comment-region, which allows commenting only one line
@@ -496,8 +498,8 @@
  `(("t" ivy-shell "shell")))
 (define-key ivy-minibuffer-map (kbd "C-d") #'ivy-immediate-done)
 (define-key ivy-minibuffer-map (kbd "RET") #'ivy-alt-done)
-(define-key ivy-minibuffer-map [(control t)] 'ivy-shell)
-(define-key ivy-minibuffer-map [(control p)] 'ivy-python)
+(define-key ivy-minibuffer-map [(meta t)] 'ivy-shell)
+(define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
 (define-key ivy-minibuffer-map [(meta h)] 'ivy-magit-status)
 (global-set-key (kbd "C-s") 'swiper)
 (global-set-key (kbd "C-r") 'swiper)
@@ -531,7 +533,7 @@
 ;                    (goto-char (point-min))
 ;                    (forward-line (1- linenum))))))))
 
-; (global-set-key [(control f)] 'ivy-grep)
+; (global-set-key [(meta f)] 'ivy-grep)
 
 
 (add-hook 'after-init-hook 'global-company-mode)
@@ -668,8 +670,10 @@ the output."
          (if (eq pyb nil)
              (new-python)
            (switch-to-buffer pyb))))
-(global-set-key [(control p)] 'old-python)
-(global-set-key [(control shift p)] 'new-python)
+(global-set-key [(meta p)] 'old-python)
+(global-set-key [(meta shift p)] 'new-python)
+(define-key shell-mode-map [(meta p)] 'old-python)
+(define-key shell-mode-map [(meta shift p)] 'new-python)
 
 (defun track-shell-directory/procfs ()
   (shell-dirtrack-mode 0)
