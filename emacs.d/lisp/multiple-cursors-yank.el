@@ -36,26 +36,59 @@ So you can paste it in later with `yank-rectangle'."
  SEQ __is__ modified."
    (setcar (nthcdr index seq) newval))
 
+(defun mc/store-current-kill-ring-in-killed-rectangle()
+  (let (
+        (id mc--create-order-id)
+        )
+    (while (<= (length killed-rectangle) id)
+      (setq killed-rectangle (append killed-rectangle '("")))
+      )
+    (let (
+          (killed-region (car kill-ring-yank-pointer))
+          )
+      ;; (message "update: killed rectangle id %S with %S" id killed-region)
+      (when killed-region
+        (set-nth id killed-rectangle killed-region)
+        )
+      )
+    )
+  )
+
+(defun mc/load-current-kill-ring-from-killed-rectangle()
+  (let (
+        (id mc--create-order-id)
+        )
+    (let (
+          (killed-region
+           (if (and (< id (length killed-rectangle)) (>= id 0))
+               (nth id killed-rectangle) "")
+           )
+          )
+      ;; (message "create: killed region for id %S < %S is %S" id killed-rectangle-size killed-region)
+      (when killed-region
+        (let (
+              (new-kill-ring (list killed-region))
+              )
+          ;; (message "create: old kill ring %S" cursor-kill-ring)
+          (setq kill-ring new-kill-ring)
+          (setq kill-ring-yank-pointer new-kill-ring)
+          ;; (message "create: new kill ring %S" (overlay-get overlay 'kill-ring))
+          )
+        )
+      )
+    )
+  )
+
+
 (defun mc/execute-command-for-all-fake-cursors-hook(orig-fun &rest args)
   (setq mc--fake-cursor-idx 0)
-  (setq killed-rectangle '())
+  ; (setq killed-rectangle '())
   ; (message "before all fakes %S" mc--fake-cursor-idx)
   (let (
         (res (apply orig-fun args))
         )
-    ; (message "after all fakes %S" mc--fake-cursor-idx)
-    (let (
-          (id (- (mc/num-cursors) mc--fake-cursor-idx 1))
-          )
-      (when (= id 0) ; must be 0 after iterating over all the cursors
-        (let (
-              (killed-region (car kill-ring))
-              )
-          ; (message "update: killed rectangle id %S with %S" id killed-region)
-          (set-nth id killed-rectangle killed-region)
-          )
-        )
-      )
+    ;; (message "after all fakes %S" mc--fake-cursor-idx)
+    (mc/store-current-kill-ring-in-killed-rectangle)
     (setq mc--fake-cursor-idx 0)
     res
     )
@@ -127,6 +160,7 @@ So you can paste it in later with `yank-rectangle'."
           ; (message "not updating killed rectangle for id %S" id)
           nil
           (mc/reset-overlay-kill-ring overlay id)
+          ; (overlay-put overlay 'mc--create-order-id id)
           )
       )
     overlay
@@ -137,22 +171,11 @@ So you can paste it in later with `yank-rectangle'."
 (defalias 'mc/for-each-fake-cursor-hook 'mc/for-each-cursor-ordered)
 (setq mc--create-order-id 0)
 (defun mc/execute-command-hook(orig-fun &rest args)
+  (mc/load-current-kill-ring-from-killed-rectangle)
   (let (
         (res (apply orig-fun args))
         )
-    (let (
-          (cid mc--create-order-id)
-          )
-      (while (<= (length killed-rectangle) cid)
-        (setq killed-rectangle (append killed-rectangle '("")))
-        )
-      (let (
-            (killed-region (car kill-ring-yank-pointer))
-            )
-        ;; (message "update: killed rectangle id %S with %S" id killed-region)
-        (set-nth cid killed-rectangle killed-region)
-        )
-      )
+    (mc/store-current-kill-ring-in-killed-rectangle)
     res
     )
   )
@@ -188,15 +211,6 @@ So you can paste it in later with `yank-rectangle'."
   (when multiple-cursors-mode
     (mc--insert-killed-rectangle-to-kill-ring)
     )
-  )
-
-
-(add-hook 'focus-in-hook 'multiple-cursors-focus-in-hook)
-(add-hook 'focus-out-hook 'multiple-cursors-focus-out-hook)
-
-(with-eval-after-load "persp-mode"
-  (add-hook 'focus-in-hook 'multiple-cursors-focus-in-hook)
-  (add-hook 'focus-out-hook 'multiple-cursors-focus-out-hook)
   )
 
 (provide 'multiple-cursors-yank)
