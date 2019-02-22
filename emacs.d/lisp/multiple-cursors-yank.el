@@ -28,52 +28,49 @@
    (setcar (nthcdr index seq) newval))
 
 (defun mc/store-current-kill-ring-in-killed-rectangle()
-  (unless mc--killed-rectangle-saved
-    (let (
-          (id mc--create-order-id)
-          )
-      (while (<= (length killed-rectangle) id)
-        (setq killed-rectangle (append killed-rectangle '("")))
+  (let (
+        (id mc--create-order-id)
         )
-      (let (
-            (killed-region (car kill-ring-yank-pointer))
-            )
-        ;; (message "update: killed rectangle id %S with %S" id killed-region)
-        (when killed-region
-          (set-nth id killed-rectangle killed-region)
-          )
-        )
-      (message "stored for id %S : ----- %S" id killed-rectangle)
+    (while (<= (length killed-rectangle) id)
+      (setq killed-rectangle (append killed-rectangle '("")))
       )
+    (let (
+          (killed-region (car kill-ring-yank-pointer))
+          )
+      ;; (message "update: killed rectangle id %S with %S" id killed-region)
+      (when killed-region
+        (set-nth id killed-rectangle killed-region)
+        )
+      )
+    (message "stored for id %S : ----- %S" id killed-rectangle)
     )
   )
 
 (defun mc/load-current-kill-ring-from-killed-rectangle()
-  (unless mc--killed-rectangle-saved
+  (let (
+        (id mc--create-order-id)
+        )
     (let (
-          (id mc--create-order-id)
+          (killed-region
+           (if (and (< id (length killed-rectangle)) (>= id 0))
+               (nth id killed-rectangle) "")
+           )
           )
-      (let (
-            (killed-region
-             (if (and (< id (length killed-rectangle)) (>= id 0))
-                 (nth id killed-rectangle) "")
-             )
-            )
-        ;; (message "create: killed region for id %S < %S is %S" id killed-rectangle-size killed-region)
-        (when killed-region
-          (let (
-                (new-kill-ring (list killed-region))
-                )
-            ;; (message "create: old kill ring %S" cursor-kill-ring)
-            (push killed-region kill-ring-yank-pointer)
-            (setq kill-ring kill-ring-yank-pointer)
-            ;; (message "create: new kill ring %S" (overlay-get overlay 'kill-ring))
-            )
+      ;; (message "create: killed region for id %S < %S is %S" id killed-rectangle-size killed-region)
+      (when killed-region
+        (let (
+              (new-kill-ring (list killed-region))
+              )
+          ;; (message "create: old kill ring %S" cursor-kill-ring)
+          (push killed-region kill-ring-yank-pointer)
+          (setq kill-ring kill-ring-yank-pointer)
+          ;; (message "create: new kill ring %S" (overlay-get overlay 'kill-ring))
           )
         )
       )
     )
   )
+
 
 (defun join-killed-rectangle()
   (string-join killed-rectangle "\n"))
@@ -101,8 +98,6 @@
 
 
 (setq mc--create-order-id 0)
-(setq mc--killed-rectangle-saved t)
-(make-local-variable 'mc--killed-rectangle-saved)
 (setq mc--ignore-first-store t)
 (make-local-variable 'mc--ignore-first-store)
 (push 'mc--create-order-id mc/cursor-specific-vars)
@@ -149,8 +144,6 @@
 (defun multiple-cursors-yank-mode-enabled()
   (message "ENABLED")
   (setq mc--ignore-first-store t)
-  (setq mc--killed-rectangle-saved nil)
-  ; (mc/load-current-kill-ring-from-killed-rectangle)
   )
 (add-hook 'multiple-cursors-mode-enabled-hook 'multiple-cursors-yank-mode-enabled)
 
@@ -158,7 +151,6 @@
 (defun multiple-cursors-yank-mode-disabled()
   (mc--insert-killed-rectangle-to-kill-ring)
   (message "done save %S" killed-rectangle)
-  (setq mc--killed-rectangle-saved t)
   )
 (add-hook 'multiple-cursors-mode-disabled-hook 'multiple-cursors-yank-mode-disabled)
 
