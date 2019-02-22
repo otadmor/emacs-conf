@@ -32,17 +32,12 @@
         (id mc--create-order-id)
         )
     (while (<= (length killed-rectangle) id)
-      (setq killed-rectangle (append killed-rectangle '("")))
-      )
+      (setq killed-rectangle (append killed-rectangle '(""))))
     (let (
           (killed-region (car kill-ring-yank-pointer))
           )
       (when killed-region
-        (set-nth id killed-rectangle killed-region)
-        )
-      )
-    )
-  )
+        (set-nth id killed-rectangle killed-region)))))
 
 (defun mc/load-current-kill-ring-from-killed-rectangle()
   (let (
@@ -51,23 +46,17 @@
     (let (
           (killed-region
            (if (and (< id (length killed-rectangle)) (>= id 0))
-               (nth id killed-rectangle) "")
-           )
+               (nth id killed-rectangle) ""))
           )
       (when killed-region
-        (kill-new killed-region)
-        )
-      )
-    )
-  )
+        (kill-new killed-region)))))
 
 
 (defun join-killed-rectangle()
   (string-join killed-rectangle "\n"))
 
 (defun mc--insert-killed-rectangle-to-kill-ring()
-  (kill-new (join-killed-rectangle))
-  )
+  (kill-new (join-killed-rectangle)))
 
 ;;;;;;;;;;;
 ;; hooks ;;
@@ -86,11 +75,8 @@
       ;; remember the order of the cursor creation. this will be used
       ;; to know on which index to save the kill-ring of each cursor
       ;; on the killed-rectangle.
-      (overlay-put overlay 'mc--create-order-id (- (mc/num-cursors) 1))
-      )
-    overlay
-    )
-  )
+      (overlay-put overlay 'mc--create-order-id (- (mc/num-cursors) 1)))
+    overlay))
 (advice-add 'mc/create-fake-cursor-at-point :around 'mc/create-fake-cursor-at-point-hook)
 
 
@@ -99,9 +85,7 @@
     ;; load the curresponding kill-ring for each cursor
     ;; before each command. this loads the kill-ring
     ;; for both real and fake cursors.
-    (mc/load-current-kill-ring-from-killed-rectangle)
-    )
-  )
+    (mc/load-current-kill-ring-from-killed-rectangle)))
 (add-hook 'pre-command-hook 'multiple-cursors-pre-command-hook)
 
 
@@ -109,17 +93,13 @@
   (when multiple-cursors-mode
     (if mc--ignore-first-store
         (setq mc--ignore-first-store nil)
-      (mc/store-current-kill-ring-in-killed-rectangle)
-      )
+      (mc/store-current-kill-ring-in-killed-rectangle))
 
     ;; store the killed-rectangle to the real kill-ring
     ;; after each command execution when using
     ;; the multiple-cursors-mode.
     (when (= mc--create-order-id 0)
-        (mc--insert-killed-rectangle-to-kill-ring)
-      )
-    )
-  )
+        (mc--insert-killed-rectangle-to-kill-ring))))
 (add-hook 'post-command-hook 'multiple-cursors-post-command-hook)
 
 
@@ -128,14 +108,12 @@
   ;; this causes the join-killed-rectangle to be saved within itself
   ;; giving invalid multiple-cursors-yank yank function.
   ;; this variable disable this behaiviour on post command execution.
-  (setq mc--ignore-first-store t)
-  )
+  (setq mc--ignore-first-store t))
 (add-hook 'multiple-cursors-mode-enabled-hook 'multiple-cursors-yank-mode-enabled)
 
 
 (defun multiple-cursors-yank-mode-disabled()
-  (mc--insert-killed-rectangle-to-kill-ring)
-  )
+  (mc--insert-killed-rectangle-to-kill-ring))
 (add-hook 'multiple-cursors-mode-disabled-hook 'multiple-cursors-yank-mode-disabled)
 
 
