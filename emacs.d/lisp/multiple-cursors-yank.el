@@ -121,33 +121,6 @@ So you can paste it in later with `yank-rectangle'."
   )
 (add-hook 'multiple-cursors-mode-enabled-hook 'multiple-cursors-init-kill-buffer)
 
-(defun mc/reset-overlay-kill-ring (overlay id)
-  (let (
-        (killed-region
-         (let (
-               (killed-rectangle-size (length killed-rectangle))
-               )
-           (if (and (< id killed-rectangle-size) (>= id 0))
-               (nth id killed-rectangle) "")
-           )
-         )
-        )
-    ;; (message "create: killed region for id %S < %S is %S" id killed-rectangle-size killed-region)
-    (when killed-region
-      (let (
-            (overlay-kill-ring (list killed-region))
-            (cursor-kill-ring (overlay-get overlay 'kill-ring))
-            )
-        ;; (message "create: old kill ring %S" cursor-kill-ring)
-        (overlay-put overlay 'kill-ring overlay-kill-ring)
-        (overlay-put overlay 'kill-ring-yank-pointer overlay-kill-ring)
-        (overlay-put overlay 'mc--create-order-id id)
-        ;; (message "create: new kill ring %S" (overlay-get overlay 'kill-ring))
-        )
-      )
-    )
-  )
-
 (defun mc/create-fake-cursor-at-point-hook(orig-fun &rest args)
   (let (
         (id (- (mc/num-cursors) mc--fake-cursor-idx))
@@ -159,8 +132,7 @@ So you can paste it in later with `yank-rectangle'."
       (if (= id 0)
           ; (message "not updating killed rectangle for id %S" id)
           nil
-          (mc/reset-overlay-kill-ring overlay id)
-          ; (overlay-put overlay 'mc--create-order-id id)
+          (overlay-put overlay 'mc--create-order-id id)
           )
       )
     overlay
@@ -190,28 +162,6 @@ So you can paste it in later with `yank-rectangle'."
 
 (push 'mc--create-order-id mc/cursor-specific-vars)
 (define-key mc/keymap (kbd "<return>") nil)
-
-(defun multiple-cursors-focus-in-hook()
-  (message "set killring focus")
-  (when multiple-cursors-mode
-    (message "set killring focus 0")
-    (setq mc--fake-cursor-idx 0)
-    (multiple-cursors-init-kill-buffer)
-    (setq mc--fake-cursor-idx (+ mc--fake-cursor-idx 1))
-    (mc/for-each-fake-cursor
-     (message "set killring focus %S" mc--fake-cursor-idx)
-     (mc/reset-overlay-kill-ring cursor mc--fake-cursor-idx)
-     (setq mc--fake-cursor-idx (+ mc--fake-cursor-idx 1))
-     )
-    )
-  )
-
-(defun multiple-cursors-focus-out-hook()
-  (message "insert to rectangle")
-  (when multiple-cursors-mode
-    (mc--insert-killed-rectangle-to-kill-ring)
-    )
-  )
 
 (provide 'multiple-cursors-yank)
 
