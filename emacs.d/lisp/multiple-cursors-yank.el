@@ -27,13 +27,6 @@
  SEQ __is__ modified."
    (setcar (nthcdr index seq) newval))
 
-(defun mc--update-kill-ring(killed-region)
-  (unless (eq killed-region (car kill-ring-yank-pointer))
-    (push killed-region kill-ring-yank-pointer)
-    (setq kill-ring kill-ring-yank-pointer)
-    )
-  )
-
 (defun mc/store-current-kill-ring-in-killed-rectangle()
   (let (
         (id mc--create-order-id)
@@ -62,7 +55,7 @@
            )
           )
       (when killed-region
-        (mc--update-kill-ring killed-region)
+        (kill-new killed-region)
         )
       )
     )
@@ -73,7 +66,7 @@
   (string-join killed-rectangle "\n"))
 
 (defun mc--insert-killed-rectangle-to-kill-ring()
-  (mc--update-kill-ring (join-killed-rectangle))
+  (kill-new (join-killed-rectangle))
   )
 
 ;;;;;;;;;;;
