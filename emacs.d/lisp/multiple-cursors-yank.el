@@ -37,12 +37,10 @@
     (let (
           (killed-region (car kill-ring-yank-pointer))
           )
-      ;; (message "update: killed rectangle id %S with %S" id killed-region)
       (when killed-region
         (set-nth id killed-rectangle killed-region)
         )
       )
-    (message "stored for id %S : ----- %S" id killed-rectangle)
     )
   )
 
@@ -56,15 +54,12 @@
                (nth id killed-rectangle) "")
            )
           )
-      ;; (message "create: killed region for id %S < %S is %S" id killed-rectangle-size killed-region)
       (when killed-region
         (let (
               (new-kill-ring (list killed-region))
               )
-          ;; (message "create: old kill ring %S" cursor-kill-ring)
           (push killed-region kill-ring-yank-pointer)
           (setq kill-ring kill-ring-yank-pointer)
-          ;; (message "create: new kill ring %S" (overlay-get overlay 'kill-ring))
           )
         )
       )
@@ -83,20 +78,6 @@
 ;; hooks ;;
 ;;;;;;;;;;;
 
-
-; (defun mc/execute-command-for-all-fake-cursors-hook(orig-fun &rest args)
-;   ; (message "before all fakes")
-;   (let (
-;         (res (apply orig-fun args))
-;         )
-;     ;; (message "after all fakes")
-;     (mc/store-current-kill-ring-in-killed-rectangle)
-;     res
-;     )
-;   )
-; (advice-add 'mc/execute-command-for-all-fake-cursors :around #'mc/execute-command-for-all-fake-cursors-hook)
-
-
 (setq mc--create-order-id 0)
 (setq mc--ignore-first-store t)
 (make-local-variable 'mc--ignore-first-store)
@@ -108,8 +89,6 @@
         )
     (when (null args)
       (overlay-put overlay 'mc--create-order-id (- (mc/num-cursors) 1))
-      (message "doing %S - args %S" (- (mc/num-cursors) 1) args)
-      (message "OVERLAY %S" overlay)
       )
     overlay
     )
@@ -119,7 +98,6 @@
 
 (defun multiple-cursors-pre-command-hook()
   (when multiple-cursors-mode
-    (message "PRE COMMAND HOOK %S ------ %S" mc--create-order-id killed-rectangle)
     (mc/load-current-kill-ring-from-killed-rectangle)
     )
   )
@@ -128,12 +106,11 @@
 
 (defun multiple-cursors-post-command-hook()
   (when multiple-cursors-mode
-    (message "POST COMMAND HOOK (NC=%S) %S ------ %S" (mc/num-cursors) mc--create-order-id killed-rectangle)
     (if mc--ignore-first-store
         (setq mc--ignore-first-store nil)
       (mc/store-current-kill-ring-in-killed-rectangle)
       )
-    (if (= mc--create-order-id 0)
+    (when (= mc--create-order-id 0)
         (mc--insert-killed-rectangle-to-kill-ring)
       )
     )
@@ -142,7 +119,6 @@
 
 
 (defun multiple-cursors-yank-mode-enabled()
-  (message "ENABLED")
   (setq mc--ignore-first-store t)
   )
 (add-hook 'multiple-cursors-mode-enabled-hook 'multiple-cursors-yank-mode-enabled)
@@ -150,7 +126,6 @@
 
 (defun multiple-cursors-yank-mode-disabled()
   (mc--insert-killed-rectangle-to-kill-ring)
-  (message "done save %S" killed-rectangle)
   )
 (add-hook 'multiple-cursors-mode-disabled-hook 'multiple-cursors-yank-mode-disabled)
 
