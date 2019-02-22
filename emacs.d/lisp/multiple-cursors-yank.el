@@ -28,8 +28,10 @@
    (setcar (nthcdr index seq) newval))
 
 (defun mc--update-kill-ring(killed-region)
-  (push killed-region kill-ring-yank-pointer)
-  (setq kill-ring kill-ring-yank-pointer)
+  (unless (eq killed-region (car kill-ring-yank-pointer))
+    (push killed-region kill-ring-yank-pointer)
+    (setq kill-ring kill-ring-yank-pointer)
+    )
   )
 
 (defun mc/store-current-kill-ring-in-killed-rectangle()
