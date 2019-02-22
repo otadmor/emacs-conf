@@ -1,10 +1,5 @@
 (require 'multiple-cursors)
 
-(defun set-multiple-cursors-mode() (interactive) (multiple-cursors-mode 1))
-;(define-globalized-minor-mode global-multiple-cursors-mode multiple-cursors-mode 'set-multiple-cursors-mode)
-;(global-multiple-cursors-mode)
-;(add-hook 'after-init-hook 'global-multiple-cursors-mode)
-
 ; (defun swiper-mc ()
 ;   (interactive)
 ;   (unless (require 'multiple-cursors nil t)
@@ -21,14 +16,11 @@
 ;          (mc/maybe-multiple-cursors-mode)))
 ;       (setq ivy-exit 'done)
 ;       (exit-minibuffer))))
-                                        ; kill-ring-yank-pointer
 
 
-(defun mc--maybe-set-killed-region ()
-  "Add the latest kill-ring entry for each cursor to killed-rectangle.
-So you can paste it in later with `yank-rectangle'."
-  (let ((entries (let (mc/max-cursors) (mc--kill-ring-entries))))
-      (setq killed-rectangle entries)))
+;;;;;;;;;;;;;;;
+;; functions ;;
+;;;;;;;;;;;;;;;
 
 (defun set-nth (index seq newval)
    "Set the INDEX th element of SEQ to NEWVAL.
@@ -69,14 +61,22 @@ So you can paste it in later with `yank-rectangle'."
               (new-kill-ring (list killed-region))
               )
           ;; (message "create: old kill ring %S" cursor-kill-ring)
-          (setq kill-ring new-kill-ring)
-          (setq kill-ring-yank-pointer new-kill-ring)
+          (push killed-region kill-ring-yank-pointer)
+          (setq kill-ring kill-ring-yank-pointer)
           ;; (message "create: new kill ring %S" (overlay-get overlay 'kill-ring))
           )
         )
       )
     )
   )
+
+(defun join-killed-rectangle()
+  (string-join killed-rectangle "\n"))
+(defun mc--insert-killed-rectangle-to-kill-ring() (kill-new (join-killed-rectangle)))
+
+;;;;;;;;;;;
+;; hooks ;;
+;;;;;;;;;;;
 
 
 (defun mc/execute-command-for-all-fake-cursors-hook(orig-fun &rest args)
@@ -91,52 +91,28 @@ So you can paste it in later with `yank-rectangle'."
   )
 (advice-add 'mc/execute-command-for-all-fake-cursors :around #'mc/execute-command-for-all-fake-cursors-hook)
 
-(defun mc/execute-command-for-fake-cursor-hook(orig-fun &rest args)
-  (let (
-        (res (apply orig-fun args))
-        )
-    res
-    )
-  )
-(advice-add 'mc/execute-command-for-fake-cursor :around #'mc/execute-command-for-fake-cursor-hook)
-
 
 (defun multiple-cursors-init-kill-buffer()
-  (let (
-        (killed-region (nth 0 killed-rectangle))
-        )
-    ; (message "init: killed region %S" killed-region)
-    (when killed-region
-      ; (message "init: old kill ring for %S is %S" 0 kill-ring)
-      (push killed-region kill-ring)
-      (setq kill-ring-yank-pointer kill-ring)
-      ; (message "init: new kill ring for %S is %S" 0 kill-ring)
-      )
-    )
+  (mc/load-current-kill-ring-from-killed-rectangle)
   )
 (add-hook 'multiple-cursors-mode-enabled-hook 'multiple-cursors-init-kill-buffer)
+
+(setq mc--create-order-id 0)
+(push 'mc--create-order-id mc/cursor-specific-vars)
 
 (defun mc/create-fake-cursor-at-point-hook(orig-fun &rest args)
   (let (
         (id (mc/num-cursors))
         (overlay (apply orig-fun args))
         )
-    (if (car args)
-        ;; (message "has id for %S" id)
-        nil
-      (if (= id 0)
-          ;; (message "not updating killed rectangle for id %S" id)
-          nil
-        (overlay-put overlay 'mc--create-order-id id)
-        )
+    (unless (car args)
+      (overlay-put overlay 'mc--create-order-id id)
       )
     overlay
     )
   )
 (advice-add 'mc/create-fake-cursor-at-point :around 'mc/create-fake-cursor-at-point-hook)
 
-(defalias 'mc/for-each-fake-cursor-hook 'mc/for-each-cursor-ordered)
-(setq mc--create-order-id 0)
 (defun mc/execute-command-hook(orig-fun &rest args)
   (mc/load-current-kill-ring-from-killed-rectangle)
   (let (
@@ -146,16 +122,10 @@ So you can paste it in later with `yank-rectangle'."
     res
     )
   )
-
 (advice-add 'mc/execute-command :around 'mc/execute-command-hook)
 
-(defun join-killed-rectangle()
-  (string-join killed-rectangle "\n"))
-
-(defun mc--insert-killed-rectangle-to-kill-ring() (kill-new (join-killed-rectangle)))
 (defalias 'mc--maybe-set-killed-rectangle 'mc--insert-killed-rectangle-to-kill-ring)
 
-(push 'mc--create-order-id mc/cursor-specific-vars)
 (define-key mc/keymap (kbd "<return>") nil)
 
 (provide 'multiple-cursors-yank)
