@@ -30,7 +30,6 @@ So you can paste it in later with `yank-rectangle'."
   (let ((entries (let (mc/max-cursors) (mc--kill-ring-entries))))
       (setq killed-rectangle entries)))
 
-(setq mc--fake-cursor-idx 0)
 (defun set-nth (index seq newval)
    "Set the INDEX th element of SEQ to NEWVAL.
  SEQ __is__ modified."
@@ -81,15 +80,12 @@ So you can paste it in later with `yank-rectangle'."
 
 
 (defun mc/execute-command-for-all-fake-cursors-hook(orig-fun &rest args)
-  (setq mc--fake-cursor-idx 0)
-  ; (setq killed-rectangle '())
-  ; (message "before all fakes %S" mc--fake-cursor-idx)
+  ; (message "before all fakes")
   (let (
         (res (apply orig-fun args))
         )
-    ;; (message "after all fakes %S" mc--fake-cursor-idx)
+    ;; (message "after all fakes")
     (mc/store-current-kill-ring-in-killed-rectangle)
-    (setq mc--fake-cursor-idx 0)
     res
     )
   )
@@ -99,7 +95,6 @@ So you can paste it in later with `yank-rectangle'."
   (let (
         (res (apply orig-fun args))
         )
-    (setq mc--fake-cursor-idx (+ mc--fake-cursor-idx 1))
     res
     )
   )
@@ -123,17 +118,17 @@ So you can paste it in later with `yank-rectangle'."
 
 (defun mc/create-fake-cursor-at-point-hook(orig-fun &rest args)
   (let (
-        (id (- (mc/num-cursors) mc--fake-cursor-idx))
+        (id (mc/num-cursors))
         (overlay (apply orig-fun args))
         )
     (if (car args)
         ;; (message "has id for %S" id)
         nil
       (if (= id 0)
-          ; (message "not updating killed rectangle for id %S" id)
+          ;; (message "not updating killed rectangle for id %S" id)
           nil
-          (overlay-put overlay 'mc--create-order-id id)
-          )
+        (overlay-put overlay 'mc--create-order-id id)
+        )
       )
     overlay
     )
