@@ -515,6 +515,13 @@
 (define-key ivy-minibuffer-map [(meta h)] 'ivy-magit-status)
 (global-set-key (kbd "C-s") 'swiper)
 (global-set-key (kbd "C-r") 'swiper)
+;;(global-set-key (kbd "C-/") (lambda () (interactive) (ivy-exit-with-action (lambda (_) (my-comment-or-uncomment-region)))))
+(global-set-key (kbd "C-/") (lambda () (interactive)
+                              (with-ivy-window
+                               (my-comment-or-uncomment-region))))
+(global-set-key (kbd "C-SPC") (lambda () (interactive)
+                                (with-ivy-window
+                                  (mc/create-fake-cursor-at-point))))
 (global-set-key (kbd "C-x C-f") 'counsel-find-file)
 (global-set-key (kbd "M-x") 'counsel-M-x)
 (global-set-key (kbd "C-x C-a") 'counsel-locate)

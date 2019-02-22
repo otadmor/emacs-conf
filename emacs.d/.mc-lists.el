@@ -32,4 +32,5 @@
         mouse-set-region
         next-buff
         prev-buffer
+        swiper-mc
         ))
