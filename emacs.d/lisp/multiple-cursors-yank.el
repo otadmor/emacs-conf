@@ -88,6 +88,9 @@
         (overlay (apply orig-fun args))
         )
     (when (null args)
+      ;; remember the order of the cursor creation. this will be used
+      ;; to know on which index to save the kill-ring of each cursor
+      ;; on the killed-rectangle.
       (overlay-put overlay 'mc--create-order-id (- (mc/num-cursors) 1))
       )
     overlay
@@ -98,6 +101,9 @@
 
 (defun multiple-cursors-pre-command-hook()
   (when multiple-cursors-mode
+    ;; load the curresponding kill-ring for each cursor
+    ;; before each command. this loads the kill-ring
+    ;; for both real and fake cursors.
     (mc/load-current-kill-ring-from-killed-rectangle)
     )
   )
@@ -110,6 +116,10 @@
         (setq mc--ignore-first-store nil)
       (mc/store-current-kill-ring-in-killed-rectangle)
       )
+
+    ;; store the killed-rectangle to the real kill-ring
+    ;; after each command execution when using
+    ;; the multiple-cursors-mode.
     (when (= mc--create-order-id 0)
         (mc--insert-killed-rectangle-to-kill-ring)
       )
@@ -119,6 +129,10 @@
 
 
 (defun multiple-cursors-yank-mode-enabled()
+  ;; the post command runs after entering the multiple-cursors-mode
+  ;; this causes the join-killed-rectangle to be saved within itself
+  ;; giving invalid multiple-cursors-yank yank function.
+  ;; this variable disable this behaiviour on post command execution.
   (setq mc--ignore-first-store t)
   )
 (add-hook 'multiple-cursors-mode-enabled-hook 'multiple-cursors-yank-mode-enabled)
@@ -129,6 +143,12 @@
   )
 (add-hook 'multiple-cursors-mode-disabled-hook 'multiple-cursors-yank-mode-disabled)
 
+
+;; we dont want to change the killed-rectangle when
+;; exiting multiple-cursor-mode. the killed-rectangle
+;; is updated on each command. updating it when
+;; exiting the multiple-cursors-mode will confuse
+;; users when using two different buffers.
 (defalias 'mc--maybe-set-killed-rectangle (lambda() ))
 
 (define-key mc/keymap (kbd "<return>") nil)
