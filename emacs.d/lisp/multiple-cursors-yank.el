@@ -46,7 +46,10 @@
     (let (
           (killed-region
            (if (and (< id (length killed-rectangle)) (>= id 0))
-               (nth id killed-rectangle) ""))
+               (nth id killed-rectangle)
+             (if (> (length killed-rectangle) 0)
+                 (car killed-rectangle)
+                 "")))
           )
       (when killed-region
         (kill-new killed-region)))))
@@ -64,7 +67,9 @@
 
 (setq mc--create-order-id 0)
 (setq mc--ignore-first-store t)
+(setq mc--was-in-mc nil)
 (make-local-variable 'mc--ignore-first-store)
+(make-local-variable 'mc--was-in-mc)
 (push 'mc--create-order-id mc/cursor-specific-vars)
 
 (defun mc/create-fake-cursor-at-point-hook(orig-fun &rest args)
@@ -85,21 +90,23 @@
     ;; load the curresponding kill-ring for each cursor
     ;; before each command. this loads the kill-ring
     ;; for both real and fake cursors.
+    (setq mc--was-in-mc t)
     (mc/load-current-kill-ring-from-killed-rectangle)))
 (add-hook 'pre-command-hook 'multiple-cursors-pre-command-hook)
 
 
 (defun multiple-cursors-post-command-hook()
-  (when multiple-cursors-mode
-    (if mc--ignore-first-store
-        (setq mc--ignore-first-store nil)
-      (mc/store-current-kill-ring-in-killed-rectangle))
+  (if multiple-cursors-mode
+      (if mc--ignore-first-store
+          (setq mc--ignore-first-store nil)
 
+        (mc/store-current-kill-ring-in-killed-rectangle))
     ;; store the killed-rectangle to the real kill-ring
     ;; after each command execution when using
     ;; the multiple-cursors-mode.
-    (when (= mc--create-order-id 0)
-        (mc--insert-killed-rectangle-to-kill-ring))))
+    (when mc--was-in-mc
+      (mc--insert-killed-rectangle-to-kill-ring)))
+  (setq mc--was-in-mc nil))
 (add-hook 'post-command-hook 'multiple-cursors-post-command-hook)
 
 
@@ -112,9 +119,9 @@
 (add-hook 'multiple-cursors-mode-enabled-hook 'multiple-cursors-yank-mode-enabled)
 
 
-(defun multiple-cursors-yank-mode-disabled()
-  (mc--insert-killed-rectangle-to-kill-ring))
-(add-hook 'multiple-cursors-mode-disabled-hook 'multiple-cursors-yank-mode-disabled)
+; (defun multiple-cursors-yank-mode-disabled()
+;   (mc--insert-killed-rectangle-to-kill-ring))
+; (add-hook 'multiple-cursors-mode-disabled-hook 'multiple-cursors-yank-mode-disabled)
 
 
 ;; we dont want to change the killed-rectangle when
@@ -127,4 +134,3 @@
 (define-key mc/keymap (kbd "<return>") nil)
 
 (provide 'multiple-cursors-yank)
-
