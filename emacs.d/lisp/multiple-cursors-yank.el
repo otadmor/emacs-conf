@@ -67,40 +67,30 @@
 (advice-add 'mc/create-fake-cursor-at-point :around 'mc/create-fake-cursor-at-point-hook)
 
 
-(defun mcy/pre-command-hook()
-;  (message "PRE %S was in mc %S" mc--create-order-id mc--was-in-mc)
-  ;; load the curresponding kill-ring for each cursor
-  ;; before each command. this loads the kill-ring
-  ;; for both real and fake cursors.
-  (setq mc--was-in-mc t)
-  (mc/load-current-kill-ring-from-killed-rectangle)
-  )
+(defun multiple-cursors-pre-command-hook()
+  (when multiple-cursors-mode
+    ;; load the curresponding kill-ring for each cursor
+    ;; before each command. this loads the kill-ring
+    ;; for both real and fake cursors.
+    (setq mc--was-in-mc t)
+    (mc/load-current-kill-ring-from-killed-rectangle)))
+(add-hook 'pre-command-hook 'multiple-cursors-pre-command-hook)
 
 
-(defun mcy/non-storing-post-command-hook()
-;  (message "NO STORE POST %S was in mc %S" mc--create-order-id mc--was-in-mc)
-  (add-hook 'post-command-hook 'mcy/storing-post-command-hook t t)
-  (remove-hook 'post-command-hook 'mcy/non-storing-post-command-hook t)
-  )
+(defun multiple-cursors-post-command-hook()
+  (if multiple-cursors-mode
+      (if mc--ignore-first-store
+          (setq mc--ignore-first-store nil)
 
-(defun mcy/storing-post-command-hook()
-;  (message "STORE POST %S was in mc %S" mc--create-order-id mc--was-in-mc)
-  ;; store the killed-rectangle to the real kill-ring
-  ;; after each command execution when using
-  ;; the multiple-cursors-mode.
-  (mc/store-current-kill-ring-in-killed-rectangle))
-
-(defun mcy/post-command-hook()
-;  (message "POST %S was in mc %S" mc--create-order-id mc--was-in-mc)
-  (when mc--was-in-mc
-    (unless multiple-cursors-mode
-;      (message "POST INSERT")
-      (mc--insert-killed-rectangle-to-kill-ring)
-;      (add-hook 'post-command-hook 'mcy/non-storing-post-command-hook t t)
-;      (remove-hook 'post-command-hook 'mcy/storing-post-command-hook t)
-      )
-    (setq mc--was-in-mc nil)))
-(add-hook 'post-command-hook 'mcy/post-command-hook)
+        (mc/store-current-kill-ring-in-killed-rectangle))
+    ;; store the killed-rectangle to the real kill-ring
+    ;; after each command execution when using
+    ;; the multiple-cursors-mode.
+    (when mc--was-in-mc
+      (setq mc--ignore-first-store t)
+      (mc--insert-killed-rectangle-to-kill-ring)))
+  (setq mc--was-in-mc nil))
+(add-hook 'post-command-hook 'multiple-cursors-post-command-hook)
 
 
 (defun multiple-cursors-yank-mode-enabled()
@@ -108,20 +98,13 @@
   ;; this causes the join-killed-rectangle to be saved within itself
   ;; giving invalid multiple-cursors-yank yank function.
   ;; this variable disable this behaiviour on post command execution.
-  (add-hook 'pre-command-hook 'mcy/pre-command-hook t t)
-  (add-hook 'post-command-hook 'mcy/non-storing-post-command-hook t t)
- ; (setq mc--ignore-first-store t))
-)
+  (setq mc--ignore-first-store t))
 (add-hook 'multiple-cursors-mode-enabled-hook 'multiple-cursors-yank-mode-enabled)
 
 
-(defun multiple-cursors-yank-mode-disabled()
-;  (message "removed hooks")
-  (remove-hook 'pre-command-hook 'mcy/pre-command-hook t)
-  (remove-hook 'post-command-hook 'mcy/storing-post-command-hook t)
-  (remove-hook 'post-command-hook 'mcy/non-storing-post-command-hook t)
-  )
-(add-hook 'multiple-cursors-mode-disabled-hook 'multiple-cursors-yank-mode-disabled)
+; (defun multiple-cursors-yank-mode-disabled()
+;   (mc--insert-killed-rectangle-to-kill-ring))
+; (add-hook 'multiple-cursors-mode-disabled-hook 'multiple-cursors-yank-mode-disabled)
 
 
 ;; we dont want to change the killed-rectangle when
