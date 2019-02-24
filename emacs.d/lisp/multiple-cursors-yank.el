@@ -87,6 +87,7 @@
     ;; after each command execution when using
     ;; the multiple-cursors-mode.
     (when mc--was-in-mc
+      (setq mc--ignore-first-store t)
       (mc--insert-killed-rectangle-to-kill-ring)))
   (setq mc--was-in-mc nil))
 (add-hook 'post-command-hook 'multiple-cursors-post-command-hook)
