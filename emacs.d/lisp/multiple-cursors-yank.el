@@ -78,15 +78,14 @@
   (if multiple-cursors-mode
       (if mcy--ignore-first-store
           (setq mcy--ignore-first-store nil)
-
         (mcy/store-current-kill-ring-in-killed-rectangle))
     ;; store the killed-rectangle to the real kill-ring
     ;; after each command execution when using
     ;; the multiple-cursors-mode.
     (when mcy--was-in-mc
       (setq mcy--ignore-first-store t)
-      (mcy--insert-killed-rectangle-to-kill-ring)))
-  (setq mcy--was-in-mc nil))
+      (mcy--insert-killed-rectangle-to-kill-ring)
+      (setq mcy--was-in-mc nil))))
 (add-hook 'post-command-hook 'mcy/post-command-hook)
 
 
