@@ -68,12 +68,11 @@
 
 
 (defun mcy/pre-command-hook()
-  (when multiple-cursors-mode
-    ;; load the curresponding kill-ring for each cursor
-    ;; before each command. this loads the kill-ring
-    ;; for both real and fake cursors.
-    (setq mcy--was-in-mc t)
-    (mcy/load-current-kill-ring-from-killed-rectangle)))
+  ;; load the curresponding kill-ring for each cursor
+  ;; before each command. this loads the kill-ring
+  ;; for both real and fake cursors.
+  (setq mcy--was-in-mc t)
+  (mcy/load-current-kill-ring-from-killed-rectangle))
 
 (defun mcy/post-command-hook()
   (if multiple-cursors-mode
