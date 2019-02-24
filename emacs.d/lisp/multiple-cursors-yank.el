@@ -74,8 +74,6 @@
     ;; for both real and fake cursors.
     (setq mcy--was-in-mc t)
     (mcy/load-current-kill-ring-from-killed-rectangle)))
-(add-hook 'pre-command-hook 'mcy/pre-command-hook)
-
 
 (defun mcy/post-command-hook()
   (if multiple-cursors-mode
@@ -98,13 +96,14 @@
   ;; this causes the join-killed-rectangle to be saved within itself
   ;; giving invalid multiple-cursors-yank yank function.
   ;; this variable disable this behaiviour on post command execution.
+  (add-hook 'pre-command-hook 'mcy/pre-command-hook t t)
   (setq mcy--ignore-first-store t))
 (add-hook 'multiple-cursors-mode-enabled-hook 'mcy/mode-enabled)
 
 
-; (defun mcy/mode-disabled()
-;   (mc--insert-killed-rectangle-to-kill-ring))
-; (add-hook 'multiple-cursors-mode-disabled-hook 'mcy/mode-disabled)
+(defun mcy/mode-disabled()
+  (remove-hook 'pre-command-hook 'mcy/pre-command-hook t))
+(add-hook 'multiple-cursors-mode-disabled-hook 'mcy/mode-disabled)
 
 
 ;; we dont want to change the killed-rectangle when
