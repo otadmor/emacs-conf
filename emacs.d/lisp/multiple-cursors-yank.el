@@ -51,6 +51,7 @@
 (setq mcy--create-order-id 0)
 (setq mcy--ignore-first-store t)
 (setq mcy--was-in-mc nil)
+(setq mcy--last-cursors-amount 1)
 (make-local-variable 'mcy--ignore-first-store)
 (make-local-variable 'mcy--was-in-mc)
 (push 'mcy--create-order-id mc/cursor-specific-vars)
@@ -72,7 +73,8 @@
   ;; load the curresponding kill-ring for each cursor
   ;; before each command. this loads the kill-ring
   ;; for both real and fake cursors.
-  (setq mcy--was-in-mc (mc/num-cursors))
+  (setq mcy--was-in-mc t)
+  (setq mcy--last-cursors-amount (mc/num-cursors))
   (mcy/load-current-kill-ring-from-killed-rectangle))
 
 (defun mcy/post-command-hook()
@@ -85,7 +87,7 @@
     ;; the multiple-cursors-mode.
     (when mcy--was-in-mc
       (setq mcy--ignore-first-store t)
-      (mcy--insert-killed-rectangle-to-kill-ring mcy--was-in-mc)
+      (mcy--insert-killed-rectangle-to-kill-ring mcy--last-cursors-amount)
       (setq mcy--was-in-mc nil))))
 (add-hook 'post-command-hook 'mcy/post-command-hook)
 
