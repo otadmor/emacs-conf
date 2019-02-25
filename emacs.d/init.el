@@ -520,10 +520,24 @@
 (define-key swiper-map (kbd "C-/") (lambda () (interactive)
                                      (with-ivy-window
                                        (my-comment-or-uncomment-region))))
-(define-key swiper-map (kbd "C-SPC") (lambda () (interactive)
-                                       (with-ivy-window
-                                         (mc/create-fake-cursor-at-point)
-                                         (mc/maybe-multiple-cursors-mode))))
+
+(defun mc/find-cursor-at-point(p)
+  (let ((result-cursor nil))
+    (mc/for-each-fake-cursor
+     (when (and (>= p (overlay-start cursor)) (<= p (overlay-end cursor)))
+       (setq result-cursor cursor)))
+    result-cursor))
+
+(define-key swiper-map (kbd "C-SPC")
+  (lambda () (interactive)
+    (with-ivy-window
+      (let (
+            (fake-cursor (mc/find-cursor-at-point (point)))
+            )
+        (if (not (null fake-cursor))
+            (mc/remove-fake-cursor fake-cursor)
+          (mc/create-fake-cursor-at-point)))
+      (mc/maybe-multiple-cursors-mode))))
 (global-set-key (kbd "C-x C-f") 'counsel-find-file)
 (global-set-key (kbd "M-x") 'counsel-M-x)
 (global-set-key (kbd "C-x C-a") 'counsel-locate)
