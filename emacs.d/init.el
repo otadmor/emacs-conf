@@ -473,12 +473,15 @@
 
 ;(setq ivy-magic-slash-non-match-action nil)
 
-
+; (with-current-buffer buffer
+;   )
+; (ivy-exit-with-action
+;  (lambda (_) (pop-to-buffer buffer)))
 
 (defun ivy-shell ()
   (interactive)
   (if ivy--directory
-      (ivy-quit-and-run
+    (ivy-quit-and-run
         (switch-to-buffer (old-shell-with-dir (expand-file-name ivy--directory))))
     (user-error
      "Not completing files currently")))
@@ -517,9 +520,11 @@
 (global-set-key (kbd "C-s") 'swiper)
 (global-set-key (kbd "C-r") 'swiper)
 ;;(global-set-key (kbd "C-/") (lambda () (interactive) (ivy-exit-with-action (lambda (_) (my-comment-or-uncomment-region)))))
-(define-key swiper-map (kbd "C-/") (lambda () (interactive)
-                                     (with-ivy-window
-                                       (my-comment-or-uncomment-region))))
+(define-key swiper-map (kbd "C-/")
+  (lambda () (interactive)
+    (with-ivy-window
+      (my-comment-or-uncomment-region)
+      (ivy--exhibit))))
 
 (defun mc/find-cursor-at-point(p)
   (let ((result-cursor nil))
@@ -528,16 +533,71 @@
        (setq result-cursor cursor)))
     result-cursor))
 
-(define-key swiper-map (kbd "C-SPC")
-  (lambda () (interactive)
+(defun mc/toggle-cursor-at-point(p)
+  (let (
+        (fake-cursor (mc/find-cursor-at-point p))
+        )
+    (if (not (null fake-cursor))
+        (mc/remove-fake-cursor fake-cursor)
+      (mc/create-fake-cursor-at-point)))
+  (mc/maybe-multiple-cursors-mode))
+
+(defun mc/remove-cursor-at-point(p)
+  (let (
+        (fake-cursor (mc/find-cursor-at-point p))
+        )
+    (when (not (null fake-cursor))
+        (mc/remove-fake-cursor fake-cursor)))
+  (mc/maybe-multiple-cursors-mode))
+
+(defun mcs-toggle-cursor-at-point () (interactive)
+  (with-ivy-window
+    (mc/toggle-cursor-at-point (point))
+    (ivy--exhibit)))
+
+(defun mcs-mark-next-like-this () (interactive)
+  (with-ivy-window
+    (mc/toggle-cursor-at-point (point))
+    (ivy-next-line)
+    (ivy--exhibit)))
+(defun mcs-mark-previous-like-this () (interactive)
+       (with-ivy-window
+    (mc/toggle-cursor-at-point (point))
+    (ivy-previous-line)
+    (ivy--exhibit)))
+
+(defun mcs-alt-done (&optional arg) (interactive "P")
+  (with-ivy-window
+    (unless (= (mc/num-cursors) 1)
+      (mc/remove-cursor-at-point (point))))
+  (ivy-alt-done arg))
+
+(defun mcs-minibuffer-keyboard-quit () (interactive)
+  (with-ivy-window
+    (unless (= (mc/num-cursors) 1)
+      (mc/remove-fake-cursors)))
+  (minibuffer-keyboard-quit))
+
+
+(defun mcs-done () (interactive)
+  (if (= (with-ivy-window (mc/num-cursors)) 1)
+      (ivy-done)
     (with-ivy-window
       (let (
-            (fake-cursor (mc/find-cursor-at-point (point)))
+            (p (overlay-start (car (mc/all-fake-cursors))))
             )
-        (if (not (null fake-cursor))
-            (mc/remove-fake-cursor fake-cursor)
-          (mc/create-fake-cursor-at-point)))
-      (mc/maybe-multiple-cursors-mode))))
+        (mc/toggle-cursor-at-point p)
+        (setq swiper--opoint p)))
+    (minibuffer-keyboard-quit)))
+
+
+(define-key swiper-map (kbd "C-g") 'mcs-minibuffer-keyboard-quit)
+(define-key swiper-map (kbd "RET") 'mcs-done)
+(define-key swiper-map (kbd "C-SPC") 'mcs-toggle-cursor-at-point)
+(define-key swiper-map (kbd "C->") 'mcs-mark-next-like-this)
+(define-key swiper-map (kbd "C-<") 'mcs-mark-previous-like-this)
+
+
 (global-set-key (kbd "C-x C-f") 'counsel-find-file)
 (global-set-key (kbd "M-x") 'counsel-M-x)
 (global-set-key (kbd "C-x C-a") 'counsel-locate)

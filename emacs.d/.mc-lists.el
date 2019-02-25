@@ -13,7 +13,6 @@
         mc/paste
         my-comment-or-uncomment-region
         overwrite-mode
-        swiper
         ))
 
 (setq mc/cmds-to-run-once
@@ -29,6 +28,11 @@
         ivy-forward-char
         ivy-switch-buffer
         line-number-mode
+        mcs-alt-done
+        mcs-cancel
+        mcs-done
+        mcs-done2
+        mcs-mark-next-like-this
         minibuffer-keyboard-quit
         mode-line-previous-buffer
         mouse-drag-mode-line
@@ -38,4 +42,5 @@
         next-buff
         prev-buffer
         swiper-mc
+        swiper
         ))
