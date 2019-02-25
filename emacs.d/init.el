@@ -540,7 +540,14 @@
 (global-set-key (kbd "C-x C-f") 'counsel-find-file)
 (global-set-key (kbd "M-x") 'counsel-M-x)
 (global-set-key (kbd "C-x C-a") 'counsel-locate)
-(define-key ivy-minibuffer-map (kbd "C-r") 'ivy-previous-line)
+(defun ivy-previous-line-or-history-2 (arg)
+  "Move cursor vertically up ARG candidates.
+If the input is empty, select the previous history element instead."
+  (interactive "p")
+  (when (string= ivy-text "")
+    (ivy-previous-history-element 1))
+  (ivy-previous-line arg))
+(define-key ivy-minibuffer-map (kbd "C-r") 'ivy-previous-line-or-history-2)
 (define-key ivy-minibuffer-map (kbd "C-d") 'ivy-occur)
 (define-key ivy-minibuffer-map (kbd "C-w") 'ivy-yank-word)
 
