@@ -544,6 +544,16 @@
 (define-key ivy-minibuffer-map (kbd "C-r") 'ivy-previous-line)
 (define-key ivy-minibuffer-map (kbd "C-d") 'ivy-occur)
 (define-key ivy-minibuffer-map (kbd "C-w") 'ivy-yank-word)
+
+(defun my-toggle-truncate-lines ()
+  "Toggle truncate lines in quietly."
+  (interactive)
+  (let ((inhibit-message t))
+    (toggle-truncate-lines)))
+(define-key ivy-minibuffer-map (kbd "C-l") 'my-toggle-truncate-lines)
+(define-key swiper-map (kbd "C-l") 'my-toggle-truncate-lines)
+(global-set-key (kbd "C-l") 'my-toggle-truncate-lines)
+
 ; (defvar ivy-grep-map
 ;   (let ((map (make-sparse-keymap)))
 ;     (define-key map (kbd "C-d") 'ivy-occur)
