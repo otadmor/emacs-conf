@@ -4,6 +4,7 @@
 (setq mc/cmds-to-run-for-all
       '(
         backward-sexp
+        dabbrev-expand
         forward-sexp
         indent-for-tab-command
         kill-region
@@ -23,8 +24,12 @@
         counsel-find-file
         describe-variable
         end-of-buffer
+        ivy-alt-done
+        ivy-backward-delete-char
+        ivy-forward-char
         ivy-switch-buffer
         line-number-mode
+        minibuffer-keyboard-quit
         mode-line-previous-buffer
         mouse-drag-mode-line
         mouse-minor-mode-menu
