@@ -59,7 +59,7 @@
       (ivy-done)
     (with-ivy-window
       (let (
-            (p (overlay-start (car (mc/all-fake-cursors))))
+            (p (overlay-start (car (last (mc/all-fake-cursors)))))
             )
         (mc/toggle-cursor-at-point p)
         (setq swiper--opoint p)))
