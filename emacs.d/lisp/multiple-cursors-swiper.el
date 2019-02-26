@@ -234,6 +234,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (cursors (mcs-get-end-points))
         (i 0)
         )
+    (mc/create-fake-cursor-at-point)
     (let (
           (mc-advancer (lambda (&optional n)
                          (if (>= i (length cursors))
