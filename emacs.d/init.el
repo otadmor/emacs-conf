@@ -519,6 +519,8 @@
 (define-key ivy-minibuffer-map [(meta h)] 'ivy-magit-status)
 (global-set-key (kbd "C-s") 'swiper)
 (global-set-key (kbd "C-r") 'swiper)
+(global-set-key (kbd "C-c C-a") 'mcs-swiper)
+
 ;;(global-set-key (kbd "C-/") (lambda () (interactive) (ivy-exit-with-action (lambda (_) (my-comment-or-uncomment-region)))))
 (define-key swiper-map (kbd "C-/")
   (lambda () (interactive)
