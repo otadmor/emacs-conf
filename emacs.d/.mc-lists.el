@@ -33,6 +33,7 @@
         mcs-done
         mcs-done2
         mcs-mark-next-like-this
+        mcs-swiper
         minibuffer-keyboard-quit
         mode-line-previous-buffer
         mouse-drag-mode-line
@@ -41,6 +42,6 @@
         mouse-set-region
         next-buff
         prev-buffer
-        swiper-mc
         swiper
+        swiper-mc
         ))
