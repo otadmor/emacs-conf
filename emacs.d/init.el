@@ -201,6 +201,7 @@
 (global-set-key [(control f12)] 'call-last-kbd-macro)
 (global-set-key [(meta f12)] 'edit-last-kbd-macro)
 (global-set-key [(control meta b)] 'toggle-truncate-lines)
+(global-set-key [(control k)] 'kill-whole-line)
 (global-set-key [(meta g)] 'goto-line)
 (global-set-key [f6] (defun last-buffer() (interactive) (switch-to-buffer (other-buffer))))
 (global-set-key [(control tab)] (defun next-buff() (interactive) (other-window 1)))
@@ -526,6 +527,12 @@
   (lambda () (interactive)
     (with-ivy-window
       (my-comment-or-uncomment-region)
+      (ivy--exhibit))))
+
+(define-key swiper-map (kbd "C-k")
+  (lambda () (interactive)
+    (with-ivy-window
+      (kill-whole-line)
       (ivy--exhibit))))
 
 (require 'multiple-cursors-swiper)
