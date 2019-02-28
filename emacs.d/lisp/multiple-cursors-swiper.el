@@ -51,8 +51,9 @@
 
 (defun mcs-minibuffer-keyboard-quit () (interactive)
   (with-ivy-window
-    (unless (= (mc/num-cursors) 1)
-      (mc/remove-fake-cursors)))
+    ; (message "20")
+    (mc/restore-all-cursors-states mc-swiper--backedup-cursors)
+    (setq mc-swiper--backedup-cursors nil))
   (minibuffer-keyboard-quit))
 
 
@@ -64,7 +65,11 @@
             (p (overlay-start (car (last (mc/all-fake-cursors)))))
             )
         (mc/toggle-cursor-at-point p)
-        (setq swiper--opoint p)))
+        (setq swiper--opoint p)
+        )
+      ; (setq mc-swiper--backedup-cursors (mc/store-all-cursors-states))
+      ; (setq mc-swiper--backedup-cursors nil)
+      )
     (minibuffer-keyboard-quit)))
 
 
@@ -103,33 +108,41 @@ numbers; replaces calculating the width from buffer line count."
                          (lambda () (goto-char (point-min)))))
             candidates)
 
-        (save-excursion
-          (funcall initiater)
-          (swiper-font-lock-ensure)
-          (while (< (point) (point-max))
-            (let ((str (save-excursion (beginning-of-line) (swiper--line))))
-              (setq str (ivy-cleanup-string str))
-              (let ((line-number-str
-                     (format swiper--format-spec
-                             (if advancer1
-                                 (setq line-number (string-to-number (format-mode-line "%l")))
+        ; (message "mark before %S" (mark))
+        (mc/save-excursion
+         (mc/save-window-scroll
+          (save-excursion
+            (funcall initiater)
+            (swiper-font-lock-ensure)
+            (while (< (point) (point-max))
+              (let ((str (save-excursion (beginning-of-line) (swiper--line))))
+                (setq str (ivy-cleanup-string str))
+                (let ((line-number-str
+                       (format swiper--format-spec
+                               (if advancer1
+                                   (setq line-number (string-to-number (format-mode-line "%l")))
                                  (cl-incf line-number)
-                             ))))
-                (if swiper-include-line-number-in-search
-                    (setq str (concat line-number-str str))
+                                 ))))
+                  (if swiper-include-line-number-in-search
+                      (setq str (concat line-number-str str))
+                    (put-text-property
+                     0 1 'display line-number-str str))
                   (put-text-property
-                   0 1 'display line-number-str str))
+                   0 1 'swiper-line-number line-number-str str))
                 (put-text-property
-                 0 1 'swiper-line-number line-number-str str))
-              (put-text-property
-               0 1 'region-data (if (use-region-p)
-                                    (list (region-beginning) (region-end))
-                                  nil
-                                  ) str)
+                 0 1 'region-data (if advancer1
+                                      (list
+                                       (set-marker (make-marker)
+                                                   (let ((mark-even-if-inactive t))
+                                                     (mark)))
+                                       (set-marker (make-marker) (point)))
+                                    nil) str)
+                (push str candidates))
+              (funcall advancer 1))
+            )))
+                                        ; (message "mark after %S" (mark))
+        (nreverse candidates)))))
 
-              (push str candidates))
-            (funcall advancer 1))
-          (nreverse candidates))))))
 (defalias 'swiper--candidates 'swiper--mcs-candidates)
 
 (defun mcs-get-end-points()
@@ -137,13 +150,18 @@ numbers; replaces calculating the width from buffer line count."
         (cursors '())
         )
     (mc/for-each-cursor-ordered
-       (push (make-overlay (overlay-start cursor) (overlay-end cursor)) cursors))
+     ; (message "orig cursor from %S to %S" (overlay-get cursor 'mark) (overlay-get cursor 'point))
+     (push (list
+            (copy-marker (overlay-get cursor 'mark))
+            (copy-marker (overlay-get cursor 'point))
+            ) cursors))
     (reverse cursors)))
 
 
 (defun swiper--mcs-update-input-ivy ()
   "Called when `ivy' input is updated."
   (with-ivy-window
+    ; (message "update info num-cursors=%S" (mc/num-cursors))
     (swiper--cleanup)
     (when (> (length (ivy-state-current ivy-last)) 0)
       (let* ((regexp-or-regexps (funcall ivy--regex-function ivy-text))
@@ -175,13 +193,16 @@ numbers; replaces calculating the width from buffer line count."
                 (let (
                       (region-data (get-text-property 0 'region-data (ivy-state-current ivy-last)))
                       )
-                  ; (message "mark at %S" (cdar region-data))
                   (if (not (null region-data))
                       (progn
-                        (setq swiper--current-match-start region-data)
+                        ; (message "region at %S" region-data)
+                        (setq swiper--current-match-start (car region-data))
                         (setq swiper--current-line num)
-                        (goto-char (car swiper--current-match-start))
-                        (push-mark (cadr swiper--current-match-start))
+                        (deactivate-mark)
+                        (goto-char (car region-data))
+                        ; (set-marker (mark-marker) (cadr region-data))
+                        ; (activate-mark)
+                        ; (message "use region=%S - %S to %S" (use-region-p) (car region-data) (cadr region-data))
                         )
 
                     (if (and (equal ivy-text "")
@@ -222,28 +243,111 @@ numbers; replaces calculating the width from buffer line count."
                 (line-end-position (window-height)))
               swiper--point-max))))))))
 
+
 (defalias 'swiper--update-input-ivy 'swiper--mcs-update-input-ivy)
 
+(setq mc-swiper--backedup-cursors nil)
+(make-local-variable 'mc-swiper--backedup-cursors)
 
+(defun mc/get-cursor-state(cursor)
+  (mc/restore-state-from-overlay cursor)
+  (let (
+        (backup-overlay (mc/store-current-state-in-overlay
+                         (make-overlay (point) (point) nil nil t)))
+        (backup-cursor-type (overlay-get cursor 'type))
+        (backup-cursor-id (overlay-get cursor 'mc-id))
+        )
+    (overlay-put backup-overlay 'type 'backup-type)
+    ; (message "store %S type %S" backup-overlay backup-cursor-type)
+    (list backup-cursor-id backup-overlay)))
+
+(defun mc/get-real-cursor-state()
+  (let (
+        (real-cursor (mc/store-current-state-in-overlay
+                      (make-overlay (point) (point) nil nil t)))
+        )
+    (overlay-put real-cursor 'type 'original-cursor)
+    ; (message "real store %S" real-cursor)
+    (list nil real-cursor)))
+
+(defun mc/store-all-cursors-states()
+  ; (message "11")
+  (let (
+        (backedup-cursors)
+        )
+    ; (message "10")
+    (mc/save-excursion
+     (mc/save-window-scroll
+      ; (message "get real cursor")
+      (mc/create-fake-cursor-at-point)
+      (mc/for-each-fake-cursor
+       (save-excursion (push (mc/get-cursor-state cursor) backedup-cursors))
+      ; (message "saved %S" backedup-cursors)
+      )))
+    (reverse backedup-cursors)))
+
+(defun poplast (l)
+  (let (
+        (lni (last l))
+        )
+    (nbutlast l)
+    (car lni)))
+
+(defun mc/restore-all-cursors-states(backedup-cursors)
+  ; (message "list=%S" backedup-cursors)
+  (mc/remove-fake-cursors)
+
+  ; (message "list=%S" backedup-cursors)
+  (cl-loop
+   repeat (length backedup-cursors) do
+   (let (
+         (backup-overlay-data (poplast backedup-cursors))
+         )
+     ;; (message "backupoverlay %S" backup-overlay-data)
+     (let (
+           (backup-cursor-id (nth 0 backup-overlay-data))
+           (backup-overlay (nth 1 backup-overlay-data))
+           )
+       ;; (message "check for real cursor %S" backup-cursor-id)
+       ; (message "poping state %S" backup-overlay)
+       (mc/pop-state-from-overlay backup-overlay)
+       ;; (message "creating cursor id %S" backup-cursor-id)
+       (mc/create-fake-cursor-at-point); backup-cursor-id)
+       ;; (message "done poping state")
+       )))
+  ;; (message "done fake pops")
+  (mc/remove-cursor-at-point (point))
+  (mc/maybe-multiple-cursors-mode))
 
 (defun mcs-swiper (&optional initial-input)
   "`isearch' with an overview.
 When non-nil, INITIAL-INPUT is the initial search pattern."
   (interactive)
+  ; (message "begin 1")
   (let (
         (cursors (mcs-get-end-points))
         (i 0)
         )
-    (mc/create-fake-cursor-at-point)
     (let (
           (mc-advancer (lambda (&optional n)
+                         ; (when (= i 0)
+                         ;   (deactivate-mark))
                          (if (>= i (length cursors))
-                             (goto-char (point-max))
+                             (progn
+                               (goto-char (point-max))
+                               (deactivate-mark)
+                               )
                            (let (
                                  (cursor (nth i cursors))
                                  )
-                             (goto-char (overlay-start cursor))
-                             (push-mark (overlay-end cursor))
+                             ; (message "loading next %S point %S to %S" cursor (car cursor) (cadr cursor))
+                             (deactivate-mark)
+                             (goto-char (car cursor))
+                             (set-marker (mark-marker) (cadr cursor))
+                             (activate-mark)
+
+                             ; (message "advancer use region=%S" (use-region-p))
+
                              )
                            (cl-incf i))))
           )
@@ -251,7 +355,21 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
             ; swiper--current-match-start
             (candidates (swiper--candidates nil :advancer1 mc-advancer :initiater1 mc-advancer))
             )
+        ; (message "begin 2 numcursors=%S" (mc/num-cursors))
         (swiper--ivy candidates initial-input)))))
+
+(advice-add 'swiper--ivy :around
+            (lambda(orig-fun &rest args)
+                                        ; (message "before store")
+              (setq mc-swiper--backedup-cursors (mc/store-all-cursors-states))
+                ; (message "SAVED 2 %S" mc-swiper--backedup-cursors)
+              ; (message "inside store %S" (mc/num-cursors))
+              (apply orig-fun args)
+              ;; (with-ivy-window
+              ;; (mc/restore-all-cursors-states mc-swiper--backedup-cursors))
+              ; (message "after orig func")
+              ))
+
 
 
 ; (defun swiper (&optional initial-input)
