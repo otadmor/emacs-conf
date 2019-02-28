@@ -57,8 +57,12 @@
 
 
 (defun mcs-done () (interactive)
-  (if (= (with-ivy-window (mc/num-cursors)) 1)
-      (ivy-done)
+  (if (= (with-ivy-window (mc/num-cursors)) 2)
+      (progn
+        (mc/remove-fake-cursors)
+        (mc/maybe-multiple-cursors-mode)
+        (ivy-done)
+        )
     (with-ivy-window
       (let (
             (real-cursor (car (last (mc/all-fake-cursors))))
@@ -241,19 +245,9 @@ numbers; replaces calculating the width from buffer line count."
   (let (
         (backup-overlay (mc/store-current-state-in-overlay
                          (make-overlay (point) (point) nil nil t)))
-        (backup-cursor-type (overlay-get cursor 'type))
-        (backup-cursor-id (overlay-get cursor 'mc-id))
         )
     (overlay-put backup-overlay 'type 'backup-type)
-    (list backup-cursor-id backup-overlay)))
-
-(defun mc/get-real-cursor-state()
-  (let (
-        (real-cursor (mc/store-current-state-in-overlay
-                      (make-overlay (point) (point) nil nil t)))
-        )
-    (overlay-put real-cursor 'type 'original-cursor)
-    (list nil real-cursor)))
+    backup-overlay))
 
 (defun mc/store-all-cursors-states()
   (let (
@@ -275,18 +269,13 @@ numbers; replaces calculating the width from buffer line count."
 
 (defun mc/restore-all-cursors-states(backedup-cursors)
   (mc/remove-fake-cursors)
-
   (cl-loop
    repeat (length backedup-cursors) do
    (let (
-         (backup-overlay-data (poplast backedup-cursors))
+         (backup-overlay (poplast backedup-cursors))
          )
-     (let (
-           (backup-cursor-id (nth 0 backup-overlay-data))
-           (backup-overlay (nth 1 backup-overlay-data))
-           )
        (mc/pop-state-from-overlay backup-overlay)
-       (mc/create-fake-cursor-at-point))))
+       (mc/create-fake-cursor-at-point)))
   (mc/remove-cursor-at-point (point))
   (mc/maybe-multiple-cursors-mode))
 

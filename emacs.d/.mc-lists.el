@@ -33,6 +33,7 @@
         mcs-done
         mcs-done2
         mcs-mark-next-like-this
+        mcs-minibuffer-keyboard-quit
         mcs-swiper
         minibuffer-keyboard-quit
         mode-line-previous-buffer
