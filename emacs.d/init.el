@@ -539,7 +539,6 @@
 (require 'multiple-cursors-swiper)
 
 (define-key swiper-map (kbd "C-g") 'mcs-minibuffer-keyboard-quit)
-(define-key swiper-map (kbd "RET") 'mcs-done)
 (define-key swiper-map (kbd "C-SPC") 'mcs-toggle-cursor-at-point)
 (define-key swiper-map (kbd "C->") 'mcs-mark-next-like-this)
 (define-key swiper-map (kbd "C-<") 'mcs-mark-previous-like-this)

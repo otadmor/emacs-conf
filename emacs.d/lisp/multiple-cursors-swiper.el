@@ -56,16 +56,6 @@
   (minibuffer-keyboard-quit))
 
 
-(defun mcs-done () (interactive)
-  (with-ivy-window
-    (setq mc-swiper--backedup-cursors nil)
-    (unless (= (mc/num-cursors) 1) ; 1 = current cursor
-      (mc/pop-state-from-overlay (car (last (mc/all-fake-cursors)))))
-    (setq swiper--opoint (point))
-    (mc/maybe-multiple-cursors-mode))
-  (minibuffer-keyboard-quit))
-
-
 (cl-defun swiper--mcs-candidates (&optional numbers-width &key advancer1 initiater1)
   "Return a list of this buffer lines.
 NUMBERS-WIDTH, when specified, is used for width spec of line
@@ -304,11 +294,27 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
       (let (
             (candidates (swiper--candidates nil :advancer1 mc-advancer :initiater1 mc-advancer))
             )
-        (swiper--ivy candidates initial-input)))))
+        (let (
+              (res (swiper--ivy candidates initial-input))
+              )
+          ; (message "after %S res" res)
+          res
+        )))))
+
+; (add-hook 'minibuffer-exit-hook (lambda () (message "exit")))
+
 
 (advice-add 'swiper--ivy :around
   (lambda(orig-fun &rest args)
     (setq mc-swiper--backedup-cursors (mc/store-all-cursors-states))
-    (apply orig-fun args)))
+    (let (
+          (res (apply orig-fun args))
+          )
+      (with-ivy-window
+        (setq mc-swiper--backedup-cursors nil)
+        (unless (= (mc/num-cursors) 1) ; 1 = current cursor
+          (mc/pop-state-from-overlay (car (last (mc/all-fake-cursors)))))
+        (mc/maybe-multiple-cursors-mode))
+      res)))
 
 (provide 'multiple-cursors-swiper)
