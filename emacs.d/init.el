@@ -1070,11 +1070,13 @@ of a speedbar-window.  It will be created if necessary."
 (setq dumb-jump-selector 'ivy)
 
 
-(defun ivy-read-winstack-hook(orig-fun &rest args)
+(defun wrap-winstack-hook(orig-fun &rest args)
   (winstack-push)
   (let (
         (res (apply orig-fun args))
         )
     (winstack-push)
     res))
-(advice-add 'ivy-read :around #'ivy-read-winstack-hook)
+(advice-add 'ivy-read :around #'wrap-winstack-hook)
+(advice-add 'switch-to-buffer :around #'wrap-winstack-hook)
+(advice-add 'other-window :around #'wrap-winstack-hook)
