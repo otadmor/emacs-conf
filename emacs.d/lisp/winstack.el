@@ -196,7 +196,8 @@ Use `winstack-push' and
             (window (display-buffer buffer))
             )
         ;; (switch-to-buffer buffer)
-        (set-window-point window point))))
+        (set-window-point window point)
+        (select-window window))))
 
 (defun jump-to-item(item)
   (let (
