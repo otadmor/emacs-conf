@@ -828,6 +828,8 @@ the output."
              (define-key speedbar-mode-map [up] 'speedbar-prev)
              (define-key speedbar-mode-map [down] 'speedbar-next)
              (define-key speedbar-mode-map (kbd "M-g") 'sr-speedbar-navigate)
+             (define-key speedbar-mode-map [(control meta p)] 'winstack-pop)
+             (define-key speedbar-mode-map [(control meta n)] 'winstack-next)
              ))
 
 (setq speedbar-last-window nil)
