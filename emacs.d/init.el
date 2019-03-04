@@ -1071,7 +1071,7 @@ of a speedbar-window.  It will be created if necessary."
 
 
 (defun wrap-winstack-hook(orig-fun &rest args)
-  (winstack-push)
+  ; (winstack-push)
   (let (
         (res (apply orig-fun args))
         )
