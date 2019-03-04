@@ -57,37 +57,13 @@
 
 
 (defun mcs-done () (interactive)
-  (let (
-        (normal-done (with-ivy-window
-                       (let (
-                             (original-coursor-count (length mc-swiper--backedup-cursors))
-                             )
-                         (setq mc-swiper--backedup-cursors nil)
-                         ; (if (= original-coursor-count 1)
-                             ; (mc/remove-cursor-at-point swiper--opoint))
-                         (if (= (mc/num-cursors) 1) ; 1 = current cursor
-                             (progn
-                               (mc/maybe-multiple-cursors-mode)
-                               (setq swiper--opoint (point))
-                               t)
-                           (mc/pop-state-from-overlay (car (last (mc/all-fake-cursors))))
-                           (setq swiper--opoint (point))
-                           (mc/maybe-multiple-cursors-mode)
-                           nil))))
-        )
-    (if nil ;normal-done
-        (ivy-done)
-      (minibuffer-keyboard-quit))))
-
-
-; (defun mcs-done () (interactive)
-;   (with-ivy-window
-;     (setq mc-swiper--backedup-cursors nil)
-;     (if (= (mc/num-cursors) 2) ; 2 = the cursor where the swiper has started and the current cursor
-;         (mc/remove-fake-cursors)
-;       (mc/pop-state-from-overlay (car (last (mc/all-fake-cursors)))))
-;     (mc/maybe-multiple-cursors-mode))
-;   (minibuffer-keyboard-quit))
+  (with-ivy-window
+    (setq mc-swiper--backedup-cursors nil)
+    (unless (= (mc/num-cursors) 1) ; 1 = current cursor
+      (mc/pop-state-from-overlay (car (last (mc/all-fake-cursors)))))
+    (setq swiper--opoint (point))
+    (mc/maybe-multiple-cursors-mode))
+  (minibuffer-keyboard-quit))
 
 
 (cl-defun swiper--mcs-candidates (&optional numbers-width &key advancer1 initiater1)
