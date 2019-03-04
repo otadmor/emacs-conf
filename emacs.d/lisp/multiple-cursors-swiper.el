@@ -169,6 +169,8 @@ numbers; replaces calculating the width from buffer line count."
                       (line-move (1- num))
                     (forward-line (1- num))))
 
+                (when (> (mc/num-cursors) 1)
+                    (deactivate-mark))
                 (let (
                       (region-data (get-text-property 0 'region-data (ivy-state-current ivy-last)))
                       )
@@ -176,7 +178,7 @@ numbers; replaces calculating the width from buffer line count."
                       (progn
                         (setq swiper--current-match-start (car region-data))
                         (setq swiper--current-line num)
-                        (deactivate-mark)
+
                         (goto-char (car region-data))
                         )
 
@@ -274,8 +276,6 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         )
     (let (
           (mc-advancer (lambda (&optional n)
-                         ; (when (= i 0)
-                         ;   (deactivate-mark))
                          (if (>= i (length cursors))
                              (progn
                                (goto-char (point-max))
