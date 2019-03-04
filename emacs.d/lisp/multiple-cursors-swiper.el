@@ -57,19 +57,37 @@
 
 
 (defun mcs-done () (interactive)
-  (if (= (with-ivy-window (mc/num-cursors)) 2)
-      (progn
-        (mc/remove-fake-cursors)
-        (mc/maybe-multiple-cursors-mode)
-        (ivy-done)
+  (let (
+        (normal-done (with-ivy-window
+                       (let (
+                             (original-coursor-count (length mc-swiper--backedup-cursors))
+                             )
+                         (setq mc-swiper--backedup-cursors nil)
+                         ; (if (= original-coursor-count 1)
+                             ; (mc/remove-cursor-at-point swiper--opoint))
+                         (if (= (mc/num-cursors) 1) ; 1 = current cursor
+                             (progn
+                               (mc/maybe-multiple-cursors-mode)
+                               (setq swiper--opoint (point))
+                               t)
+                           (mc/pop-state-from-overlay (car (last (mc/all-fake-cursors))))
+                           (setq swiper--opoint (point))
+                           (mc/maybe-multiple-cursors-mode)
+                           nil))))
         )
-    (with-ivy-window
-      (let (
-            (real-cursor (car (last (mc/all-fake-cursors))))
-            )
-        (mc/pop-state-from-overlay real-cursor)
-        (setq swiper--opoint (point))))
-    (minibuffer-keyboard-quit)))
+    (if nil ;normal-done
+        (ivy-done)
+      (minibuffer-keyboard-quit))))
+
+
+; (defun mcs-done () (interactive)
+;   (with-ivy-window
+;     (setq mc-swiper--backedup-cursors nil)
+;     (if (= (mc/num-cursors) 2) ; 2 = the cursor where the swiper has started and the current cursor
+;         (mc/remove-fake-cursors)
+;       (mc/pop-state-from-overlay (car (last (mc/all-fake-cursors)))))
+;     (mc/maybe-multiple-cursors-mode))
+;   (minibuffer-keyboard-quit))
 
 
 (cl-defun swiper--mcs-candidates (&optional numbers-width &key advancer1 initiater1)
@@ -251,31 +269,32 @@ numbers; replaces calculating the width from buffer line count."
 
 (defun mc/store-all-cursors-states()
   (let (
-        (backedup-cursors)
+        (backedup-cursors '())
         )
     (mc/save-excursion
      (mc/save-window-scroll
-      (mc/create-fake-cursor-at-point)
-      (mc/for-each-fake-cursor
-       (save-excursion (push (mc/get-cursor-state cursor) backedup-cursors)))))
+      (when (> (mc/num-cursors) 1)
+        (mc/for-each-cursor-ordered
+         (save-excursion (push (mc/get-cursor-state cursor) backedup-cursors)))
+        (mc/create-fake-cursor-at-point))))
     (reverse backedup-cursors)))
 
 (defun poplast (l)
   (let (
         (lni (last l))
         )
-    (nbutlast l)
-    (car lni)))
+      (nbutlast l)
+      (car lni)))
 
 (defun mc/restore-all-cursors-states(backedup-cursors)
   (mc/remove-fake-cursors)
-  (cl-loop
-   repeat (length backedup-cursors) do
-   (let (
-         (backup-overlay (poplast backedup-cursors))
-         )
-       (mc/pop-state-from-overlay backup-overlay)
-       (mc/create-fake-cursor-at-point)))
+  (cl-loop repeat (length backedup-cursors) do
+           (let (
+                 (backup-overlay (poplast backedup-cursors))
+                 )
+             (overlay-put backup-overlay 'type 'fake-cursor)
+             (mc/pop-state-from-overlay backup-overlay)
+             (mc/create-fake-cursor-at-point)))
   (mc/remove-cursor-at-point (point))
   (mc/maybe-multiple-cursors-mode))
 
