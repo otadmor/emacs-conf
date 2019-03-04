@@ -761,6 +761,10 @@ the output."
 (setq jedi:complete-on-dot t)                 ; optional
 (define-key jedi-mode-map (kbd "M-C-j") 'jedi:goto-definition)
 
+(defun jedi:goto-definition-push-marker-hook(orig-fun &rest args)
+  (winstack-push)
+  (apply orig-fun args))
+(advice-add 'jedi:goto-definition-push-marker :around #'jedi:goto-definition-push-marker-hook)
 
 (require 'bash-completion)
 (bash-completion-setup)
@@ -1046,12 +1050,31 @@ of a speedbar-window.  It will be created if necessary."
                   )))
   )
 
-(with-eval-after-load "persp-mode-autoloads"
-)
-
 (add-to-list 'speedbar-frame-parameters (cons 'persp-ignore-wconf t))
 
 (require 'dumb-jump)
 (global-set-key (kbd "M-C-j") 'dumb-jump-go)
 (global-set-key (kbd "M-C-q") 'dumb-jump-quick-look)
+
+(defun dumb-jump-after-jump-winstack-hook()
+  (winstack-push))
+(add-hook 'dumb-jump-after-jump-hook 'dumb-jump-after-jump-winstack-hook)
+
+
+(defun dumb-jump-goto-file-line-hook(orig-fun &rest args)
+  (winstack-push)
+  (apply orig-fun args))
+(advice-add 'dumb-jump-goto-file-line :around #'dumb-jump-goto-file-line-hook)
+
+
 (setq dumb-jump-selector 'ivy)
+
+
+(defun ivy-read-winstack-hook(orig-fun &rest args)
+  (winstack-push)
+  (let (
+        (res (apply orig-fun args))
+        )
+    (winstack-push)
+    res))
+(advice-add 'ivy-read :around #'ivy-read-winstack-hook)

@@ -258,7 +258,7 @@ Use `winstack-push' and
 )
 ;(advice-add 'winstack-next :around #'lock-winstack)
 
-(add-hook 'post-command-hook #'winstack-push)
+; (add-hook 'post-command-hook #'winstack-push)
 ;(add-hook 'pre-command-hook 'winstack-push)
 
 (provide 'winstack)
