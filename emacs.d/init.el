@@ -570,6 +570,10 @@ If the input is empty, select the previous history element instead."
 (define-key swiper-map (kbd "C-l") 'my-toggle-truncate-lines)
 (global-set-key (kbd "C-l") 'my-toggle-truncate-lines)
 
+(require 'counsel)
+(define-key counsel-ag-map (kbd "<down>") (lambda() (interactive) (ivy-next-line) (ivy-call)))
+(define-key counsel-ag-map (kbd "<up>") (lambda() (interactive) (ivy-previous-line) (ivy-call)))
+
 ; (defvar ivy-grep-map
 ;   (let ((map (make-sparse-keymap)))
 ;     (define-key map (kbd "C-d") 'ivy-occur)
