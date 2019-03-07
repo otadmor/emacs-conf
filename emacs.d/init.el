@@ -1067,5 +1067,5 @@ of a speedbar-window.  It will be created if necessary."
 (advice-add 'goto-line :around #'wrap-winstack-hook)
 ; (advice-add 'goto-char :around #'wrap-winstack-hook)
 
-(advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook) 
+(advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook)
 (advice-add 'jedi:goto-definition-push-marker :around #'wrap-winstack-hook)
