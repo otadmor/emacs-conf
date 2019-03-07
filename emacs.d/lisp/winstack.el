@@ -56,7 +56,7 @@ Use `winstack-push' and
 
 (defun winstack-future-stack-push(item)
   (if persp-mode
-      (progn
+     (progn
         (when (not (persp-parameter 'winstack-future-stack))
           (set-persp-parameter 'winstack-future-stack '()))
         (let (
@@ -102,39 +102,33 @@ Use `winstack-push' and
 
 (setq in-winstack nil)
 
-(defun lock-winstack(orig-fun &rest args)
-  (let (
-        (res
-         (when (not in-winstack)
-           (setq in-winstack t)
-           (apply orig-fun args)))
-        )
-    (setq in-winstack nil) res))
-
 (defun winstack-push(&optional window important)
   (let (
         (buffer (window-buffer window))
         (point (window-point window))
         )
-    (when (not (minibufferp buffer))
-      (winstack-push-inner buffer point important))))
-(advice-add 'winstack-push :around #'lock-winstack)
+    (when (and
+           (buffer-file-name buffer)
+           (not (minibufferp buffer))
+           )
+      (winstack-push-inner (if window window (selected-window)) buffer point important))))
 
 (defun same-buffer-point(o buffer point)
   (and
-   (equal (second o) buffer)
-   (equal (third o) point)))
+   (equal (third o) buffer)
+   (equal (fourth o) point)))
 
 (defun buffer-point-action(o buffer point important)
   (if (not (same-buffer-point o buffer point))
       0 ; put new
-    (if important
-    1 ; replace
-    2 ; do nothing
+    (if (or important
+            (not (window-live-p (second o))))
+        1 ; replace
+      2 ; do nothing
     )))
 
 ; compare-window-configurations
-(defun winstack-push-inner(buffer point &optional important)
+(defun winstack-push-inner(window buffer point &optional important)
     "Push the current window state onto `winstack-stack'."
     ;;(message "items before push important %S" my-important)
     ;;(print-elements-of-list winstack-future-stack)
@@ -170,6 +164,7 @@ Use `winstack-push' and
                 )
             (push point item)
             (push buffer item)
+            (push window item)
             (push important item)
             ;(message "winstack-push %S" item)
             (winstack-stack-push item)
@@ -190,26 +185,35 @@ Use `winstack-push' and
     (message "%S" (car list))
     (setq list (cdr list))))
 
-(defun jump-to-buffer-point(buffer point)
+(defun jump-to-buffer-point(window buffer point)
   (if (buffer-live-p buffer)
       (let (
-            (window (display-buffer buffer))
+            (window (if (window-live-p window)
+                        window
+                      (let (
+                            (w (selected-window))
+                            )
+                        (if (minibufferp (window-buffer w))
+                            (get-lru-window)
+                          w))))
+            ;(window (display-buffer buffer))
             )
+        (set-window-buffer window buffer)
         ;; (switch-to-buffer buffer)
         (set-window-point window point)
         (select-window window))))
 
 (defun jump-to-item(item)
   (let (
-        (buffer (second item))
-        (point (third item))
+        (window (second item))
+        (buffer (third item))
+        (point (fourth item))
         )
-    (jump-to-buffer-point buffer point)))
+    (jump-to-buffer-point window buffer point)))
 
 (defun winstack-pop()
   "Pop the last window state off `winstack-stack' and apply it. takes from old-stack and put in new-stack"
   (interactive)
-  (setq in-winstack t)
     ;(message "items before pop")
     ;(print-elements-of-list winstack-stack)
     ;(message ",")
@@ -238,7 +242,6 @@ Use `winstack-push' and
 (defun winstack-next()
     "Pop the last window state off `winstack-stack' and apply it. takes from old-stack and put in new-stack"
     (interactive)
-    (setq in-winstack t)
     ;;(message "items before next")
     ;;(print-elements-of-list winstack-future-stack)
     ;;(message ",")
@@ -257,9 +260,33 @@ Use `winstack-push' and
 ;    (message ",")
 ;    (print-elements-of-list winstack-stack)
 )
-;(advice-add 'winstack-next :around #'lock-winstack)
+
+(defun wrap-winstack-hook(orig-fun &rest args)
+  (if in-winstack
+      (apply orig-fun args)
+    (winstack-push)
+    (setq in-winstack t)
+    (let (
+          (res (unwind-protect
+                    (apply orig-fun args)
+                  (setq in-winstack nil)))
+          )
+      (winstack-push)
+      res)))
+
+(defun wrap-winstack-command-hook(orig-fun &rest args)
+  (interactive)
+  (unless in-winstack
+    (setq in-winstack t)
+    (unwind-protect
+        (apply orig-fun args)
+      (setq in-winstack nil))))
+
+(advice-add 'winstack-push :around #'wrap-winstack-command-hook)
+(advice-add 'winstack-next :around #'wrap-winstack-command-hook)
+(advice-add 'winstack-pop :around #'wrap-winstack-command-hook)
 
 ; (add-hook 'post-command-hook #'winstack-push)
-;(add-hook 'pre-command-hook 'winstack-push)
+; (add-hook 'pre-command-hook 'winstack-push)
 
 (provide 'winstack)
