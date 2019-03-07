@@ -571,8 +571,8 @@ If the input is empty, select the previous history element instead."
 (global-set-key (kbd "C-l") 'my-toggle-truncate-lines)
 
 (require 'counsel)
-(define-key counsel-ag-map (kbd "<down>") (lambda() (interactive) (ivy-next-line) (ivy-call)))
-(define-key counsel-ag-map (kbd "<up>") (lambda() (interactive) (ivy-previous-line) (ivy-call)))
+(define-key counsel-ag-map (kbd "<down>") (lambda() (interactive) (ivy-next-line-and-call)))
+(define-key counsel-ag-map (kbd "<up>") (lambda() (interactive) (ivy-previous-line-and-call)))
 
 ; (defvar ivy-grep-map
 ;   (let ((map (make-sparse-keymap)))
@@ -1058,6 +1058,28 @@ of a speedbar-window.  It will be created if necessary."
 (require 'dumb-jump)
 (global-set-key (kbd "M-C-j") 'dumb-jump-go)
 (global-set-key (kbd "M-C-q") 'dumb-jump-quick-look)
+
+(defvar dumb-jump-ivy-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "<down>") (lambda() (interactive) (ivy-next-line-and-call)))
+    (define-key map (kbd "<up>") (lambda() (interactive) (ivy-previous-line-and-call)))
+    (define-key map (kbd "C-l") 'ivy-call-and-recenter)
+    map))
+
+(defun dumb-jump-ivy-jump-to-selected-with-call (results choices proj)
+  "Offer CHOICES as canidates through ivy-read then execute
+dumb-jump-to-selected on RESULTS CHOICES and selected choice.
+Ignore PROJ"
+  (dumb-jump-to-selected results choices
+                         (ivy-read "Jump to: " choices
+                                   ; :preselect
+                                   :keymap dumb-jump-ivy-map
+                                   :action
+                                   (lambda (x)
+                                     (dumb-jump-to-selected results choices x)))))
+
+(defalias 'dumb-jump-ivy-jump-to-selected 'dumb-jump-ivy-jump-to-selected-with-call)
+
 (setq dumb-jump-selector 'ivy)
 
 (advice-add 'ivy-read :around #'wrap-winstack-hook)
