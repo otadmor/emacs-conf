@@ -184,7 +184,8 @@
 
 (require 'grep)
 (defun nice-rgrep() (interactive) (grep-compute-defaults) (rgrep (grep-read-regexp) "*" default-directory nil))
-(global-set-key [(meta f)] 'nice-rgrep)
+; (global-set-key [(meta f)] 'nice-rgrep)
+(global-set-key [(meta f)] 'counsel-ag)
 (global-set-key [f4] 'next-error)
 (global-set-key [(shift f4)] 'previous-error)
 (global-set-key [f1] 'manual-entry)
