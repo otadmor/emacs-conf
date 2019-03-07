@@ -230,6 +230,6 @@
         )
     (eval-after-load 'company '(add-to-list 'company-backends completion-func))))
 
-(epc-completion-add (lambda () (substring-no-properties (company-grab-symbol))))
+; (epc-completion-add (lambda () (substring-no-properties (company-grab-symbol))))
 
 (provide 'completion-epc)
