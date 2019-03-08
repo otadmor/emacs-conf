@@ -1120,4 +1120,4 @@ Ignore PROJ"
 ; (advice-add 'goto-char :around #'wrap-winstack-hook)
 
 (advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook)
-(advice-add 'jedi:goto-definition-push-marker :around #'wrap-winstack-hook)
+(advice-add 'jedi:goto-definition--nth :around #'wrap-winstack-hook)
