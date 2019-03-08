@@ -1072,6 +1072,9 @@ of a speedbar-window.  It will be created if necessary."
     (define-key map (kbd "C-g") 'dumb-jump-ivy-minibuffer-keyboard-quit)
     map))
 
+(ivy-set-display-transformer 'dumb-jump-ivy-jump-to-selected 'counsel-git-grep-transformer)
+
+
 (defun dumb-jump-ivy-jump-to-selected-with-call (results choices proj)
   "Offer CHOICES as canidates through ivy-read then execute
 dumb-jump-to-selected on RESULTS CHOICES and selected choice.
