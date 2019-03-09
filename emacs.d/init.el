@@ -15,34 +15,34 @@
 ;    (server-start))
 
 
-; '(default ((t (:foreground "white" :background "black" ))) t)
-;(set-face-attribute 'default nil :font "monospace 10" )
-;:family "courier"
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(default ((t (:foundry "adobe" :foreground "white" :background "black" :slant normal :weight normal :height 120 :width normal))))
- '(diff-added ((t (:background "#003000"))))
- '(diff-hunk-header ((t (:background "blue"))))
- '(diff-removed ((t (:background "#300000"))))
- '(font-lock-comment-face ((t (:foreground "green"))))
- '(font-lock-doc-face ((t (:foreground "green2"))))
- '(font-lock-function-name-face ((t (:foreground "gold"))))
- '(font-lock-keyword-face ((t (:foreground "red"))))
- '(font-lock-preprocessor-face ((t (:foreground "yellow"))))
- '(font-lock-string-face ((t (:foreground "cyan"))))
- '(font-lock-type-face ((t (:foreground "green3"))))
- '(font-lock-variable-name-face ((t (:foreground "aquamarine"))))
- '(font-lock-warning-face ((t (:foreground "#Ea0" :bold t))))
- '(isearch ((t (:background "cornflowerblue"))))
- '(region ((t (:background "#444444"))))
- '(show-paren-match ((t (:background "#444464"))))
- '(show-paren-mismatch ((t (:background "#600000")))))
+;; ; '(default ((t (:foreground "white" :background "black" ))) t)
+;; ;(set-face-attribute 'default nil :font "monospace 10" )
+;; ;:family "courier"
+;; (custom-set-faces
+;;  ;; custom-set-faces was added by Custom.
+;;  ;; If you edit it by hand, you could mess it up, so be careful.
+;;  ;; Your init file should contain only one such instance.
+;;  ;; If there is more than one, they won't work right.
+;;  '(default ((t (:foundry "adobe" :foreground "white" :background "black" :slant normal :weight normal :height 120 :width normal))))
+;;  '(diff-added ((t (:background "#003000"))))
+;;  '(diff-hunk-header ((t (:background "blue"))))
+;;  '(diff-removed ((t (:background "#300000"))))
+;;  '(font-lock-comment-face ((t (:foreground "green"))))
+;;  '(font-lock-doc-face ((t (:foreground "green2"))))
+;;  '(font-lock-function-name-face ((t (:foreground "gold"))))
+;;  '(font-lock-keyword-face ((t (:foreground "red"))))
+;;  '(font-lock-preprocessor-face ((t (:foreground "yellow"))))
+;;  '(font-lock-string-face ((t (:foreground "cyan"))))
+;;  '(font-lock-type-face ((t (:foreground "green3"))))
+;;  '(font-lock-variable-name-face ((t (:foreground "aquamarine"))))
+;;  '(font-lock-warning-face ((t (:foreground "#Ea0" :bold t))))
+;;  '(isearch ((t (:background "cornflowerblue"))))
+;;  '(region ((t (:background "#444444"))))
+;;  '(show-paren-match ((t (:background "#444464"))))
+;;  '(show-paren-mismatch ((t (:background "#600000")))))
 
-(set-cursor-color "white")
-(set-mouse-color "white")
+;; (set-cursor-color "white")
+;; (set-mouse-color "white")
 
 (tool-bar-mode -1)
 (setq inhibit-splash-screen t)
@@ -166,6 +166,26 @@
 (setq load-path (cons (expand-file-name "~/.emacs.d/lisp/jss-master") load-path))
 (setq load-path (cons CONFIGURATION-PATH load-path))
 
+(setq load-path (cons (expand-file-name "~/.emacs.d/graphics") load-path))
+
+(require 'doom-themes)
+
+;; Global settings (defaults)
+(setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
+      doom-themes-enable-italic t) ; if nil, italics is universally disabled
+
+;; Load the theme
+(load-theme 'doom-mhfc t)
+
+;; Enable flashing mode-line on errors
+(doom-themes-visual-bell-config)
+
+;; Corrects (and improves) org-mode's native fontification.
+(doom-themes-org-config)
+
+(require 'powerline)
+(powerline-default-theme)
+
 (require 'cl) ; required for defun*
 
 (global-set-key [(control x) (control c)] (defun dont-kill-emacs() (interactive) (message "Use C-x c to leave")))
@@ -209,8 +229,11 @@
 (global-set-key [(control tab)] (defun next-buff() (interactive) (other-window 1)))
 (global-set-key (kbd "C-S-<iso-lefttab>") (defun prev-buffer() (interactive) (other-window -1)))
 (global-set-key [(pause)] 'kill-this-buffer)
+(global-set-key (kbd "C-M-k") 'kill-this-buffer)
 (global-set-key [(scroll-lock)] 'kill-this-buffer)
 ;(global-set-key [f8] 'gud-gdb)
+
+
 
 (global-set-key [(meta left)] 'backward-sexp)
 (global-set-key [(meta right)] 'forward-sexp)
@@ -220,10 +243,10 @@
 ;(global-set-key [(control meta left)] 'next-buffer)
 ;(global-set-key [(control meta right)] 'previous-buffer)
 
-(global-set-key [(control meta left)] 'windmove-left)
-(global-set-key [(control meta right)] 'windmove-right)
-(global-set-key [(control meta up)] 'windmove-up)
-(global-set-key [(control meta down)] 'windmove-down)
+(global-set-key (kbd "C-M-<left>") 'windmove-left)
+(global-set-key (kbd "C-M-<right>") 'windmove-right)
+(global-set-key (kbd "C-M-<up>") 'windmove-up)
+(global-set-key (kbd "C-M-<down>") 'windmove-down)
 
 
 (require 'redo+)
@@ -300,7 +323,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (ag dumb-jump counsel sr-speedbar persp-mode python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (powerline ag dumb-jump counsel sr-speedbar persp-mode python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(safe-local-variable-values
    (quote
     ((eval progn
@@ -649,6 +672,21 @@ If the input is empty, select the previous history element instead."
 (global-set-key [(control meta p)] 'winstack-pop)
 (global-set-key [(control meta n)] 'winstack-next)
 
+
+; clipboard useful shortcuts
+(global-set-key [(control shift v)] 'x-clipboard-yank)
+(global-set-key [(control shift x)] 'clipboard-kill-region)
+(global-set-key [(control shift c)] 'clipboard-kill-ring-save)
+
+(defun lunaryorn-new-buffer-frame ()
+  "Create a new frame with a new empty buffer."
+  (interactive)
+  (let ((buffer (generate-new-buffer "untitled")))
+    (switch-to-buffer buffer)))
+
+(global-set-key [(control n)] 'lunaryorn-new-buffer-frame)
+
+
 (require 'lk-file-search)
 
 ;(require 'webkit)
@@ -757,9 +795,11 @@ the output."
 (require 'multiple-cursors)
 (require 'multiple-cursors-yank)
 (require 'multiple-cursors-sync-window)
-(global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
+; (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
 (global-set-key (kbd "C->") 'mc/mark-next-like-this)
 (global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
+(global-set-key (kbd "M-<f3>") 'mc/mark-all-like-this)
+(global-set-key (kbd "C-S-l") 'mc/edit-ends-of-lines)
 
 
 (require 'jedi-core)
