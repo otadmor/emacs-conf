@@ -1121,11 +1121,22 @@ of a speedbar-window.  It will be created if necessary."
     (goto-char dumb-jump--opoint))
   (minibuffer-keyboard-quit))
 
+(defun dumb-jump--goto-original-point()
+  (interactive)
+  (with-ivy-window
+    (setq swiper--current-match-start dumb-jump--opoint)
+    (setq swiper--current-line (string-to-number (format-mode-line "%l")))
+    (goto-char dumb-jump--opoint)
+    ))
+
+
 (defvar dumb-jump-ivy-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "<down>") (lambda() (interactive) (ivy-next-line-and-call)))
     (define-key map (kbd "<up>") (lambda() (interactive) (ivy-previous-line-and-call)))
     (define-key map (kbd "C-l") 'ivy-call-and-recenter)
+    (define-key map (kbd "M-C-p") 'dumb-jump--goto-original-point)
+    (define-key map (kbd "M-C-n") (lambda () (interactive)))
     (define-key map (kbd "C-g") 'dumb-jump-ivy-minibuffer-keyboard-quit)
     map))
 
