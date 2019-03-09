@@ -250,10 +250,20 @@
 ;(global-set-key [(control meta left)] 'next-buffer)
 ;(global-set-key [(control meta right)] 'previous-buffer)
 
+(global-set-key (kbd "C-x C-z") (lambda() (interactive) (message "Dont minimize")))
+
 (global-set-key (kbd "C-M-<left>") 'windmove-left)
 (global-set-key (kbd "C-M-<right>") 'windmove-right)
 (global-set-key (kbd "C-M-<up>") 'windmove-up)
 (global-set-key (kbd "C-M-<down>") 'windmove-down)
+
+(defun switch-to-minibuffer ()
+  "Switch to minibuffer window."
+  (interactive)
+  (if (active-minibuffer-window)
+      (select-window (active-minibuffer-window))
+    (error "Minibuffer is not active")))
+(global-set-key (kbd "M-d") 'switch-to-minibuffer)
 
 
 (require 'redo+)
@@ -496,14 +506,6 @@
 (setq ivy-wrap t)
 (setq ivy-auto-select-single-candidate t)
 (setq ivy-do-completion-in-region nil) ; we have company
-
-(defun switch-to-minibuffer ()
-  "Switch to minibuffer window."
-  (interactive)
-  (if (active-minibuffer-window)
-      (select-window (active-minibuffer-window))
-    (error "Minibuffer is not active")))
-(global-set-key (kbd "M-d") 'switch-to-minibuffer)
 
 ;(setq ivy-magic-slash-non-match-action nil)
 
