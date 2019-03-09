@@ -14,6 +14,13 @@
 ;(unless (server-running-p)
 ;    (server-start))
 
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+  '(default ((t (:foundry "adobe"  :slant normal :weight normal :height 120 :width normal))))
+ )
 
 ;; ; '(default ((t (:foreground "white" :background "black" ))) t)
 ;; ;(set-face-attribute 'default nil :font "monospace 10" )
@@ -1164,3 +1171,4 @@ Ignore PROJ"
 
 (advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook)
 (advice-add 'jedi:goto-definition--nth :around #'wrap-winstack-hook)
+
