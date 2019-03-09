@@ -503,6 +503,7 @@
   (if (active-minibuffer-window)
       (select-window (active-minibuffer-window))
     (error "Minibuffer is not active")))
+(global-set-key (kbd "M-d") 'switch-to-minibuffer)
 
 ;(setq ivy-magic-slash-non-match-action nil)
 
