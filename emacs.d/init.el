@@ -567,6 +567,14 @@
       (kill-whole-line)
       (ivy--exhibit))))
 
+(defun swiper--goto-original-point()
+  (interactive)
+  (with-ivy-window
+    (setq swiper--current-match-start swiper--opoint)
+    (setq swiper--current-line (string-to-number (format-mode-line "%l")))
+    (goto-char swiper--opoint)
+    ))
+
 (require 'multiple-cursors-swiper)
 
 (define-key swiper-map (kbd "C-g") 'mcs-minibuffer-keyboard-quit)
@@ -575,6 +583,8 @@
 (define-key swiper-map (kbd "C-<") 'mcs-mark-previous-like-this)
 (define-key swiper-map (kbd "C-<up>") 'ivy-previous-line)
 (define-key swiper-map (kbd "C-<down>") 'ivy-next-line)
+
+(define-key swiper-map (kbd "M-C-p") 'swiper--goto-original-point)
 
 
 (global-set-key (kbd "C-x C-f") 'counsel-find-file)
