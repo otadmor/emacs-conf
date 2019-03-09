@@ -166,13 +166,13 @@
 (setq load-path (cons (expand-file-name "~/.emacs.d/lisp/jss-master") load-path))
 (setq load-path (cons CONFIGURATION-PATH load-path))
 
-(setq load-path (cons (expand-file-name "~/.emacs.d/graphics") load-path))
-
 (require 'doom-themes)
 
 ;; Global settings (defaults)
 (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
       doom-themes-enable-italic t) ; if nil, italics is universally disabled
+
+(setq custom-theme-load-path (cons (expand-file-name "~/.emacs.d/lisp/themes") custom-theme-load-path))
 
 ;; Load the theme
 (load-theme 'doom-mhfc t)
