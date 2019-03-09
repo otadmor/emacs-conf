@@ -211,6 +211,22 @@ determine the exact padding."
 
   ;; --- extra variables ---------------------
   ;; ()
+
+  ;; TODO
+    ;; ;; git-commit
+    ;; (git-commit-keyword :foreground cyan :slant 'italic)
+
+    ;; ;; power
+    ;; (powerline-active0   :inherit 'mode-line :background bg)
+    ;; (powerline-active1   :inherit 'mode-line :background (doom-lighten 'bg 0.025))
+    ;; (powerline-active2   :inherit 'mode-line :foreground base8 :background (doom-lighten 'bg 0.08))
+    ;; (powerline-inactive0 :inherit 'mode-line-inactive :background base2)
+    ;; (powerline-inactive1 :inherit 'mode-line-inactive :background (doom-lighten 'base2 0.02))
+    ;; (powerline-inactive2 :inherit 'mode-line-inactive :background (doom-lighten 'base2 0.04))
+
+    ;; ;; whitespace
+    ;; (whitespace-tab      :foreground base4 :background (unless (default-value 'indent-tabs-mode) base3))
+
   )
 
 ;;; doom-mhfc-theme.el ends here
