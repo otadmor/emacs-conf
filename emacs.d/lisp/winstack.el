@@ -9,96 +9,32 @@ Use `winstack-push' and
 Use `winstack-push' and
 `winstack-pop' to modify it.")
 
-(require 'persp-mode nil t)
+(require 'persp-mode-variables nil t)
+
+(when (boundp 'pmv/cursor-specific-vars)
+    (push 'winstack-stack pmv/cursor-specific-vars)
+    (push 'winstack-future-stack pmv/cursor-specific-vars))
 
 (defun winstack-stack-push(item)
-  (if persp-mode
-      (progn
-        (when (not (persp-parameter 'winstack-stack))
-          (set-persp-parameter 'winstack-stack '()))
-        (let (
-              (ws (persp-parameter 'winstack-stack))
-              )
-          (push item ws)
-          (set-persp-parameter 'winstack-stack ws)))
-    (push item winstack-stack)))
+    (push item winstack-stack))
 (defun winstack-stack-first()
-  (if persp-mode
-      (progn
-        (when (not (persp-parameter 'winstack-stack))
-          (set-persp-parameter 'winstack-stack '()))
-        (first (persp-parameter 'winstack-stack))
-        )
-  (first winstack-stack)))
+  (first winstack-stack))
 (defun winstack-stack-pop()
-  (if persp-mode
-      (progn
-        (when (not (persp-parameter 'winstack-stack))
-          (set-persp-parameter 'winstack-stack '()))
-        (let (
-              (ws (persp-parameter 'winstack-stack))
-              )
-          (let (
-                (item (pop ws))
-                )
-            (set-persp-parameter 'winstack-stack ws)
-            item)))
-  (pop winstack-stack)))
+  (pop winstack-stack))
 (defun winstack-stack-length()
-  (if persp-mode
-      (progn
-        (when (not (persp-parameter 'winstack-stack))
-          (set-persp-parameter 'winstack-stack '()))
-        (length (persp-parameter 'winstack-stack))
-        )
-  (length winstack-stack)))
+  (length winstack-stack))
 
 
 (defun winstack-future-stack-push(item)
-  (if persp-mode
-     (progn
-        (when (not (persp-parameter 'winstack-future-stack))
-          (set-persp-parameter 'winstack-future-stack '()))
-        (let (
-              (ws (persp-parameter 'winstack-future-stack))
-              )
-          (push item ws)
-          (set-persp-parameter 'winstack-future-stack ws)))
-    (push item winstack-future-stack)))
+    (push item winstack-future-stack))
 (defun winstack-future-stack-first()
-  (if persp-mode
-      (progn
-        (when (not (persp-parameter 'winstack-future-stack))
-          (set-persp-parameter 'winstack-future-stack '()))
-        (first (persp-parameter 'winstack-future-stack))
-        )
-  (first winstack-future-stack)))
+  (first winstack-future-stack))
 (defun winstack-future-stack-pop()
-  (if persp-mode
-      (progn
-        (when (not (persp-parameter 'winstack-future-stack))
-          (set-persp-parameter 'winstack-future-stack '()))
-        (let (
-              (ws (persp-parameter 'winstack-future-stack))
-              )
-          (let (
-                (item (pop ws))
-                )
-            (set-persp-parameter 'winstack-future-stack ws)
-            item)))
-  (pop winstack-future-stack)))
+  (pop winstack-future-stack))
 (defun winstack-future-stack-length()
-  (if persp-mode
-      (progn
-        (when (not (persp-parameter 'winstack-future-stack))
-          (set-persp-parameter 'winstack-future-stack '()))
-        (length (persp-parameter 'winstack-future-stack))
-        )
-  (length winstack-future-stack)))
+  (length winstack-future-stack))
 (defun winstack-future-stack-clear()
-  (if persp-mode
-      (set-persp-parameter 'winstack-future-stack '())
-  (length winstack-future-stack)))
+  (length winstack-future-stack))
 
 (setq in-winstack nil)
 
