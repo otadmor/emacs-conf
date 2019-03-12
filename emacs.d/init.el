@@ -1196,3 +1196,5 @@ Ignore PROJ"
 (advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook)
 (advice-add 'jedi:goto-definition--nth :around #'wrap-winstack-hook)
 
+(push 'ivy-last pmv/cursor-specific-vars)
+(push 'ivy-text pmv/cursor-specific-vars)
