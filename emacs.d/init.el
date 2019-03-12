@@ -1198,3 +1198,7 @@ Ignore PROJ"
 
 (push 'ivy-last pmv/cursor-specific-vars)
 (push 'ivy-text pmv/cursor-specific-vars)
+(push 'ivy--all-candidates pmv/cursor-specific-vars)
+(push 'ivy--old-text pmv/cursor-specific-vars)
+(push 'ivy--old-re pmv/cursor-specific-vars)
+; (push 'ivy--pulse-overlay pmv/cursor-specific-vars)
