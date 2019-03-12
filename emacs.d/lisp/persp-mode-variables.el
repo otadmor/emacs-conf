@@ -29,18 +29,18 @@
       )
     persp))
 
-; (defmacro ivy-quit-and-run-keep-windows (&rest body)
-;   "Quit the minibuffer and run BODY afterwards."
-;   (declare (indent 0))
-;   `(progn
-;      (run-at-time nil nil (lambda ()
-;                                  (let (
-;                                        (new-window-configuration (current-window-configuration))
-;                                        )
-;                                    (ivy-quit-and-run
-;                                      (set-window-configuration new-window-configuration)
-;                                      ,@body
-;                                      ))))))
+(defmacro ivy-quit-and-run-keep-windows (&rest body)
+  "Quit the minibuffer and run BODY afterwards."
+  (declare (indent 0))
+  `(progn
+     (run-at-time nil nil
+                  (lambda ()
+                    (let (
+                          (new-window-configuration (current-window-configuration))
+                          )
+                      (ivy-quit-and-run
+                        (set-window-configuration new-window-configuration)
+                        ,@body))))))
 
 (defun persp-variables-after-activate-hook(frame-or-window)
   (let (
@@ -54,25 +54,12 @@
             )
         (cond
          ((and previous-persp-has-minibuffer current-persp-has-minibuffer)
-          (run-at-time nil nil (lambda ()
-                                 (let (
-                                       (new-window-configuration (current-window-configuration))
-                                       )
-                                   (ivy-quit-and-run
-                                     (set-window-configuration new-window-configuration)
-                                     (ivy-resume)
-                                     )))))
+          (ivy-quit-and-run-keep-windows (ivy-resume)))
          ((and (not previous-persp-has-minibuffer) current-persp-has-minibuffer)
-          (run-at-time nil nil (lambda ()  (ivy-resume))))
+          (run-at-time nil nil (lambda () (ivy-resume))))
          ((and previous-persp-has-minibuffer (not current-persp-has-minibuffer))
-          (run-at-time nil nil (lambda ()
-                                 (let (
-                                       (new-window-configuration (current-window-configuration))
-                                       )
-                                   (ivy-quit-and-run
-                                     (set-window-configuration new-window-configuration)
-                                     ))))))
-    persp))))
+          (ivy-quit-and-run-keep-windows))))
+    persp)))
 
 (add-hook 'persp-before-deactivate-functions #'persp-variables-before-deactivate-hook)
 (add-hook 'persp-activated-functions #'persp-variables-after-activate-hook)
