@@ -570,6 +570,11 @@
       (kill-whole-line)
       (ivy--exhibit))))
 
+(define-key swiper-map (kbd "M-f")
+  (lambda () (interactive)
+    (ivy-quit-and-run
+      (counsel-ag ivy-text))))
+
 (defun swiper--goto-original-point()
   (interactive)
   (with-ivy-window
