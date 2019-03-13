@@ -260,11 +260,12 @@
 (defun switch-to-minibuffer ()
   "Switch to minibuffer window."
   (interactive)
-  (if (active-minibuffer-window)
-      (select-window (active-minibuffer-window))
-    (error "Minibuffer is not active")))
+  (when (active-minibuffer-window)
+      (if (eq (active-minibuffer-window) (frame-selected-window))
+          (select-window (get-mru-window))
+          (select-window (active-minibuffer-window))
+          )))
 (global-set-key (kbd "M-d") 'switch-to-minibuffer)
-
 
 (require 'redo+)
 (global-set-key [(control z)] 'undo)
