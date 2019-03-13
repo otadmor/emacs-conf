@@ -1139,6 +1139,11 @@ of a speedbar-window.  It will be created if necessary."
     (goto-char dumb-jump--opoint)
     ))
 
+(setq dumb-jump-last-query nil)
+(defalias 'dumb-jump-populate-regexes (lambda (look-for regexes variant)
+  "Take list of REGEXES and populate the LOOK-FOR target and return that list."
+  (setq dumb-jump-last-query look-for)
+  (--map (dumb-jump-populate-regex it look-for variant) regexes)))
 
 (defvar dumb-jump-ivy-map
   (let ((map (make-sparse-keymap)))
@@ -1146,6 +1151,11 @@ of a speedbar-window.  It will be created if necessary."
     (define-key map (kbd "<up>") (lambda() (interactive) (ivy-previous-line-and-call)))
     (define-key map (kbd "C-<up>") 'ivy-previous-line)
     (define-key map (kbd "C-<down>") 'ivy-next-line)
+    (define-key map (kbd "M-f")
+      (lambda () (interactive)
+        (ivy-quit-and-run
+          (counsel-ag dumb-jump-last-query)
+          )))
     (define-key map (kbd "C-l") 'ivy-call-and-recenter)
     (define-key map (kbd "M-C-p") 'dumb-jump--goto-original-point)
     (define-key map (kbd "M-C-n") (lambda () (interactive)))
