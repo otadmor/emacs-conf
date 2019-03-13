@@ -130,7 +130,7 @@ Use `winstack-push' and
                             (w (selected-window))
                             )
                         (if (minibufferp (window-buffer w))
-                            (get-lru-window)
+                            (get-mru-window)
                           w))))
             ;(window (display-buffer buffer))
             )
