@@ -75,6 +75,22 @@
                           (set-window-configuration ,conf)
                           ,@body)))))))
 
+(defmacro ivy-resume-keep-frame-selected-window (&rest body)
+  (let (
+        (win (gensym "selected-win"))
+        )
+    `(progn
+       (run-at-time nil nil
+                    (lambda ()
+                      (let (
+                            (,win (frame-selected-window))
+                            )
+                        (run-at-time nil nil
+                                     (lambda ()
+                                       (select-window ,win)
+                                       ,@body))
+                        (ivy-resume)))))))
+
 (defun persp-variables-before-deactivate-hook(frame-or-window)
   (ivy-cancel-timers)
   (setq persp-variables-has-minibuffer (not (null (active-minibuffer-window))))
@@ -90,12 +106,10 @@
     (lambda ()
       (ivy-cancel-timers)
       (pmv/restore-state-from-persp) ; should run after killing the minibuffer on deactivate.
-
-      ;; (when persp-variables-has-minibuffer-focus
-      ;;   (select-window (active-minibuffer-window)))
       (when (and ivy-last persp-variables-has-minibuffer)
-        ; (ivy-resume)))))
-        (run-at-time nil nil (lambda () (ivy-resume)))))))
+        (ivy-resume-keep-frame-selected-window
+         (when persp-variables-has-minibuffer-focus
+           (select-window (active-minibuffer-window))))))))
 
 (add-hook 'persp-before-deactivate-functions #'persp-variables-before-deactivate-hook)
 (add-hook 'persp-activated-functions #'persp-variables-after-activate-hook)
