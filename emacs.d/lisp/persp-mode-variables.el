@@ -62,39 +62,40 @@
 
 (defmacro ivy-quit-and-run-keep-windows (&rest body)
   "Quit the minibuffer and run BODY afterwards."
-  (declare (indent 0))
-  `(progn
-     (run-at-time nil nil
-                  (lambda ()
-                    (let (
-                          (new-window-configuration (current-window-configuration))
-                          )
-                      (when persp-variables-has-minibuffer-focus
-                        (select-window (active-minibuffer-window)))
-                      (ivy-quit-and-run
-                        (set-window-configuration new-window-configuration)
-                        ,@body))))))
+  (let (
+        (conf (gensym "window-conf"))
+        )
+    `(progn
+       (run-at-time nil nil
+                    (lambda ()
+                      (let (
+                            (,conf (current-window-configuration))
+                            )
+                        (ivy-quit-and-run
+                          (set-window-configuration ,conf)
+                          ,@body)))))))
 
 (defun persp-variables-before-deactivate-hook(frame-or-window)
   (ivy-cancel-timers)
   (setq persp-variables-has-minibuffer (not (null (active-minibuffer-window))))
   (setq persp-variables-has-minibuffer-focus (eq (active-minibuffer-window) (frame-selected-window)))
-  (when persp-variables-has-minibuffer
+  (when (and persp-variables-has-minibuffer persp-variables-has-minibuffer-focus)
     (select-window (ivy--get-window ivy-last)))
   (when (and ivy-last persp-variables-has-minibuffer)
-    (ivy-quit-and-run-keep-windows))
+    (ivy-quit-and-run-keep-windows)) ; quit must run async.
   (pmv/store-current-state-in-persp))
 
 (defun persp-variables-after-activate-hook(frame-or-window)
   (run-at-time nil nil
     (lambda ()
       (ivy-cancel-timers)
-      (let (
-            (persp (pmv/restore-state-from-persp))
-            )
-        (when (and ivy-last persp-variables-has-minibuffer)
-          (run-at-time nil nil (lambda () (ivy-resume))))
-        persp))))
+      (pmv/restore-state-from-persp) ; should run after killing the minibuffer on deactivate.
+
+      ;; (when persp-variables-has-minibuffer-focus
+      ;;   (select-window (active-minibuffer-window)))
+      (when (and ivy-last persp-variables-has-minibuffer)
+        ; (ivy-resume)))))
+        (run-at-time nil nil (lambda () (ivy-resume)))))))
 
 (add-hook 'persp-before-deactivate-functions #'persp-variables-before-deactivate-hook)
 (add-hook 'persp-activated-functions #'persp-variables-after-activate-hook)
