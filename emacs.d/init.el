@@ -621,6 +621,8 @@ If the input is empty, select the previous history element instead."
 (require 'counsel)
 (define-key counsel-ag-map (kbd "<down>") (lambda() (interactive) (ivy-next-line-and-call)))
 (define-key counsel-ag-map (kbd "<up>") (lambda() (interactive) (ivy-previous-line-and-call)))
+(define-key counsel-ag-map (kbd "C-<up>") 'ivy-previous-line)
+(define-key counsel-ag-map (kbd "C-<down>") 'ivy-next-line)
 
 ; (defvar ivy-grep-map
 ;   (let ((map (make-sparse-keymap)))
@@ -1142,6 +1144,8 @@ of a speedbar-window.  It will be created if necessary."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "<down>") (lambda() (interactive) (ivy-next-line-and-call)))
     (define-key map (kbd "<up>") (lambda() (interactive) (ivy-previous-line-and-call)))
+    (define-key map (kbd "C-<up>") 'ivy-previous-line)
+    (define-key map (kbd "C-<down>") 'ivy-next-line)
     (define-key map (kbd "C-l") 'ivy-call-and-recenter)
     (define-key map (kbd "M-C-p") 'dumb-jump--goto-original-point)
     (define-key map (kbd "M-C-n") (lambda () (interactive)))
