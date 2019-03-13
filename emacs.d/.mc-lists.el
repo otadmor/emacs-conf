@@ -45,4 +45,14 @@
         prev-buffer
         swiper
         swiper-mc
+        perspsw1
+        perspsw2
+        perspsw3
+        perspsw4
+        perspsw5
+        perspsw6
+        perspsw7
+        perspsw8
+        perspsw9
+        perspsw0
         ))
