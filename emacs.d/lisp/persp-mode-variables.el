@@ -78,8 +78,6 @@
 (defun persp-variables-before-deactivate-hook(frame-or-window)
   (ivy-cancel-timers)
   (setq persp-variables-has-minibuffer (not (null (active-minibuffer-window))))
-  (when persp-variables-has-minibuffer
-    (setq ivy-text (with-selected-window (active-minibuffer-window) (ivy--input))))
   (setq persp-variables-has-minibuffer-focus (eq (active-minibuffer-window) (frame-selected-window)))
   (when persp-variables-has-minibuffer
     (select-window (ivy--get-window ivy-last)))
