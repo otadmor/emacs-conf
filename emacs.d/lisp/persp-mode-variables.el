@@ -3,14 +3,12 @@
 
 ;; COPIED FROM multiple-cursors-core.el
 (setq persp-variables-has-minibuffer nil)
-(setq persp-variables-minibuffer-input "")
 (setq persp-variables-has-minibuffer-focus nil)
 
 (defvar pmv/cursor-specific-vars nil
   "A list of vars that need to be tracked on a per-perspective basis.")
 
 (push 'persp-variables-has-minibuffer pmv/cursor-specific-vars)
-(push 'persp-variables-minibuffer-input pmv/cursor-specific-vars)
 (push 'persp-variables-has-minibuffer-focus pmv/cursor-specific-vars)
 
 
@@ -62,46 +60,10 @@
     (setq ivy--exhibit-timer nil)
     (ivy--exhibit)))
 
-(defun persp-variables-before-deactivate-hook(frame-or-window)
-  (ivy-cancel-timers)
-  (setq persp-variables-has-minibuffer (not (null (active-minibuffer-window))))
-  (when persp-variables-has-minibuffer
-    (with-selected-window (active-minibuffer-window)
-      (setq persp-variables-minibuffer-input (ivy--input))))
-  (setq persp-variables-has-minibuffer-focus (eq (active-minibuffer-window) (frame-selected-window)))
-  ; (message "has-focus %S" persp-variables-has-minibuffer-focus)
-  (let (
-        (persp (pmv/store-current-state-in-persp))
-        )
-    (when persp-variables-has-minibuffer
-      (select-window (ivy--get-window ivy-last))
-      )
-    persp))
-
-
-(defun ivy--cleanup-input ()
-  "Delete the input text."
-  (goto-char (minibuffer-prompt-end))
-  (delete-region (minibuffer-prompt-end) (line-end-position)))
-
-(defun ivy--set-input (text)
-  "Delete the input text."
-  (insert text)
-  (undo-boundary)
-  (insert "\\_>")
-  (goto-char (minibuffer-prompt-end))
-  (insert "\\_<")
-  (forward-char (+ 2 (length text))))
-
-(defun ivy--reset-input (text)
-  (ivy--cleanup-input)
-  (ivy--set-input text))
-
 (defmacro ivy-quit-and-run-keep-windows (&rest body)
   "Quit the minibuffer and run BODY afterwards."
   (declare (indent 0))
   `(progn
-     (ivy-cancel-timers)
      (run-at-time nil nil
                   (lambda ()
                     (let (
@@ -109,51 +71,35 @@
                           )
                       (when persp-variables-has-minibuffer-focus
                         (select-window (active-minibuffer-window)))
-                      (ivy-cancel-timers)
                       (ivy-quit-and-run
                         (set-window-configuration new-window-configuration)
                         ,@body))))))
 
-
-(defun ivy--maybe-null(orig-fun &rest args)
-  (when ivy-last
-    (apply orig-fun args)))
-(advice-add 'ivy--exhibit :around #'ivy--maybe-null)
-; (advice-add 'ivy--queue-exhibit :around #'ivy--maybe-null)
-; (advice-add 'ivy-state-dynamic-collection :around #'ivy--maybe-null)
+(defun persp-variables-before-deactivate-hook(frame-or-window)
+  (ivy-cancel-timers)
+  (setq persp-variables-has-minibuffer (not (null (active-minibuffer-window))))
+  (when persp-variables-has-minibuffer
+    (setq ivy-text (with-selected-window (active-minibuffer-window) (ivy--input))))
+  (setq persp-variables-has-minibuffer-focus (eq (active-minibuffer-window) (frame-selected-window)))
+  (when persp-variables-has-minibuffer
+    (select-window (ivy--get-window ivy-last)))
+  (when (and ivy-last persp-variables-has-minibuffer)
+    (ivy-quit-and-run-keep-windows))
+  (pmv/store-current-state-in-persp))
 
 (defun persp-variables-after-activate-hook(frame-or-window)
-  (let (
-        (previous-persp-has-minibuffer (and ivy-last persp-variables-has-minibuffer))
-        )
-    (let (
-          (persp (pmv/restore-state-from-persp))
-          )
+  (run-at-time nil nil
+    (lambda ()
+      (ivy-cancel-timers)
       (let (
-            (current-persp-has-minibuffer (and ivy-last persp-variables-has-minibuffer))
+            (persp (pmv/restore-state-from-persp))
             )
-        (ivy-cancel-timers)
-        (cond
-         ((and previous-persp-has-minibuffer current-persp-has-minibuffer)
-          (ivy-quit-and-run-keep-windows
-            (setq ivy-text persp-variables-minibuffer-input)
-            ; (run-at-time nil nil (lambda ()
-            ;                        (when persp-variables-has-minibuffer-focus
-                                     ; (select-window (active-minibuffer-window)))))
-            (ivy-resume)))
-         ((and (not previous-persp-has-minibuffer) current-persp-has-minibuffer)
-          (run-at-time nil nil (lambda ()
-                                 (setq ivy-text persp-variables-minibuffer-input)
-                                 ; (run-at-time nil nil (lambda ()
-                                 ;                        (when persp-variables-has-minibuffer-focus
-                                 ;                          (select-window (active-minibuffer-window)))))
-                                 (ivy-resume))))
-         ((and previous-persp-has-minibuffer (not current-persp-has-minibuffer))
-          (ivy-quit-and-run-keep-windows))))
-      (ivy--exhibit)
-    persp)))
+        (when (and ivy-last persp-variables-has-minibuffer)
+          (run-at-time nil nil (lambda () (ivy-resume))))
+        persp))))
 
 (add-hook 'persp-before-deactivate-functions #'persp-variables-before-deactivate-hook)
 (add-hook 'persp-activated-functions #'persp-variables-after-activate-hook)
+
 
 (provide 'persp-mode-variables)
