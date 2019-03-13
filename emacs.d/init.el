@@ -211,8 +211,73 @@
 
 (require 'grep)
 (defun nice-rgrep() (interactive) (grep-compute-defaults) (rgrep (grep-read-regexp) "*" default-directory nil))
-; (global-set-key [(meta f)] 'nice-rgrep)
-(global-set-key [(meta f)] 'counsel-ag)
+;; (global-set-key [(meta f)] 'nice-rgrep)
+
+(defun ag--format-result (proj result)
+  (format "%s:%s: %s"
+          (s-replace proj "" (plist-get result :path))
+          (plist-get result :line)
+          (plist-get result :context)))
+
+
+(defun preselect-line(proj)
+  (with-selected-window (if (active-minibuffer-window)
+                            (if (eq (active-minibuffer-window) (frame-selected-window))
+                                (get-mru-window)
+                              (frame-selected-window))
+                          (frame-selected-window))
+    (let (
+          (pselect-record (list :path buffer-file-name
+                                :line (string-to-number (format-mode-line "%l"))
+                                :context (replace-regexp-in-string "\n$" "" (thing-at-point 'line t))))
+          )
+      (ag--format-result (expand-file-name proj) pselect-record))))
+
+
+(defun counsel-ag-preselect (&optional initial-input initial-directory extra-ag-args ag-prompt)
+  "Grep for a string in the current directory using ag.
+INITIAL-INPUT can be given as the initial minibuffer input.
+INITIAL-DIRECTORY, if non-nil, is used as the root directory for search.
+EXTRA-AG-ARGS string, if non-nil, is appended to `counsel-ag-base-command'.
+AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
+  (interactive)
+  (setq counsel-ag-command counsel-ag-base-command)
+  (counsel-require-program (car (split-string counsel-ag-command)))
+  (when current-prefix-arg
+    (setq initial-directory
+          (or initial-directory
+              (read-directory-name (concat
+                                    (car (split-string counsel-ag-command))
+                                    " in directory: "))))
+    (setq extra-ag-args
+          (or extra-ag-args
+              (read-from-minibuffer (format
+                                     "%s args: "
+                                     (car (split-string counsel-ag-command)))))))
+  (setq counsel-ag-command (counsel--format-ag-command (or extra-ag-args "") "%s"))
+  (let ((default-directory (or initial-directory
+                               (locate-dominating-file default-directory ".git")
+                               default-directory)))
+    (let (
+          (preselect (preselect-line default-directory))
+          )
+      (message "dir=3D%S" default-directory)
+      (message "preselect=3D%S" preselect)
+      (ivy-read (or ag-prompt
+                    (concat (car (split-string counsel-ag-command)) ": "))
+                #'counsel-ag-function
+                :initial-input initial-input
+                :preselect preselect
+                :dynamic-collection t
+                :keymap counsel-ag-map
+                :history 'counsel-git-grep-history
+                :action #'counsel-git-grep-action
+                :unwind (lambda ()
+                          (counsel-delete-process)
+                          (swiper--cleanup))
+                :caller 'counsel-ag))))
+
+(global-set-key [(meta f)] 'counsel-ag-preselect)
 (global-set-key [f4] 'next-error)
 (global-set-key [(shift f4)] 'previous-error)
 (global-set-key [f1] 'manual-entry)
@@ -574,7 +639,7 @@
 (define-key swiper-map (kbd "M-f")
   (lambda () (interactive)
     (ivy-quit-and-run
-      (counsel-ag ivy-text))))
+      (counsel-ag-preselect ivy-text))))
 
 (defun swiper--goto-original-point()
   (interactive)
@@ -1155,7 +1220,7 @@ of a speedbar-window.  It will be created if necessary."
     (define-key map (kbd "M-f")
       (lambda () (interactive)
         (ivy-quit-and-run
-          (counsel-ag dumb-jump-last-query)
+          (counsel-ag-preselect dumb-jump-last-query)
           )))
     (define-key map (kbd "C-l") 'ivy-call-and-recenter)
     (define-key map (kbd "M-C-p") 'dumb-jump--goto-original-point)
