@@ -206,7 +206,7 @@ determine the exact padding."
 
    ;; markdown-mode
    (markdown-markup-face :foreground base5)
-   (markdown-header-face :inherit 'bold :foreground green)
+   (markdown-header-face :foreground green) ; :inherit 'bold
    (markdown-code-face :background (doom-lighten base3 0.05)))
 
   ;; --- extra variables ---------------------
