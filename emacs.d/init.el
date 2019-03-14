@@ -214,7 +214,7 @@
 ;; (global-set-key [(meta f)] 'nice-rgrep)
 
 (defun ag--format-result (proj result)
-  (format "%s:%s: %s"
+  (format "%s:%s:%s"
           (s-replace proj "" (plist-get result :path))
           (plist-get result :line)
           (plist-get result :context)))
@@ -233,6 +233,8 @@
           )
       (ag--format-result (expand-file-name proj) pselect-record))))
 
+(require 'ivy)
+; (push '(counsel-ag . ivy-recompute-index-swiper-async) ivy-index-functions-alist)
 
 (defun counsel-ag-preselect (&optional initial-input initial-directory extra-ag-args ag-prompt)
   "Grep for a string in the current directory using ag.
@@ -261,8 +263,6 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
     (let (
           (preselect (preselect-line default-directory))
           )
-      (message "dir=3D%S" default-directory)
-      (message "preselect=3D%S" preselect)
       (ivy-read (or ag-prompt
                     (concat (car (split-string counsel-ag-command)) ": "))
                 #'counsel-ag-function
