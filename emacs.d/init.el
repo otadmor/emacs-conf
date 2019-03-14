@@ -619,8 +619,9 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 (define-key ivy-minibuffer-map [(meta shift t)] 'ivy-new-shell)
 (define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
 (define-key ivy-minibuffer-map [(meta h)] 'ivy-magit-status)
-(global-set-key (kbd "C-s") 'swiper)
-(global-set-key (kbd "C-r") 'swiper)
+(global-set-key (kbd "M-c") 'ivy-resume)
+(global-set-key (kbd "C-s") 'counsel-grep-or-swiper)
+(global-set-key (kbd "C-r") 'counsel-grep-or-swiper)
 (global-set-key (kbd "C-c C-a") 'mcs-swiper)
 
 ;;(global-set-key (kbd "C-/") (lambda () (interactive) (ivy-exit-with-action (lambda (_) (my-comment-or-uncomment-region)))))
