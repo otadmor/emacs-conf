@@ -717,8 +717,7 @@ If the input is empty, select the previous history element instead."
 
 ; (global-set-key [(meta f)] 'ivy-grep)
 
-
-(add-hook 'after-init-hook 'global-company-mode)
+(require 'swiper-async)
 
 ; (defun complete-or-indent ()
 ;     (interactive)
@@ -728,6 +727,7 @@ If the input is empty, select the previous history element instead."
 ; ;(global-set-key [(tab)] 'complete-or-indent)
 
 (require 'company)
+(add-hook 'after-init-hook 'global-company-mode)
 (global-set-key (kbd "C-SPC") 'company-complete)
 
 (require 'company-irony)

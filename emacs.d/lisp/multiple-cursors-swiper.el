@@ -56,7 +56,7 @@
   (minibuffer-keyboard-quit))
 
 
-(cl-defun swiper--mcs-candidates (&optional numbers-width &key advancer1 initiater1)
+(cl-defun swiper--mcs-candidates (&optional numbers-width &key advancer1 initiater1 use-marker use-format-mode-line)
   "Return a list of this buffer lines.
 NUMBERS-WIDTH, when specified, is used for width spec of line
 numbers; replaces calculating the width from buffer line count."
@@ -76,12 +76,10 @@ numbers; replaces calculating the width from buffer line count."
           (setq swiper-use-visual-line t))
       (setq swiper-use-visual-line nil))
     (unless (zerop n-lines)
-
       (setq swiper--width (or numbers-width
                               (1+ (floor (log n-lines 10)))))
       (setq swiper--format-spec
             (format "%%-%dd " swiper--width))
-
       (let ((line-number 0)
             (advancer (if advancer1 advancer1
                         (if swiper-use-visual-line
@@ -90,7 +88,6 @@ numbers; replaces calculating the width from buffer line count."
             (initiater (if initiater1 initiater1
                          (lambda () (goto-char (point-min)))))
             candidates)
-
         (mc/save-excursion
          (mc/save-window-scroll
           (save-excursion
@@ -101,7 +98,7 @@ numbers; replaces calculating the width from buffer line count."
                 (setq str (ivy-cleanup-string str))
                 (let ((line-number-str
                        (format swiper--format-spec
-                               (if advancer1
+                               (if use-format-mode-line
                                    (setq line-number (string-to-number (format-mode-line "%l")))
                                  (cl-incf line-number)
                                  ))))
@@ -110,9 +107,11 @@ numbers; replaces calculating the width from buffer line count."
                     (put-text-property
                      0 1 'display line-number-str str))
                   (put-text-property
-                   0 1 'swiper-line-number line-number-str str))
+                   0 1 'swiper-line-number line-number-str str)
+                  ; (message "line %S" line-number-str)
+                  )
                 (put-text-property
-                 0 1 'region-data (if advancer1
+                 0 1 'region-data (if use-marker
                                       (list
                                        (set-marker (make-marker)
                                                    (let ((mark-even-if-inactive t))
@@ -292,7 +291,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                            (cl-incf i))))
           )
       (let (
-            (candidates (swiper--candidates nil :advancer1 mc-advancer :initiater1 mc-advancer))
+            (candidates (swiper--candidates nil :advancer1 mc-advancer :initiater1 mc-advancer :use-marker t :use-format-mode-line t))
             )
         (let (
               (res (swiper--ivy candidates initial-input))
