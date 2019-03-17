@@ -56,7 +56,28 @@
   (minibuffer-keyboard-quit))
 
 
-(cl-defun swiper--mcs-candidates (&optional numbers-width &key advancer1 initiater1 use-marker use-format-mode-line)
+(defun swiper--fill-candidate-properties (str swiper--format-spec line-no use-marker)
+  (setq str (ivy-cleanup-string str))
+  (let ((line-number-str (format swiper--format-spec line-no)))
+    (if swiper-include-line-number-in-search
+        (setq str (concat line-number-str str))
+      (put-text-property
+       0 1 'display line-number-str str))
+    (put-text-property
+     0 1 'swiper-line-number line-number-str str)
+    ;; (message "line %S" line-number-str)
+    )
+  (put-text-property
+   0 1 'region-data (if use-marker
+                        (list
+                         (set-marker (make-marker)
+                                     (let ((mark-even-if-inactive t))
+                                       (mark)))
+                         (set-marker (make-marker) (point)))
+                      nil) str)
+  str)
+
+(cl-defun swiper--mcs-candidates (&optional numbers-width &key advancer1 initiater1 use-marker use-format-mode-line include-empty-last-line)
   "Return a list of this buffer lines.
 NUMBERS-WIDTH, when specified, is used for width spec of line
 numbers; replaces calculating the width from buffer line count."
@@ -94,33 +115,27 @@ numbers; replaces calculating the width from buffer line count."
             (funcall initiater)
             (swiper-font-lock-ensure)
             (while (< (point) (point-max))
-              (let ((str (save-excursion (beginning-of-line) (swiper--line))))
-                (setq str (ivy-cleanup-string str))
-                (let ((line-number-str
-                       (format swiper--format-spec
-                               (if use-format-mode-line
-                                   (setq line-number (string-to-number (format-mode-line "%l")))
-                                 (cl-incf line-number)
-                                 ))))
-                  (if swiper-include-line-number-in-search
-                      (setq str (concat line-number-str str))
-                    (put-text-property
-                     0 1 'display line-number-str str))
-                  (put-text-property
-                   0 1 'swiper-line-number line-number-str str)
-                  ; (message "line %S" line-number-str)
-                  )
-                (put-text-property
-                 0 1 'region-data (if use-marker
-                                      (list
-                                       (set-marker (make-marker)
-                                                   (let ((mark-even-if-inactive t))
-                                                     (mark)))
-                                       (set-marker (make-marker) (point)))
-                                    nil) str)
-                (push str candidates))
+              (push (swiper--fill-candidate-properties
+                     (save-excursion (beginning-of-line) (swiper--line))
+                     swiper--format-spec
+                     (if use-format-mode-line
+                         (setq line-number (string-to-number (format-mode-line "%l")))
+                       (cl-incf line-number)
+                       )
+                     use-marker)
+                    candidates)
               (funcall advancer 1))
-            )))
+            (when (and include-empty-last-line
+                       (= (line-beginning-position) (line-end-position)))
+              (push (swiper--fill-candidate-properties
+                     (save-excursion (beginning-of-line) (swiper--line))
+                     swiper--format-spec
+                     (if use-format-mode-line
+                         (setq line-number (string-to-number (format-mode-line "%l")))
+                       (cl-incf line-number)
+                       )
+                     use-marker)
+                    candidates)))))
         (nreverse candidates)))))
 
 (defalias 'swiper--candidates 'swiper--mcs-candidates)
