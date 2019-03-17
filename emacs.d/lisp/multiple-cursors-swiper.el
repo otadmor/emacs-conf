@@ -65,6 +65,8 @@
        0 1 'display line-number-str str))
     (put-text-property
      0 1 'swiper-line-number line-number-str str)
+    (put-text-property
+     0 1 'swiper-no-line-number line-no str)
     ;; (message "line %S" line-number-str)
     )
   (put-text-property

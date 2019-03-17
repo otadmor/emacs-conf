@@ -30,6 +30,8 @@
   :type 'integer)
 
 (defun swiper--get-line (item)
+  (get-text-property 0 'swiper-no-line-number item))
+(defun swiper--get-str-line (item)
   (get-text-property 0 'swiper-line-number item))
 (defun swiper--get-begin (item)
   (get-text-property 0 'begin item))
@@ -88,10 +90,10 @@ Update the minibuffer with the amount of lines collected every
             )
         (cl-loop for cand in ivy--all-candidates do
                  (when (> (length new-candidates) 0)
-                   (when (string= (swiper--get-line cand)
+                   (when (= (swiper--get-line cand)
                                   (swiper--get-line first-new-candidate))
                      (setq first-index i))
-                   (when (string= (swiper--get-line cand)
+                   (when (= (swiper--get-line cand)
                                   (swiper--get-line last-new-candidate))
                      (setq last-index i)))
                    (let (
@@ -152,7 +154,7 @@ Update the minibuffer with the amount of lines collected every
               (dolist (cand cand-lasts new-cand-lasts)
                 (push (swiper--fill-candidate-properties
                        (if swiper-include-line-number-in-search
-                           (string-remove-prefix (swiper--get-line cand) cand)
+                           (string-remove-prefix (swiper--get-str-line cand) cand)
                          cand)
                        swiper--format-spec i nil) new-cand-lasts)
                 (cl-incf i))
