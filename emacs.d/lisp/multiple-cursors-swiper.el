@@ -61,8 +61,9 @@
   (let ((line-number-str (format swiper--format-spec line-no)))
     (if swiper-include-line-number-in-search
         (setq str (concat line-number-str str))
-      (put-text-property
-       0 1 'display line-number-str str))
+      ; (put-text-property
+       ; 0 1 'display line-number-str str)
+      )
     (put-text-property
      0 1 'swiper-line-number line-number-str str)
     (put-text-property

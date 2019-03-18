@@ -3,6 +3,21 @@
 (require 'ivy)
 (require 'multiple-cursors-swiper) ; for candidates with advancer and initiater
 
+(setq swiper-include-line-number-in-search nil)
+(defun swiper-line-transformer (str)
+  (let (
+        (n-lines (length ivy--all-candidates))
+        )
+    (let (
+          (swiper--width (1+ (floor (log n-lines 10))))
+          )
+      (let (
+            (swiper--format-spec (format "%%-%dd: " swiper--width))
+            )
+        (concat (format swiper--format-spec (swiper--get-line str)) str)))))
+(ivy-set-display-transformer 'swiper 'swiper-line-transformer)
+
+
 (defun swiper--async-candidates (addition-begin addition-end)
   (let (
         (swiper-async-initiater (lambda ()
