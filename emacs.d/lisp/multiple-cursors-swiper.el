@@ -176,7 +176,8 @@ numbers; replaces calculating the width from buffer line count."
             (unless (memq this-command '(ivy-yank-word
                                          ivy-yank-symbol
                                          ivy-yank-char
-                                         scroll-other-window))
+                                         scroll-other-window
+                                         swiper-async))
               (when (cl-plusp num)
                 (unless (if swiper--current-line
                             (eq swiper--current-line num)

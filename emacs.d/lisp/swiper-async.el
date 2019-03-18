@@ -186,6 +186,7 @@ Update the minibuffer with the amount of lines collected every
     (setq ivy--old-cands ivy--all-candidates)
     (let (
           (fmt (ivy--format ivy--all-candidates))
+          (this-command 'swiper-async)
           )
       (ivy--insert-minibuffer fmt))
     (setq counsel--async-time (current-time))))
