@@ -117,6 +117,7 @@
 
 (push 'ivy-last pmv/cursor-specific-vars)
 (push 'ivy-text pmv/cursor-specific-vars)
+(push 'ivy--orig-cands pmv/cursor-specific-vars)
 (push 'ivy--all-candidates pmv/cursor-specific-vars)
 (push 'ivy--old-text pmv/cursor-specific-vars)
 (push 'ivy--old-re pmv/cursor-specific-vars)

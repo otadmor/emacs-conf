@@ -78,6 +78,9 @@
       str)))
 (defalias 'swiper--line 'swiper--line-with-borders)
 
+(defvar ivy--orig-cands nil
+  "Store the original candidates found.")
+
 (defun swiper--async-filter (buffer begin end deleted-length)
   "Receive from buffer the output STR.
 Update the minibuffer with the amount of lines collected every
@@ -86,31 +89,33 @@ Update the minibuffer with the amount of lines collected every
              ;; (time-less-p (list 0 0 swiper-async-filter-update-time)
              ;; (time-since counsel--async-time))
              )
-    (setq ivy--old-cands ivy--all-candidates)
     (let (
-          (chars-diff (- (- end begin) deleted-length))
-          (new-candidates (with-current-buffer buffer (swiper--async-candidates begin end)))
+          (working-candidates ivy--orig-cands) ; work on unfiltered candidates
           )
       (let (
-            (cands)
-            (first-new-candidate (first new-candidates))
-            (last-new-candidate (car (last new-candidates)))
-            (i 0)
-            (first-index)
-            (last-index)
-            (deleted-lines 0)
-            (added-lines 0)
-            (deleted-leftover deleted-length)
-            (lines-diff 0)
+            (chars-diff (- (- end begin) deleted-length))
+            (new-candidates (with-current-buffer buffer (swiper--async-candidates begin end)))
             )
-        (cl-loop for cand in ivy--all-candidates do
-                 (when (> (length new-candidates) 0)
-                   (when (= (swiper--get-line cand)
-                                  (swiper--get-line first-new-candidate))
-                     (setq first-index i))
-                   (when (= (swiper--get-line cand)
-                                  (swiper--get-line last-new-candidate))
-                     (setq last-index i)))
+        (let (
+              (cands)
+              (first-new-candidate (first new-candidates))
+              (last-new-candidate (car (last new-candidates)))
+              (i 0)
+              (first-index)
+              (last-index)
+              (deleted-lines 0)
+              (added-lines 0)
+              (deleted-leftover deleted-length)
+              (lines-diff 0)
+              )
+          (cl-loop for cand in working-candidates do
+                   (when (> (length new-candidates) 0)
+                     (when (= (swiper--get-line cand)
+                              (swiper--get-line first-new-candidate))
+                       (setq first-index i))
+                     (when (= (swiper--get-line cand)
+                              (swiper--get-line last-new-candidate))
+                       (setq last-index i)))
                    (let (
                          (cand-begin (swiper--get-begin cand))
                          (cand-end (swiper--get-end cand))
@@ -133,62 +138,58 @@ Update the minibuffer with the amount of lines collected every
                              (when (= left-in-line drained-length)
                                (cl-incf deleted-lines))
                              (setq deleted-leftover (- deleted-leftover
-                                                       drained-length))
-                             )
-                           )
-                         )
-                       )
-                     )
+                                                       drained-length)))))))
                    (cl-incf i))
-        (when (null first-index)
-          (setq first-index (length ivy--all-candidates)))
-        (when (null last-index)
-          (setq last-index (length ivy--all-candidates)))
-        (setq added-lines (+ (- last-index first-index) 1))
-        (setq deleted-lines (+ deleted-lines 1))
-        (unless (= deleted-leftover 0)
-          (message "WARNING - deleted-leftover (=%S) != 0" deleted-leftover))
-        (unless (= (length new-candidates) added-lines)
-          (message "WARNING - amount of added cands %S != diff of first %S and last %S lines = %S" (length new-candidates) last-index first-index added-lines))
-        (let (
-              (cand-lasts (nthcdr (+ first-index deleted-lines)
-                                  ivy--all-candidates))
-              (i (+ first-index added-lines 1))
-              )
+          (when (null first-index)
+            (setq first-index (length working-candidates)))
+          (when (null last-index)
+            (setq last-index (length working-candidates)))
+          (setq added-lines (length new-candidates))
+          (setq deleted-lines (+ deleted-lines 1))
+          (unless (= deleted-leftover 0)
+            (message "WARNING - deleted-leftover (=%S) != 0" deleted-leftover))
+          (unless (= added-lines (+ (- last-index first-index) 1))
+            (message "WARNING - amount of added cands %S != diff of first %S and last %S lines = %S" (length new-candidates) last-index first-index added-lines))
           (let (
-                (n-lines (+ first-index added-lines (length cand-lasts)))
+                (cand-lasts (nthcdr (+ first-index deleted-lines) working-candidates))
+                (i (+ first-index added-lines 1))
                 )
             (let (
-                  (numbers-width nil) ; &optional numbers-width
+                  (n-lines (+ first-index added-lines (length cand-lasts)))
                   )
-            (setq swiper--width (or numbers-width (1+ (floor (log n-lines 10)))))
-            (setq swiper--format-spec (format "%%-%dd " swiper--width))
-            (let (
-                  (new-cand-lasts)
-                  )
-              (dolist (cand cand-lasts new-cand-lasts)
-                (push (swiper--fill-candidate-properties
-                       (if swiper-include-line-number-in-search
-                           (string-remove-prefix (swiper--get-str-line cand) cand)
-                         cand)
-                       swiper--format-spec i nil) new-cand-lasts)
-                (cl-incf i))
-              (setq new-cand-lasts (nreverse new-cand-lasts))
-              (if (= (length new-candidates) 0)
-                  (setq new-candidates new-cand-lasts)
-                (setcdr (last new-candidates) new-cand-lasts))))))
-        (if (> first-index 0)
-            (setcdr (nthcdr (- first-index 1) ivy--all-candidates)
-                    new-candidates)
-          (setq ivy--all-candidates new-candidates))
-        (setq ivy--index (+ ivy--index lines-diff))))
-    (ivy--set-candidates ivy--all-candidates)
-    (setq ivy--old-cands ivy--all-candidates)
+              (let (
+                    (numbers-width nil) ; &optional numbers-width
+                    )
+                (setq swiper--width (or numbers-width (1+ (floor (log n-lines 10)))))
+                (setq swiper--format-spec (format "%%-%dd " swiper--width))
+                (let (
+                      (new-cand-lasts)
+                      )
+                  (dolist (cand cand-lasts new-cand-lasts)
+                    (push (swiper--fill-candidate-properties
+                           (if swiper-include-line-number-in-search
+                               (string-remove-prefix (swiper--get-str-line cand) cand)
+                             cand)
+                           swiper--format-spec i nil) new-cand-lasts)
+                    (cl-incf i))
+                  (setq new-cand-lasts (nreverse new-cand-lasts))
+                  (if (= (length new-candidates) 0)
+                      (setq new-candidates new-cand-lasts)
+                    (setcdr (last new-candidates) new-cand-lasts))))))
+          (if (> first-index 0)
+              (setcdr (nthcdr (- first-index 1) working-candidates)
+                      new-candidates)
+            (setq working-candidates new-candidates))
+          (setq ivy--index (+ ivy--index lines-diff))))
+      (ivy--set-candidates working-candidates))
+    (setq ivy--orig-cands ivy--all-candidates)
     (let (
-          (fmt (ivy--format ivy--all-candidates))
           (this-command 'swiper-async)
           )
-      (ivy--insert-minibuffer fmt))
+      (ivy--insert-minibuffer
+       (with-current-buffer (ivy-state-buffer ivy-last)
+         (ivy--format
+          (ivy--filter ivy-text ivy--all-candidates)))))
     (setq counsel--async-time (current-time))))
 
 (defun swiper-async-after-change(begin end deleted-length)
@@ -196,21 +197,10 @@ Update the minibuffer with the amount of lines collected every
 
 (defun swiper-async-function (string)
   "Grep in the current directory for STRING."
-  (when (= (length ivy--all-candidates) 0)
-    (let ((regex (counsel--elisp-to-pcre
-                  (setq ivy--old-re
-                        (ivy--regex string)))))
-      (setq counsel--async-time (current-time))
-      (setq counsel--async-start counsel--async-time)
-      (setq swiper-use-visual-line nil)
-      (with-ivy-window
-        (let (
-              (start (point-min))
-              (end (point-max))
-              )
-          (add-hook 'after-change-functions #'swiper-async-after-change t t)
-          (swiper-async-after-change start end 0)))))
-    (ivy--filter ivy-text ivy--all-candidates))
+  ; (counsel--elisp-to-pcre (setq ivy--old-re (ivy--regex string)))
+    (if (string= ivy-text "")
+        ivy--orig-cands
+      (ivy--filter ivy-text ivy--orig-cands)))
 
 (defun swiper-async--cleanup ()
   (with-ivy-window
@@ -239,6 +229,17 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         res)
     (setq ivy--old-cands nil)
     (setq ivy--all-candidates nil)
+    (setq ivy--orig-cands nil)
+    (setq counsel--async-time (current-time))
+    (setq counsel--async-start counsel--async-time)
+    (setq swiper-use-visual-line nil)
+    (with-ivy-window
+      (let (
+            (start (point-min))
+            (end (point-max))
+            )
+        (add-hook 'after-change-functions #'swiper-async-after-change t t)
+        (swiper-async-after-change start end 0)))
     (unwind-protect
          (and
           (setq res
