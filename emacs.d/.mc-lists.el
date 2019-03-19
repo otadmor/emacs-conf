@@ -55,4 +55,7 @@
         perspsw8
         perspsw9
         perspsw0
+        next-error-no-select
+        kill-buffer
+        compile-goto-error
         ))
