@@ -518,19 +518,8 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 ;    )
 ;  )
 
-
-;(defun goto-def()
-;    (interactive)
-;    ;(call-interactively 'ami-cscope-at-point)
-;)
-
-(defun winstack-goto-def-and-push()
-  (interactive)
-    (semantic-symref-symbol (symbol-at-point))
-    (winstack-push)
-)
-
-
+; (semantic-symref-symbol (symbol-at-point))
+; (call-interactively 'ami-cscope-at-point)
 
 
 
