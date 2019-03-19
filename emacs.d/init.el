@@ -653,6 +653,9 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 
 (define-key swiper-map (kbd "M-C-p") 'swiper--goto-original-point)
 
+(require 'counsel)
+(define-key counsel-find-file-map (kbd "C-o") (lambda () (interactive) (counsel-find-file-as-root ivy-text)))
+
 
 (global-set-key (kbd "C-x C-f") 'counsel-find-file)
 (global-set-key (kbd "M-x") 'counsel-M-x)
