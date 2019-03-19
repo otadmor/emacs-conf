@@ -91,12 +91,14 @@ Update the minibuffer with the amount of lines collected every
              )
     (let (
           (working-candidates ivy--orig-cands) ; work on unfiltered candidates
+          (original-candidates-length (length ivy--orig-cands))
           )
       (let (
             (chars-diff (- (- end begin) deleted-length))
             (new-candidates (with-current-buffer buffer (swiper--async-candidates begin end)))
             )
         (let (
+              (new-candidates-length (length new-candidates))
               (cands)
               (first-new-candidate (first new-candidates))
               (last-new-candidate (car (last new-candidates)))
@@ -109,7 +111,7 @@ Update the minibuffer with the amount of lines collected every
               (lines-diff 0)
               )
           (cl-loop for cand in working-candidates do
-                   (when (> (length new-candidates) 0)
+                   (when (> new-candidates-length 0)
                      (when (= (swiper--get-line cand)
                               (swiper--get-line first-new-candidate))
                        (setq first-index i))
@@ -141,15 +143,15 @@ Update the minibuffer with the amount of lines collected every
                                                        drained-length)))))))
                    (cl-incf i))
           (when (null first-index)
-            (setq first-index (length working-candidates)))
+            (setq first-index original-candidates-length))
           (when (null last-index)
-            (setq last-index (length working-candidates)))
-          (setq added-lines (length new-candidates))
+            (setq last-index original-candidates-length))
+          (setq added-lines new-candidates-length)
           (setq deleted-lines (+ deleted-lines 1))
           (unless (= deleted-leftover 0)
             (message "WARNING - deleted-leftover (=%S) != 0" deleted-leftover))
           (unless (= added-lines (+ (- last-index first-index) 1))
-            (message "WARNING - amount of added cands %S != diff of first %S and last %S lines = %S" (length new-candidates) last-index first-index added-lines))
+            (message "WARNING - amount of added cands %S != diff of first %S and last %S lines = %S" new-candidates-length last-index first-index added-lines))
           (let (
                 (cand-lasts (nthcdr (+ first-index deleted-lines) working-candidates))
                 (i (+ first-index added-lines 1))
@@ -173,7 +175,7 @@ Update the minibuffer with the amount of lines collected every
                            swiper--format-spec i nil) new-cand-lasts)
                     (cl-incf i))
                   (setq new-cand-lasts (nreverse new-cand-lasts))
-                  (if (= (length new-candidates) 0)
+                  (if (= new-candidates-length 0)
                       (setq new-candidates new-cand-lasts)
                     (setcdr (last new-candidates) new-cand-lasts))))))
           (if (> first-index 0)
