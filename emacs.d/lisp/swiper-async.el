@@ -6,7 +6,7 @@
 (setq swiper-include-line-number-in-search nil)
 (defun swiper-line-transformer (str)
   (let (
-        (n-lines (length ivy--all-candidates))
+        (n-lines (length ivy--all-candidates)) ; ivy--orig-cands
         )
     (let (
           (swiper--width (1+ (floor (log n-lines 10))))
@@ -186,10 +186,10 @@ Update the minibuffer with the amount of lines collected every
     (let (
           (this-command 'swiper-async)
           )
+      (setq ivy--old-re nil) ; force recalculation
       (ivy--insert-minibuffer
-       (with-current-buffer (ivy-state-buffer ivy-last)
          (ivy--format
-          (ivy--filter ivy-text ivy--all-candidates)))))
+          (ivy--filter ivy-text ivy--all-candidates))))
     (setq counsel--async-time (current-time))))
 
 (defun swiper-async-after-change(begin end deleted-length)
