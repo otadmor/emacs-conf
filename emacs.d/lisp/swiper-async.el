@@ -37,7 +37,7 @@
     (swiper--candidates nil
                         :advancer1 swiper-async-advancer
                         :initiater1 swiper-async-initiater
-                        :use-format-mode-line t
+                        :use-format-mode-line nil
                         :include-empty-last-line t)))
 
 (defcustom swiper-async-filter-update-time 50
@@ -149,9 +149,9 @@ Update the minibuffer with the amount of lines collected every
           (setq added-lines new-candidates-length)
           (setq deleted-lines (+ deleted-lines 1))
           (unless (= deleted-leftover 0)
-            (message "WARNING - deleted-leftover (=%S) != 0" deleted-leftover))
+            (warn "deleted-leftover (=%S) != 0" deleted-leftover))
           (unless (= added-lines (+ (- last-index first-index) 1))
-            (message "WARNING - amount of added cands %S != diff of first %S and last %S lines = %S" new-candidates-length last-index first-index added-lines))
+            (warn "amount of added cands %S != diff of first %S and last %S lines = %S" new-candidates-length last-index first-index added-lines))
           (let (
                 (cand-lasts (nthcdr (+ first-index deleted-lines) working-candidates))
                 (i (+ first-index added-lines 1))
@@ -199,10 +199,12 @@ Update the minibuffer with the amount of lines collected every
 
 (defun swiper-async-function (string)
   "Grep in the current directory for STRING."
-  ; (counsel--elisp-to-pcre (setq ivy--old-re (ivy--regex string)))
-    (if (string= ivy-text "")
-        ivy--orig-cands
-      (ivy--filter ivy-text ivy--orig-cands)))
+  ;; (counsel--elisp-to-pcre (setq ivy--old-re (ivy--regex string)))
+  (when (= (length ivy--orig-cands) 0)
+    (swiper--async-init))
+  (if (string= ivy-text "")
+      ivy--orig-cands
+    (ivy--filter ivy-text ivy--orig-cands)))
 
 (defun swiper-async--cleanup ()
   (with-ivy-window
@@ -214,6 +216,17 @@ Update the minibuffer with the amount of lines collected every
 When non-nil, INITIAL-INPUT is the initial search pattern."
   (interactive)
   (swiper--async-ivy initial-input))
+
+(defun swiper--async-init ()
+  (setq counsel--async-time (current-time))
+  (setq counsel--async-start counsel--async-time)
+  (with-ivy-window
+    (let (
+          (start (point-min))
+          (end (point-max))
+          )
+      (message "start")
+      (swiper-async-after-change start end 0))))
 
 (defun swiper--async-ivy (&optional initial-input)
   "Select one of CANDIDATES and move there.
@@ -232,16 +245,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq ivy--old-cands nil)
     (setq ivy--all-candidates nil)
     (setq ivy--orig-cands nil)
-    (setq counsel--async-time (current-time))
-    (setq counsel--async-start counsel--async-time)
     (setq swiper-use-visual-line nil)
-    (with-ivy-window
-      (let (
-            (start (point-min))
-            (end (point-max))
-            )
-        (add-hook 'after-change-functions #'swiper-async-after-change t t)
-        (swiper-async-after-change start end 0)))
+    (add-hook 'after-change-functions #'swiper-async-after-change t t)
     (unwind-protect
          (and
           (setq res
