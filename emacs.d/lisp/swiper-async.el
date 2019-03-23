@@ -48,10 +48,12 @@
   (get-text-property 0 'swiper-no-line-number item))
 (defun swiper--get-str-line (item)
   (get-text-property 0 'swiper-line-number item))
+(defun swiper--get-region (item)
+  (get-text-property 0 'region-data item))
 (defun swiper--get-begin (item)
-  (get-text-property 0 'begin item))
+  (car (swiper--get-region item)))
 (defun swiper--get-end (item)
-  (get-text-property 0 'end item))
+  (cadr (swiper--get-region item)))
 
 
 (defun swiper--line-with-borders ()
@@ -217,16 +219,122 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (interactive)
   (swiper--async-ivy initial-input))
 
+(defun schedule-isearch(buffer func)
+  (run-with-idle-timer 0 nil 'swiper--async-isearch buffer func))
+
+(setq swiper--async-isearch-interval 0.5)
+(setq swiper--async-high-start-point nil)
+(setq swiper--async-high-end-point nil)
+(setq swiper--async-low-start-point nil)
+(setq swiper--async-low-end-point nil)
+(setq swiper--async-direction-backward nil)
+
+(defun swiper--async-isearch(buffer func)
+  (if (and (not (string= ivy-text "")) (active-minibuffer-window))
+      (let (
+            (found-any-match nil)
+            )
+      (with-ivy-window
+        (save-excursion
+          (deactivate-mark)
+          (with-timeout
+              (swiper--async-isearch-interval
+               (progn
+                 (when (not swiper--async-direction-backward)
+                   (if (< swiper--async-high-start-point swiper--async-high-end-point)
+                       (setq swiper--async-high-start-point (point))
+                     (setq swiper--async-low-start-point (point))))))
+            (when (not swiper--async-direction-backward)
+              (when (< swiper--async-high-start-point
+                       swiper--async-high-end-point)
+                (goto-char swiper--async-high-start-point)
+                (while (word-search-forward
+                        ivy-text
+                        swiper--async-high-end-point
+                        'on-error-go-to-limit)
+                  (setq found-any-match t)
+                  (funcall func (match-beginning 0) (match-end 0)))
+                (setq swiper--async-high-start-point (point)))
+              (when (< swiper--async-low-start-point
+                       swiper--async-low-end-point)
+                (goto-char swiper--async-low-start-point)
+                (while (word-search-forward
+                        ivy-text
+                        swiper--async-low-end-point
+                        'on-error-go-to-limit)
+                  (setq found-any-match t)
+                  (funcall func (match-beginning 0) (match-end 0)))
+                (setq swiper--async-low-start-point (point))))
+            )))
+      (when found-any-match
+        (ivy--set-candidates ivy--orig-cands)
+        (let (
+              (this-command 'swiper-async)
+              )
+          (setq ivy--old-re nil) ; force recalculation
+          (ivy--insert-minibuffer
+           (ivy--format
+            (ivy--filter ivy-text ivy--all-candidates))))
+        ))
+    ;; TODO : schedule only if ivy-text != "", else, clear results
+  (schedule-isearch buffer func)))
+
+(defun swiper--async-insertion-sort (candidate comp-func)
+  (if (null ivy--orig-cands)
+      (setq ivy--orig-cands (list candidate))
+    (if (funcall comp-func candidate (car ivy--orig-cands))
+        (push candidate ivy--orig-cands)
+      (let (
+            (insertion-point ivy--orig-cands)
+            )
+        (while (and
+                (not (null (cdr insertion-point)))
+                (not (funcall comp-func candidate (cadr insertion-point))))
+          (setq insertion-point (cdr insertion-point)))
+        (let (
+              (current-cdr (cdr insertion-point))
+              (current-candidate (list candidate))
+              )
+          (setcdr insertion-point current-candidate)
+          (setcdr current-candidate current-cdr))))))
+
 (defun swiper--async-init ()
   (setq counsel--async-time (current-time))
   (setq counsel--async-start counsel--async-time)
   (with-ivy-window
-    (let (
-          (start (point-min))
-          (end (point-max))
-          )
-      (message "start")
-      (swiper-async-after-change start end 0))))
+    (if (not swiper--async-direction-backward)
+        (setq swiper--async-high-start-point (window-start))
+      (setq swiper--async-high-start-point (window-end)))
+    (setq swiper--async-high-end-point (point-max))
+    (setq swiper--async-low-start-point (point-min))
+    (setq swiper--async-low-end-point swiper--async-high-start-point)
+    (let* ((n-lines (count-lines (point-min) (point-max))))
+      (unless (zerop n-lines)
+        (setq swiper--width (1+ (floor (log n-lines 10))))
+        (setq swiper--format-spec (format "%%-%dd " swiper--width))
+        (let (
+              (buffer (current-buffer))
+              )
+          (schedule-isearch
+           buffer
+           (lambda (b e)
+             (swiper--async-insertion-sort
+              (swiper--fill-candidate-properties
+               (buffer-substring
+                (save-excursion (goto-char b) (line-beginning-position))
+                (save-excursion (goto-char e) (line-end-position)))
+               swiper--format-spec
+               (line-number-at-pos)
+               t b e)
+              (lambda (c1 c2)
+                (let (
+                      (l1 (swiper--get-line c1))
+                      (l2 (swiper--get-line c2))
+                      )
+                  (or (< l1 l2)
+                      (and (= l1 l2)
+                           (< (swiper--get-end c1)
+                              (swiper--get-end c2))))))))))))))
 
 (defun swiper--async-ivy (&optional initial-input)
   "Select one of CANDIDATES and move there.

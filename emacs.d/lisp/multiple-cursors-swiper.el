@@ -56,7 +56,7 @@
   (minibuffer-keyboard-quit))
 
 
-(defun swiper--fill-candidate-properties (str swiper--format-spec line-no use-marker)
+(defun swiper--fill-candidate-properties (str swiper--format-spec line-no use-marker &optional begin end)
   (setq str (ivy-cleanup-string str))
   (let ((line-number-str (format swiper--format-spec line-no)))
     (if swiper-include-line-number-in-search
@@ -75,8 +75,10 @@
                         (list
                          (set-marker (make-marker)
                                      (let ((mark-even-if-inactive t))
-                                       (mark)))
-                         (set-marker (make-marker) (point)))
+                                       end))
+                         (set-marker (make-marker)
+                                     (let ((mark-even-if-inactive t))
+                                       begin)))
                       nil) str)
   str)
 
@@ -125,7 +127,8 @@ numbers; replaces calculating the width from buffer line count."
                          (setq line-number (string-to-number (format-mode-line "%l")))
                        (cl-incf line-number)
                        )
-                     use-marker)
+                     use-marker
+                     (mark) (point))
                     candidates)
               (funcall advancer 1))
             (when (and include-empty-last-line
@@ -137,7 +140,8 @@ numbers; replaces calculating the width from buffer line count."
                          (setq line-number (string-to-number (format-mode-line "%l")))
                        (cl-incf line-number)
                        )
-                     use-marker)
+                     use-marker
+                     (mark) (point))
                     candidates)))))
         (nreverse candidates)))))
 
@@ -303,8 +307,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                  (cursor (nth i cursors))
                                  )
                              (deactivate-mark)
-                             (goto-char (car cursor))
-                             (set-marker (mark-marker) (cadr cursor))
+                             (goto-char (cadr cursor))
+                             (set-marker (mark-marker) (car cursor))
                              (activate-mark)
                              )
                            (cl-incf i))))
