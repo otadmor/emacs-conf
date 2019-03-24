@@ -236,8 +236,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                              swiper--async-isearch-interval
                              nil 'swiper--async-isearch buffer func)))
 
-(setq swiper--async-isearch-interval 0.1)
-(setq swiper--async-isearch-interval2 0.01)
+(setq swiper--async-isearch-interval 0)
 (setq swiper--async-high-start-point nil)
 (setq swiper--async-high-end-point nil)
 (setq swiper--async-low-start-point nil)
@@ -368,10 +367,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                   (or (< l1 l2)
                       (and (= l1 l2)
                            (< (swiper--get-end c1)
-                              (swiper--get-end c2)))))))
-                                        ; (swiper--async-update-output)
-             ; (swiper--update-input-ivy)
-             )))))))
+                              (swiper--get-end c2))))))))))))))
 
 
 ; (defun swiper--async-update-input-ivy ()
