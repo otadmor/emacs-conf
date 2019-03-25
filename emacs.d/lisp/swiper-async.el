@@ -204,6 +204,7 @@ Update the minibuffer with the amount of lines collected every
 (defun swiper-async-function (string)
   "Grep in the current directory for STRING."
   ;; (counsel--elisp-to-pcre (setq ivy--old-re (ivy--regex string)))
+  ; (message "inp2 %S" ivy-text)
   (setq isearch-string ivy-text)
   (when (and (/= (length ivy-text) 0)
              (or (<= (length ivy-text) isearch-swiper-limit)
@@ -225,9 +226,14 @@ Update the minibuffer with the amount of lines collected every
 
 (defun swiper-async--cleanup ()
   (with-ivy-window
+    (setq to-search nil)
     (lazy-highlight-cleanup t)
     (isearch-dehighlight)
-    (remove-hook 'after-change-functions #'swiper-async-after-change t))
+    (remove-hook 'after-change-functions #'swiper-async-after-change t)
+    (remove-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t)
+    (remove-hook 'window-size-change-functions #'swiper--async-update-input-ivy-size-hook t)
+    ; (remove-hook 'window-configuration-change-hook #'swiper--async-update-input-ivy-hook t)
+    )
   (swiper--cleanup))
 
 (defun swiper-async (&optional initial-input)
@@ -261,7 +267,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq ivy--old-re nil) ; force recalculation
     (ivy--insert-minibuffer
      (ivy--format
-      (ivy--filter ivy-text ivy--all-candidates)))))
+      (ivy--filter ivy-text ivy--all-candidates)))
+    ; (message "inp %S" ivy-text)
+    (swiper--async-update-input-ivy)))
 
 (defun swiper--async-isearch(buffer func)
   (when (and (/= (length to-search) 0)
@@ -378,17 +386,18 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 
 (defun swiper--async-mark-candidates-in-window ()
-  (swiper--async-mark-candidates-in-range
-   (max
-    (if (display-graphic-p)
-        (window-start)
-      (line-beginning-position (- (window-height))))
-    swiper--point-min)
-   (min
-    (if (display-graphic-p)
-        (window-end (selected-window) t)
-      (line-end-position (window-height)))
-    swiper--point-max)))
+  (with-ivy-window
+    (swiper--async-mark-candidates-in-range
+     (max
+      (if (display-graphic-p)
+          (window-start)
+        (line-beginning-position (- (window-height))))
+      swiper--point-min)
+     (min
+      (if (display-graphic-p)
+          (window-end (selected-window) t)
+        (line-end-position (window-height)))
+      swiper--point-max))))
 
 (defun swiper--async-mark-candidates-in-range (beg end)
   ;; (save-excursion (swiper--add-overlays ivy-text beg end))
@@ -428,6 +437,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (when isearch-overlay
     (delete-overlay isearch-overlay)))
 
+;; (setq disable-point-adjustment t)
+;; (run-hooks 'isearch-update-post-hook)
+;; (setq cursor-sensor-inhibit (delq 'isearch cursor-sensor-inhibit))
+
 (setq isearch-lazy-highlight-buffer nil)
 (defun isearch-lazy-highlight-match (mb me)
   (let ((ov (make-overlay mb me)))
@@ -440,11 +453,22 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                 isearch-lazy-highlight-buffer)
       (overlay-put ov 'window (selected-window)))))
 
+(defun swiper--async-update-input-ivy-scroll-hook (window new-window-start)
+  (when (eq window (ivy--get-window ivy-last))
+    (with-selected-window window
+      (swiper--async-mark-candidates-in-range
+       new-window-start (window-end (selected-window) t)))))
+
+(defun swiper--async-update-input-ivy-size-hook (x)
+  (message "size %S" x)
+  (swiper--async-mark-candidates-in-window))
+
 (defun swiper--async-update-input-ivy ()
   "Called when `ivy' input is updated."
  (with-ivy-window
-    (swiper--cleanup)
-    (when (> (length (ivy-state-current ivy-last)) 0)
+    ; (swiper--cleanup)
+    (when (and (/= (length ivy-text) 0)
+               (> (length (ivy-state-current ivy-last)) 0))
       (let (
             (item (ivy-state-current ivy-last))
             )
@@ -469,10 +493,14 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                       (mb (match-beginning 0))
                       (me (match-end 0))
                       )
-                  (isearch-back-into-window swiper--async-direction-backward me)
+                  (let (
+                        (should-scroll (isearch-string-out-of-window me))
+                        )
+                    (when should-scroll
+                      (isearch-back-into-window (eq should-scroll 'above) me)))
                   (isearch-highlight mb me))
-                (isearch-dehighlight)))
-          (swiper--async-mark-candidates-in-window)))))))
+                (isearch-dehighlight))))
+          (swiper--async-mark-candidates-in-window))))))
 
 (defun swiper--async-ivy (&optional initial-input)
   "Select one of CANDIDATES and move there.
@@ -493,6 +521,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq ivy--orig-cands nil)
     (setq swiper-use-visual-line nil)
     (add-hook 'after-change-functions #'swiper-async-after-change t t)
+    (add-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t t)
+    (add-hook 'window-size-change-functions #'swiper--async-update-input-ivy-size-hook t t)
+    ; (add-hook 'window-configuration-change-hook #'swiper--async-update-input-ivy-hook t t)
     (unwind-protect
          (and
           (setq res
