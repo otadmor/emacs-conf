@@ -51,9 +51,9 @@
 (defun swiper--get-region (item)
   (get-text-property 0 'region-data item))
 (defun swiper--get-begin (item)
-  (car (swiper--get-region item)))
-(defun swiper--get-end (item)
   (cadr (swiper--get-region item)))
+(defun swiper--get-end (item)
+  (car (swiper--get-region item)))
 
 
 (defun swiper--line-with-borders ()
@@ -204,6 +204,7 @@ Update the minibuffer with the amount of lines collected every
 (defun swiper-async-function (string)
   "Grep in the current directory for STRING."
   ;; (counsel--elisp-to-pcre (setq ivy--old-re (ivy--regex string)))
+  (setq isearch-string ivy-text)
   (when (and (/= (length ivy-text) 0)
              (or (<= (length ivy-text) isearch-swiper-limit)
                  (= (length to-search) 0)
@@ -214,12 +215,18 @@ Update the minibuffer with the amount of lines collected every
     (setq ivy--all-candidates nil)
     (setq ivy--orig-cands nil)
     (swiper--async-init))
-  (if (string= ivy-text "")
-      ivy--orig-cands
-    (ivy--filter ivy-text ivy--orig-cands)))
+  (let (
+        (res (if (string= ivy-text "")
+                 ivy--orig-cands
+               (ivy--filter ivy-text ivy--orig-cands)))
+        )
+    (swiper--async-update-input-ivy)
+    res))
 
 (defun swiper-async--cleanup ()
   (with-ivy-window
+    (lazy-highlight-cleanup t)
+    (isearch-dehighlight)
     (remove-hook 'after-change-functions #'swiper-async-after-change t))
   (swiper--cleanup))
 
@@ -370,96 +377,102 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                               (swiper--get-end c2))))))))))))))
 
 
-; (defun swiper--async-update-input-ivy ()
-;   "Called when `ivy' input is updated."
-;   (message "upd")
-;   (if (or (< (length ivy-text) 3)
-;           (not (string-prefix-p ivy--old-text ivy-text)))
-;       (progn
-;         (message "reset")
-;         (setq ivy--old-cands nil)
-;         (setq ivy--all-candidates nil)
-;         (setq ivy--orig-cands nil))
-;     (with-ivy-window
-;       (swiper--cleanup)
-;       (when (> (length (ivy-state-current ivy-last)) 0)
-;         (let* ((regexp-or-regexps (funcall ivy--regex-function ivy-text))
-;                (regexps
-;                 (if (listp regexp-or-regexps)
-;                     (mapcar #'car (cl-remove-if-not #'cdr regexp-or-regexps))
-;                   (list regexp-or-regexps))))
-;           (dolist (re regexps)
-;             (let* ((re (replace-regexp-in-string
-;                         "    " "\t"
-;                         re))
-;                    (str (get-text-property 0 'swiper-line-number (ivy-state-current ivy-last)))
-;                    (num (if (string-match "^[0-9]+" str)
-;                             (string-to-number (match-string 0 str))
-;                           0)))
-;               (unless (memq this-command '(ivy-yank-word
-;                                            ivy-yank-symbol
-;                                            ivy-yank-char
-;                                            scroll-other-window
-;                                            swiper-async))
-;                 (when (cl-plusp num)
-;                   (unless (if swiper--current-line
-;                               (eq swiper--current-line num)
-;                             (eq (line-number-at-pos) num))
-;                     (goto-char swiper--point-min)
-;                     (if swiper-use-visual-line
-;                         (line-move (1- num))
-;                       (forward-line (1- num))))
+(defun swiper--async-mark-candidates-in-window ()
+  (swiper--async-mark-candidates-in-range
+   (max
+    (if (display-graphic-p)
+        (window-start)
+      (line-beginning-position (- (window-height))))
+    swiper--point-min)
+   (min
+    (if (display-graphic-p)
+        (window-end (selected-window) t)
+      (line-end-position (window-height)))
+    swiper--point-max)))
 
-;                   (when (> (mc/num-cursors) 1)
-;                     (deactivate-mark))
-;                   (let (
-;                         (region-data (get-text-property 0 'region-data (ivy-state-current ivy-last)))
-;                         )
-;                     (if (not (null region-data))
-;                         (progn
-;                           (setq swiper--current-match-start (car region-data))
-;                           (setq swiper--current-line num)
+(defun swiper--async-mark-candidates-in-range (beg end)
+  ;; (save-excursion (swiper--add-overlays ivy-text beg end))
+  ;; (save-excursion (isearch-lazy-highlight-new-loop beg end))
+  (save-excursion
+    (lazy-highlight-cleanup t)
+    (goto-char beg)
+    (while (word-search-forward-lax
+            ivy-text
+            end
+            'on-error-go-to-limit)
+      (swiper--async-mark-candidate (match-beginning 0) (match-end 0)))))
 
-;                           (goto-char (car region-data))
-;                           )
-
-;                       (if (and (equal ivy-text "")
-;                                (>= swiper--opoint (line-beginning-position))
-;                                (<= swiper--opoint (line-end-position)))
-
-;                           (goto-char swiper--opoint)
-
-;                         (if (eq swiper--current-line num)
-;                             (when swiper--current-match-start
-;                               (goto-char swiper--current-match-start))
-;                           (setq swiper--current-line num))
+(defun swiper--async-mark-candidate (beg end)
+  (let (
+        (isearch-lazy-highlight-buffer (current-buffer))
+        )
+    (isearch-lazy-highlight-match beg end)))
 
 
-;                         (when (re-search-forward re (line-end-position) t)
-;                           (setq swiper--current-match-start (match-beginning 0)))
 
 
-;                         )))
-;                   (isearch-range-invisible (line-beginning-position)
-;                                            (line-end-position))
-;                   (when (and (display-graphic-p)
-;                              (or
-;                               (< (point) (window-start))
-;                               (> (point) (window-end (ivy-state-window ivy-last) t))))
-;                     (recenter))
-;                   (setq swiper--current-window-start (window-start))))
-;               (swiper--add-overlays
-;                re
-;                (max
-;                 (if (display-graphic-p)
-;                     (window-start)
-;                   (line-beginning-position (- (window-height))))
-;                 swiper--point-min)
-;                (min
-;                 (if (display-graphic-p)
-;                     (window-end (selected-window) t)
-;                   (line-end-position (window-height)))
-;                 swiper--point-max)))))))))
+(defvar isearch-overlay nil)
+
+(defun isearch-highlight (beg end)
+  (if search-highlight
+      (if isearch-overlay
+	  ;; Overlay already exists, just move it.
+	  (move-overlay isearch-overlay beg end (current-buffer))
+	;; Overlay doesn't exist, create it.
+	(setq isearch-overlay (make-overlay beg end))
+	;; 1001 is higher than lazy's 1000 and ediff's 100+
+	(overlay-put isearch-overlay 'priority 1001)
+	(overlay-put isearch-overlay 'face isearch-face))))
+
+(defun isearch-dehighlight ()
+  (when isearch-overlay
+    (delete-overlay isearch-overlay)))
+
+(setq isearch-lazy-highlight-buffer nil)
+(defun isearch-lazy-highlight-match (mb me)
+  (let ((ov (make-overlay mb me)))
+    (push ov isearch-lazy-highlight-overlays)
+    ;; 1000 is higher than ediff's 100+,
+    ;; but lower than isearch main overlay's 1001
+    (overlay-put ov 'priority 1000)
+    (overlay-put ov 'face 'lazy-highlight)
+    (unless (or (eq isearch-lazy-highlight 'all-windows)
+                isearch-lazy-highlight-buffer)
+      (overlay-put ov 'window (selected-window)))))
+
+(defun swiper--async-update-input-ivy ()
+  "Called when `ivy' input is updated."
+ (with-ivy-window
+    (swiper--cleanup)
+    (when (> (length (ivy-state-current ivy-last)) 0)
+      (let (
+            (item (ivy-state-current ivy-last))
+            )
+        (unless (memq this-command '(ivy-yank-word
+                                     ivy-yank-symbol
+                                     ivy-yank-char
+                                     scroll-other-window
+                                     swiper-async))
+          (let (
+                (begin (swiper--get-begin item))
+                )
+            (let (
+                  (has-match (save-excursion
+                               (goto-char begin)
+                               (word-search-forward-lax
+                                ivy-text
+                                (line-end-position)
+                                'on-error-go-to-limit)))
+                  )
+              (if has-match
+                (let (
+                      (mb (match-beginning 0))
+                      (me (match-end 0))
+                      )
+                  (isearch-back-into-window swiper--async-direction-backward me)
+                  (isearch-highlight mb me))
+                (isearch-dehighlight)))
+          (swiper--async-mark-candidates-in-window)))))))
 
 (defun swiper--async-ivy (&optional initial-input)
   "Select one of CANDIDATES and move there.
@@ -491,7 +504,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                  :keymap swiper-map
                  :preselect preselect
                  :require-match t
-                 :update-fn #'swiper--update-input-ivy
+                 :update-fn #'swiper--async-update-input-ivy
                  :unwind #'swiper-async--cleanup
                  :action #'swiper--action
                  :re-builder #'swiper--re-builder
