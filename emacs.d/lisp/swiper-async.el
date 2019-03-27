@@ -5,7 +5,9 @@
 
 (setq swiper-include-line-number-in-search nil)
 (defun swiper-line-transformer (str)
-  (concat (format (swiper--async-format-spec) (swiper--get-line str)) str))
+  (concat (format (swiper--async-format-spec)
+                  (save-excursion (goto-char (swiper--get-end str))
+                                  (line-number-at-pos))) str))
 (ivy-set-display-transformer 'swiper 'swiper-line-transformer)
 
 
@@ -331,7 +333,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (swiper--fill-candidate-properties
      (buffer-substring lb le)
      format-spec
-     (line-number-at-pos)
+     nil
      t b e lb le)))
 
 (defun swiper--async-found-new-candidate (format-spec b e)
