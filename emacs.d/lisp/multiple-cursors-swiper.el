@@ -56,7 +56,7 @@
   (minibuffer-keyboard-quit))
 
 
-(defun swiper--fill-candidate-properties (str swiper--format-spec line-no use-marker &optional begin end)
+(defun swiper--fill-candidate-properties (str swiper--format-spec line-no use-marker &optional begin end line-begin line-end)
   (setq str (ivy-cleanup-string str))
   (let ((line-number-str (format swiper--format-spec line-no)))
     (if swiper-include-line-number-in-search
@@ -79,6 +79,16 @@
                          (set-marker (make-marker)
                                      (let ((mark-even-if-inactive t))
                                        begin)))
+                      nil) str)
+  (put-text-property
+   0 1 'line-region-data (if use-marker
+                             (list
+                              (set-marker (make-marker)
+                                          (let ((mark-even-if-inactive t))
+                                            line-end))
+                              (set-marker (make-marker)
+                                          (let ((mark-even-if-inactive t))
+                                            line-begin)))
                       nil) str)
   str)
 
