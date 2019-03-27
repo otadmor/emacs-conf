@@ -5,16 +5,7 @@
 
 (setq swiper-include-line-number-in-search nil)
 (defun swiper-line-transformer (str)
-  (let (
-        (n-lines (length ivy--all-candidates)) ; ivy--orig-cands
-        )
-    (let (
-          (swiper--width (1+ (floor (log n-lines 10))))
-          )
-      (let (
-            (swiper--format-spec (format "%%-%dd: " swiper--width))
-            )
-        (concat (format swiper--format-spec (swiper--get-line str)) str)))))
+  (concat (format (swiper--async-format-spec) (swiper--get-line str)) str))
 (ivy-set-display-transformer 'swiper 'swiper-line-transformer)
 
 
@@ -83,6 +74,15 @@
 (defvar ivy--orig-cands nil
   "Store the original candidates found.")
 
+(defun swiper--async-iterate-matches (pattern beg end func)
+  (when (/= (length pattern) 0)
+    (goto-char beg)
+    (while (word-search-forward-lax
+            pattern
+            end
+            'on-error-go-to-limit)
+      (funcall func (match-beginning 0) (match-end 0)))))
+
 (defun swiper--async-filter (buffer begin end deleted-length)
   "Receive from buffer the output STR.
 Update the minibuffer with the amount of lines collected every
@@ -92,119 +92,60 @@ Update the minibuffer with the amount of lines collected every
              ;; (time-since counsel--async-time))
              )
     (let (
-          (working-candidates ivy--orig-cands) ; work on unfiltered candidates
-          (original-candidates-length (length ivy--orig-cands))
+          (chars-diff (- (- end begin) deleted-length))
+          (deleted-end (+ begin deleted-length))
+          (deleted-matches 0)
+          (found-matches 0)
+          (first-insert-index 0)
+          (last-insert-index 0)
           )
+      ;; (let (
+      ;;       (cands)
+      ;;       )
+      ;;   (dolist cand working-candidates
+      ;;           (let (
+      ;;                 (cand-begin (swiper--get-begin cand))
+      ;;                 (cand-end (swiper--get-end cand))
+      ;;                 )
+      ;;             (if (or (< deleted-end cand-begin) (> begin cand-end))
+      ;;                 (cl-incf deleted-matches)
+      ;;                 (push cand cands)))))
       (let (
-            (chars-diff (- (- end begin) deleted-length))
-            (new-candidates (with-current-buffer buffer (swiper--async-candidates begin end)))
+            (max-end (max deleted-end end))
             )
         (let (
-              (new-candidates-length (length new-candidates))
-              (cands)
-              (first-new-candidate (first new-candidates))
-              (last-new-candidate (car (last new-candidates)))
-              (i 0)
-              (first-index)
-              (last-index)
-              (deleted-lines 0)
-              (added-lines 0)
-              (deleted-leftover deleted-length)
-              (lines-diff 0)
+              (search-start (progn (goto-char begin) (line-beginning-position)))
+              (search-end (progn (goto-char max-end) (line-end-position)))
               )
-          (cl-loop for cand in working-candidates do
-                   (when (> new-candidates-length 0)
-                     (when (= (swiper--get-line cand)
-                              (swiper--get-line first-new-candidate))
-                       (setq first-index i))
-                     (when (= (swiper--get-line cand)
-                              (swiper--get-line last-new-candidate))
-                       (setq last-index i)))
-                   (let (
-                         (cand-begin (swiper--get-begin cand))
-                         (cand-end (swiper--get-end cand))
-                         )
-                     (when (and (not (null first-index))
-                                (> deleted-leftover 0))
-                       (let (
-                             (begin-reference (if (and (>= begin cand-begin)
-                                                       (<= begin cand-end))
-                                                  begin
-                                                cand-begin))
-                             )
-                         (let (
-                               (left-in-line (+ (- cand-end begin-reference) 1))
-                               )
-                           (let (
-                                 (drained-length (min deleted-leftover
-                                                      left-in-line))
-                                 )
-                             (when (= left-in-line drained-length)
-                               (cl-incf deleted-lines))
-                             (setq deleted-leftover (- deleted-leftover
-                                                       drained-length)))))))
-                   (cl-incf i))
-          (when (null first-index)
-            (setq first-index original-candidates-length))
-          (when (null last-index)
-            (setq last-index original-candidates-length))
-          (setq added-lines new-candidates-length)
-          (setq deleted-lines (+ deleted-lines 1))
-          (unless (= deleted-leftover 0)
-            (warn "deleted-leftover (=%S) != 0" deleted-leftover))
-          (unless (= added-lines (+ (- last-index first-index) 1))
-            (warn "amount of added cands %S != diff of first %S and last %S lines = %S" new-candidates-length last-index first-index added-lines))
-          (let (
-                (cand-lasts (nthcdr (+ first-index deleted-lines) working-candidates))
-                (i (+ first-index added-lines 1))
-                )
-            (let (
-                  (n-lines (+ first-index added-lines (length cand-lasts)))
-                  )
-              (let (
-                    (numbers-width nil) ; &optional numbers-width
-                    )
-                (setq swiper--width (or numbers-width (1+ (floor (log n-lines 10)))))
-                (setq swiper--format-spec (format "%%-%dd " swiper--width))
-                (let (
-                      (new-cand-lasts)
-                      )
-                  (dolist (cand cand-lasts new-cand-lasts)
-                    (push (swiper--fill-candidate-properties
-                           (if swiper-include-line-number-in-search
-                               (string-remove-prefix (swiper--get-str-line cand) cand)
-                             cand)
-                           swiper--format-spec i nil) new-cand-lasts)
-                    (cl-incf i))
-                  (setq new-cand-lasts (nreverse new-cand-lasts))
-                  (if (= new-candidates-length 0)
-                      (setq new-candidates new-cand-lasts)
-                    (setcdr (last new-candidates) new-cand-lasts))))))
-          (if (> first-index 0)
-              (setcdr (nthcdr (- first-index 1) working-candidates)
-                      new-candidates)
-            (setq working-candidates new-candidates))
-          (setq ivy--index (+ ivy--index lines-diff))))
-      (ivy--set-candidates working-candidates))
-    (setq ivy--orig-cands ivy--all-candidates)
-    (let (
-          (this-command 'swiper-async)
-          )
-      (setq ivy--old-re nil) ; force recalculation
-      (ivy--insert-minibuffer
-         (ivy--format
-          (ivy--filter ivy-text ivy--all-candidates))))
+          (swiper--async-iterate-matches
+           ivy-text search-start search-end
+           (let (
+                 (swiper--format-spec (swiper--async-format-spec))
+                 )
+             (lambda (b e)
+               (cl-incf found-matches)
+               (let (
+                     (idx (swiper--async-found-new-candidate swiper--format-spec b e))
+                     )
+                 (setq first-insert-index (if (null first-insert-index) idx (min first-insert-index idx)))
+                 (setq last-insert-index (if (null last-insert-index) idx (max last-insert-index idx)))))))))
+      (when (> ivy--index first-insert-index)
+                                        ; (if < ivy-index last-deleted-index)
+        (setq ivy--index (+ ivy--index (- found-matches deleted-matches)))
+        )
+      (when (/= (+ found-matches deleted-matches) 0)
+        (swiper--async-update-output)))
     (setq counsel--async-time (current-time))))
 
 (defun swiper-async-after-change(begin end deleted-length)
-  (swiper--async-filter (current-buffer) begin end deleted-length))
+  (save-excursion
+    (swiper--async-filter (current-buffer) begin end deleted-length)))
 
 (setq to-search nil)
 (setq isearch-swiper-limit 3)
 (defun swiper-async-function (string)
   "Grep in the current directory for STRING."
   ;; (counsel--elisp-to-pcre (setq ivy--old-re (ivy--regex string)))
-  ; (message "inp2 %S" ivy-text)
   (setq isearch-string ivy-text)
   (when (and (/= (length ivy-text) 0)
              (or (<= (length ivy-text) isearch-swiper-limit)
@@ -267,8 +208,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq ivy--old-re nil) ; force recalculation
     (ivy--insert-minibuffer
      (ivy--format
-      (ivy--filter ivy-text ivy--all-candidates)))
-    ; (message "inp %S" ivy-text)
+      (if (string= ivy-text "")
+          ivy--orig-cands
+        (ivy--filter ivy-text ivy--all-candidates))))
     (swiper--async-update-input-ivy)))
 
 (defun swiper--async-isearch(buffer func)
@@ -325,23 +267,55 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
       (schedule-isearch buffer func))))
 
 (defun swiper--async-insertion-sort (candidate comp-func)
-  (if (null ivy--orig-cands)
-      (setq ivy--orig-cands (list candidate))
-    (if (funcall comp-func candidate (car ivy--orig-cands))
-        (push candidate ivy--orig-cands)
-      (let (
-            (insertion-point ivy--orig-cands)
-            )
-        (while (and
-                (not (null (cdr insertion-point)))
-                (not (funcall comp-func candidate (cadr insertion-point))))
-          (setq insertion-point (cdr insertion-point)))
+  (let (
+        (idx 0)
+        )
+    (if (null ivy--orig-cands)
+        (setq ivy--orig-cands (list candidate))
+      (if (funcall comp-func candidate (car ivy--orig-cands))
+          (push candidate ivy--orig-cands)
         (let (
-              (current-cdr (cdr insertion-point))
-              (current-candidate (list candidate))
+              (insertion-point ivy--orig-cands)
               )
-          (setcdr insertion-point current-candidate)
-          (setcdr current-candidate current-cdr))))))
+          (while (and
+                  (not (null (cdr insertion-point)))
+                  (not (funcall comp-func candidate (cadr insertion-point))))
+            (cl-incf idx)
+            (setq insertion-point (cdr insertion-point)))
+          (let (
+                (current-cdr (cdr insertion-point))
+                (current-candidate (list candidate))
+                )
+            (setcdr insertion-point current-candidate)
+            (setcdr current-candidate current-cdr)))))
+  idx))
+
+(defun candidate--compare (c1 c2)
+  (let (
+        (l1 (swiper--get-line c1))
+        (l2 (swiper--get-line c2))
+        )
+    (or (< l1 l2)
+        (and (= l1 l2)
+             (< (swiper--get-end c1)
+                (swiper--get-end c2))))))
+
+(defun swiper--async-found-new-candidate (format-spec b e)
+  (swiper--async-insertion-sort
+   (swiper--fill-candidate-properties
+    (buffer-substring
+     (save-excursion (goto-char b) (line-beginning-position))
+     (save-excursion (goto-char e) (line-end-position)))
+    swiper--format-spec
+    (line-number-at-pos)
+    t b e)
+   'candidate--compare))
+
+(defun swiper--async-format-spec ()
+  (let* ((n-lines (count-lines (point-min) (point-max))))
+    (setq swiper--width (1+ (floor (log n-lines 10))))
+    (setq swiper--format-spec (format "%%-%dd: " swiper--width))))
+
 
 (defun swiper--async-init ()
   (setq counsel--async-time (current-time))
@@ -353,36 +327,16 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq swiper--async-high-end-point (point-max))
     (setq swiper--async-low-start-point (point-min))
     (setq swiper--async-low-end-point swiper--async-high-start-point)
-    (let* ((n-lines (count-lines (point-min) (point-max))))
-      (unless (zerop n-lines)
-        (setq swiper--width (1+ (floor (log n-lines 10))))
-        (setq swiper--format-spec (format "%%-%dd " swiper--width))
-        (when (not (null swiper--async-timer))
-          (cancel-timer swiper--async-timer)
-          (setq swiper--async-timer nil))
-        (let (
-              (buffer (current-buffer))
-              )
-          (schedule-isearch
-           buffer
-           (lambda (b e)
-             (swiper--async-insertion-sort
-              (swiper--fill-candidate-properties
-               (buffer-substring
-                (save-excursion (goto-char b) (line-beginning-position))
-                (save-excursion (goto-char e) (line-end-position)))
-               swiper--format-spec
-               (line-number-at-pos)
-               t b e)
-              (lambda (c1 c2)
-                (let (
-                      (l1 (swiper--get-line c1))
-                      (l2 (swiper--get-line c2))
-                      )
-                  (or (< l1 l2)
-                      (and (= l1 l2)
-                           (< (swiper--get-end c1)
-                              (swiper--get-end c2))))))))))))))
+    (when (not (null swiper--async-timer))
+      (cancel-timer swiper--async-timer)
+      (setq swiper--async-timer nil))
+    (schedule-isearch
+     (current-buffer)
+     (let (
+           (swiper--format-spec (swiper--async-format-spec))
+           )
+       (lambda (b e)
+         (swiper--async-found-new-candidate swiper--format-spec b e))))))
 
 
 (defun swiper--async-mark-candidates-in-window ()
@@ -404,12 +358,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   ;; (save-excursion (isearch-lazy-highlight-new-loop beg end))
   (save-excursion
     (lazy-highlight-cleanup t)
-    (goto-char beg)
-    (while (word-search-forward-lax
-            ivy-text
-            end
-            'on-error-go-to-limit)
-      (swiper--async-mark-candidate (match-beginning 0) (match-end 0)))))
+    (swiper--async-iterate-matches
+     ivy-text beg end
+     'swiper--async-mark-candidate)))
 
 (defun swiper--async-mark-candidate (beg end)
   (let (
@@ -454,13 +405,13 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
       (overlay-put ov 'window (selected-window)))))
 
 (defun swiper--async-update-input-ivy-scroll-hook (window new-window-start)
-  (when (eq window (ivy--get-window ivy-last))
+  (when (and (eq window (ivy--get-window ivy-last)) (active-minibuffer-window))
     (with-selected-window window
       (swiper--async-mark-candidates-in-range
        new-window-start (window-end (selected-window) t)))))
 
-(defun swiper--async-update-input-ivy-size-hook (x)
-  (message "size %S" x)
+(defun swiper--async-update-input-ivy-size-hook (frame)
+  (message "size %S" frame)
   (swiper--async-mark-candidates-in-window))
 
 (defun swiper--async-update-input-ivy ()
