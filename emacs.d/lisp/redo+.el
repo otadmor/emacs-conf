@@ -224,8 +224,8 @@ then you cannot redo any undos before then."
 	(setq pending-undo-list p)))
     (and modified (not (buffer-modified-p))
 	 (delete-auto-save-file-if-necessary recent-save))
-    (or (eq (selected-window) (minibuffer-window))
-	(message "Redo!"))
+    ; (or (eq (selected-window) (minibuffer-window))
+    ;     (message "Redo!"))
     (setq last-buffer-undo-list buffer-undo-list)))
 
 (defun undo (&optional arg)
@@ -280,8 +280,8 @@ A numeric argument serves as a repeat count."
       (setq buffer-undo-list (cdr list)))
     (and modified (not (buffer-modified-p))
 	 (delete-auto-save-file-if-necessary recent-save)))
-  (or (eq (selected-window) (minibuffer-window))
-      (message "Undo!"))
+  ; (or (eq (selected-window) (minibuffer-window))
+  ;     (message "Undo!"))
   (setq last-buffer-undo-list buffer-undo-list))
 
 ;; Modify menu-bar and tool-bar item of GNU Emacs
