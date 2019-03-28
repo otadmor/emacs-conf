@@ -118,7 +118,7 @@ Update the minibuffer with the amount of lines collected every
             (let (
                   (item (car iterator))
                   )
-              (when (< (swiper--get-line-begin item) change-end)
+              (when (<= (swiper--get-line-begin item) change-end)
                 (cl-incf deleted-matches)
                 (setq last-item iterator))
               (when (< (swiper--get-line-end item) change-begin)
