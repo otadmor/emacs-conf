@@ -438,7 +438,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
        new-window-start (window-end (selected-window) t)))))
 
 (defun swiper--async-update-input-ivy-size-hook (frame)
-  (message "size %S" frame)
+  ; (message "size %S" frame)
   (swiper--async-mark-candidates-in-window))
 
 (defun swiper--async-update-input-ivy ()
