@@ -14,28 +14,6 @@
 (ivy-set-display-transformer 'swiper 'swiper-line-transformer)
 
 
-(defun swiper--async-candidates (addition-begin addition-end)
-  (let (
-        (swiper-async-initiater (lambda ()
-                                  (deactivate-mark)
-                                  (goto-char addition-begin)
-                                  (beginning-of-line)))
-        (swiper-async-advancer (if swiper-use-visual-line
-                                   (lambda (n)
-                                     (if (>= (line-end-position) addition-end)
-                                         (goto-char (point-max))
-                                       (line-move n t)))
-                                   (lambda (n)
-                                     (if (>= (line-end-position) addition-end)
-                                         (goto-char (point-max))
-                                       (forward-line n)))))
-        )
-    (swiper--candidates nil
-                        :advancer1 swiper-async-advancer
-                        :initiater1 swiper-async-initiater
-                        :use-format-mode-line nil
-                        :include-empty-last-line t)))
-
 (defcustom swiper-async-filter-update-time 50
   "The amount of microseconds to wait until updating `swiper--async-filter'."
   :type 'integer)
@@ -74,12 +52,7 @@
                     (end-of-visual-line)
                     (point))
                 (line-end-position))))
-    (let (
-          (str (concat " " (buffer-substring beg end)))
-          )
-      (put-text-property 0 1 'begin beg str)
-      (put-text-property 0 1 'end end str)
-      str)))
+    (concat " " (buffer-substring beg end))))
 (defalias 'swiper--line 'swiper--line-with-borders)
 
 (defvar ivy--orig-cands nil
