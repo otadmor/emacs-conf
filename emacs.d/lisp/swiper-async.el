@@ -14,6 +14,26 @@
 (ivy-set-display-transformer 'swiper 'swiper-line-transformer)
 
 
+(defun swiper--async-action(orig-fun &rest args)
+  (let (
+        (x (car args))
+        )
+    (let (
+          (pos (swiper--get-end x))
+          )
+      (when pos
+        (let (
+              (line-no (save-excursion (goto-char pos) (line-number-at-pos)))
+              )
+          (let (
+                (line-number-str (format swiper--format-spec line-no))
+                )
+            (put-text-property
+             0 1 'swiper-line-number line-number-str x))))))
+  (apply orig-fun args))
+(advice-add 'swiper--action :around 'swiper--async-action)
+
+
 (defcustom swiper-async-filter-update-time 50
   "The amount of microseconds to wait until updating `swiper--async-filter'."
   :type 'integer)
