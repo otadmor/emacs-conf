@@ -333,7 +333,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (swiper--fill-candidate-properties
      (buffer-substring lb le)
      format-spec
-     nil
+     0
      t b e lb le)))
 
 (defun swiper--async-found-new-candidate (format-spec b e)
