@@ -109,7 +109,7 @@ Update the minibuffer with the amount of lines collected every
           (last-item nil)
           )
       (let (
-            (max-end (max deleted-end inserted-end))
+            (change-end (max deleted-end inserted-end))
             )
         (let (
               (iterator working-candidates)
@@ -118,18 +118,18 @@ Update the minibuffer with the amount of lines collected every
             (let (
                   (item (car iterator))
                   )
-              (when (< (swiper--get-line-end item) change-begin)
-                (setq first-item iterator))
-              (when (< (swiper--get-line-begin item) max-end)
+              (when (< (swiper--get-line-begin item) change-end)
+                (cl-incf deleted-matches)
                 (setq last-item iterator))
-              (when (and first-item (null last-item))
-                (cl-incf deleted-matches)))
+              (when (< (swiper--get-line-end item) change-begin)
+                (cl-decf deleted-matches)
+                (setq first-item iterator)))
             (setq iterator (cdr iterator))))
         (unless (null last-item)
           (setq last-item (cdr last-item)))
         (let (
               (search-start (progn (goto-char change-begin) (line-beginning-position)))
-              (search-end (progn (goto-char max-end) (line-end-position)))
+              (search-end (progn (goto-char change-end) (line-end-position)))
               (new-candidates)
               (new-candidates-tail)
               )
@@ -235,7 +235,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
      (ivy--format
       (if (string= ivy-text "")
           ivy--orig-cands
-        (ivy--filter ivy-text ivy--all-candidates))))
+        (ivy--filter ivy-text ivy--orig-cands))))
     (swiper--async-update-input-ivy)))
 
 (defun swiper--async-isearch(buffer func)
