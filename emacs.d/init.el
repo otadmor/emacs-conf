@@ -385,8 +385,15 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 
 (defun my-comment-or-uncomment-region ()
   (interactive)
-  (let ((beg (if mark-active (region-beginning) (point-at-bol)))
-	(end (if mark-active (region-end) (point-at-eol))))
+  (let ((beg (save-excursion (when mark-active (goto-char (region-beginning)))
+                             (line-beginning-position)))
+	(end (save-excursion (when mark-active (goto-char (region-end)))
+                             (line-end-position))))
+    (when (and mark-active
+               (< beg end)
+               (= (save-excursion (goto-char end)
+                                  (line-beginning-position)) (region-end)))
+      (setq end (- (region-end) 1)))
     (comment-or-uncomment-region beg end 1)))
 (global-set-key (kbd "C-/") 'my-comment-or-uncomment-region)
 
