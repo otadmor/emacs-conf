@@ -217,10 +217,13 @@
 ;; (global-set-key [(meta f)] 'nice-rgrep)
 
 (defun ag--format-result (proj result)
-  (format "%s:%s:%s"
-          (s-replace proj "" (plist-get result :path))
-          (plist-get result :line)
-          (plist-get result :context)))
+  (let (
+        (rep-path (plist-get result :path))
+        )
+    (format "%s:%s:%s"
+            (if (null rep-path) proj (s-replace proj "" (plist-get result :path)))
+            (plist-get result :line)
+            (plist-get result :context))))
 
 
 (defun preselect-line(proj)
