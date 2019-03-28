@@ -6,8 +6,11 @@
 (setq swiper-include-line-number-in-search nil)
 (defun swiper-line-transformer (str)
   (concat (format (swiper--async-format-spec)
-                  (save-excursion (goto-char (swiper--get-end str))
-                                  (line-number-at-pos))) str))
+                  (let (
+                        (pos (swiper--get-end str))
+                        )
+                    (if pos (save-excursion (goto-char pos) (line-number-at-pos))
+                      (swiper--get-line str)))) str))
 (ivy-set-display-transformer 'swiper 'swiper-line-transformer)
 
 
