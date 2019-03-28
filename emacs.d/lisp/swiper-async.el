@@ -280,10 +280,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                 (setq swiper--async-low-start-point (point)))))))
       (when (/= matches-found 0)
         (swiper--async-update-output)))
-    (when (and (< swiper--async-high-start-point
-                  swiper--async-high-end-point)
-               (< swiper--async-low-start-point
-                  swiper--async-low-end-point))
+    (when (or (< swiper--async-high-start-point
+                 swiper--async-high-end-point)
+              (< swiper--async-low-start-point
+                 swiper--async-low-end-point))
       (schedule-isearch buffer func))))
 
 (defun swiper--async-insertion-sort (candidate comp-func)
