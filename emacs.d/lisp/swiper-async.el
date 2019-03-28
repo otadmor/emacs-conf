@@ -326,15 +326,17 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                 (swiper--get-end c2))))))
 
 (defun swiper--async-create-candidate (format-spec b e)
-  (let (
-        (lb (save-excursion (goto-char b) (line-beginning-position)))
-        (le (save-excursion (goto-char e) (line-end-position)))
-        )
-    (swiper--fill-candidate-properties
-     (buffer-substring lb le)
-     format-spec
-     0
-     t b e lb le)))
+  (save-restriction
+    (widen)
+    (let (
+          (lb (save-excursion (goto-char b) (point-at-bol)))
+          (le (save-excursion (goto-char e) (point-at-eol)))
+          )
+      (swiper--fill-candidate-properties
+       (buffer-substring lb le)
+       format-spec
+       0
+       t b e lb le))))
 
 (defun swiper--async-found-new-candidate (format-spec b e)
   (swiper--async-insertion-sort
