@@ -125,8 +125,7 @@ Update the minibuffer with the amount of lines collected every
                 (cl-decf deleted-matches)
                 (setq first-item iterator)))
             (setq iterator (cdr iterator))))
-        (unless (null last-item)
-          (setq last-item (cdr last-item)))
+        (setq last-item (if (null last-item) ivy--orig-cands (cdr last-item)))
         (let (
               (search-start (progn (goto-char change-begin) (line-beginning-position)))
               (search-end (progn (goto-char change-end) (line-end-position)))
