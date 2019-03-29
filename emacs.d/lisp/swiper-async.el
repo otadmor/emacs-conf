@@ -26,7 +26,7 @@
               (line-no (save-excursion (goto-char pos) (line-number-at-pos)))
               )
           (let (
-                (line-number-str (format swiper--format-spec line-no))
+                (line-number-str (format "%d" line-no))
                 )
             (put-text-property
              0 1 'swiper-line-number line-number-str x))))))
