@@ -79,7 +79,7 @@
   "Store the original candidates found.")
 
 (defun swiper--async-iterate-matches (pattern beg end func)
-  (when (/= (length pattern) 0)
+  (when (and (/= (length pattern) 0) (< beg end))
     (goto-char beg)
     (while (word-search-forward-lax
             pattern
@@ -260,7 +260,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                              to-search
                              (min swiper--async-high-end-point
                                   (+ swiper--async-high-start-point
-                                     swiper--max-search-length))
+                                     swiper--max-search-length
+				     1))
                              'on-error-go-to-limit))
                   (cl-incf matches-found)
                   (if (>= ivy--index
@@ -276,7 +277,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                              to-search
                              (min swiper--async-low-end-point
                                   (+ swiper--async-low-start-point
-                                     swiper--max-search-length))
+                                     swiper--max-search-length
+				     1))
                              'on-error-go-to-limit))
                   (cl-incf matches-found)
                   (if (>= ivy--index
@@ -460,10 +462,15 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
             (let (
                   (has-match (save-excursion
                                (goto-char begin)
-                               (word-search-forward-lax
-                                ivy-text
-                                (line-end-position)
-                                'on-error-go-to-limit)))
+                               (let (
+                                     (ending (line-end-position))
+                                     )
+                                 (if (< begin ending)
+                                     (word-search-forward-lax
+                                      ivy-text
+                                      ending
+                                      'on-error-go-to-limit)
+                                   nil))))
                   )
               (if has-match
                 (let (
