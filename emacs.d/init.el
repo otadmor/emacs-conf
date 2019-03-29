@@ -622,8 +622,8 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 (define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
 (define-key ivy-minibuffer-map [(meta h)] 'ivy-magit-status)
 (global-set-key (kbd "M-c") 'ivy-resume)
-(global-set-key (kbd "C-s") 'counsel-grep-or-swiper)
-(global-set-key (kbd "C-r") 'counsel-grep-or-swiper)
+(global-set-key (kbd "C-s") 'swiper-async)
+(global-set-key (kbd "C-r") (lambda () (interactive) (setq swiper--async-direction-backward t) (swiper-async)))
 (global-set-key (kbd "C-c C-a") 'mcs-swiper)
 
 ;;(global-set-key (kbd "C-/") (lambda () (interactive) (ivy-exit-with-action (lambda (_) (my-comment-or-uncomment-region)))))
@@ -1287,6 +1287,7 @@ Ignore PROJ"
 (advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook)
 (advice-add 'jedi:goto-definition--nth :around #'wrap-winstack-hook)
 
+	
 (which-function-mode 1)
 
 (defun my-command-error-function (data context caller)

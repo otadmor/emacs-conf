@@ -250,41 +250,77 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                      (- (+ ivy-height ivy--index) (length ivy--orig-cands))
                    swiper--async-default-max-matches-per-search))
                 )
-            (when (not swiper--async-direction-backward)
-              (when (< swiper--async-high-start-point
-                       swiper--async-high-end-point)
-                (goto-char swiper--async-high-start-point)
-                (while (and (not (input-pending-p))
-                            (< matches-found swiper--async-max-matches-per-search)
-                            (word-search-forward-lax
-                             to-search
-                             (min swiper--async-high-end-point
-                                  (+ swiper--async-high-start-point
-                                     swiper--max-search-length
-				     1))
-                             'on-error-go-to-limit))
-                  (cl-incf matches-found)
-                  (if (>= ivy--index
-                          (funcall func (match-beginning 0) (match-end 0)))
-                      (cl-incf ivy--index)))
-                (setq swiper--async-high-start-point (point)))
-              (when (< swiper--async-low-start-point
-                       swiper--async-low-end-point)
-                (goto-char swiper--async-low-start-point)
-                (while (and (not (input-pending-p))
-                            (< matches-found swiper--async-max-matches-per-search)
-                            (word-search-forward-lax
-                             to-search
-                             (min swiper--async-low-end-point
-                                  (+ swiper--async-low-start-point
-                                     swiper--max-search-length
-				     1))
-                             'on-error-go-to-limit))
-                  (cl-incf matches-found)
-                  (if (>= ivy--index
-                          (funcall func (match-beginning 0) (match-end 0)))
-                      (cl-incf ivy--index)))
-                (setq swiper--async-low-start-point (point)))))))
+            (if (not swiper--async-direction-backward)
+                (progn
+                  (when (< swiper--async-high-start-point
+                           swiper--async-high-end-point)
+                    (goto-char swiper--async-high-start-point)
+                    (while (and (not (input-pending-p))
+                                (< matches-found swiper--async-max-matches-per-search)
+                                (word-search-forward-lax
+                                 to-search
+                                 (min swiper--async-high-end-point
+                                      (+ swiper--async-high-start-point
+                                         swiper--max-search-length
+                                         1))
+                                 'on-error-go-to-limit))
+                      (cl-incf matches-found)
+                      (if (>= ivy--index
+                              (funcall func (match-beginning 0) (match-end 0)))
+                          (cl-incf ivy--index)))
+                    (setq swiper--async-high-start-point (point)))
+                  (when (< swiper--async-low-start-point
+                           swiper--async-low-end-point)
+                    (goto-char swiper--async-low-start-point)
+                    (while (and (not (input-pending-p))
+                                (< matches-found swiper--async-max-matches-per-search)
+                                (word-search-forward-lax
+                                 to-search
+                                 (min swiper--async-low-end-point
+                                      (+ swiper--async-low-start-point
+                                         swiper--max-search-length
+                                         1))
+                                 'on-error-go-to-limit))
+                      (cl-incf matches-found)
+                      (if (>= ivy--index
+                              (funcall func (match-beginning 0) (match-end 0)))
+                          (cl-incf ivy--index)))
+                    (setq swiper--async-low-start-point (point))))
+              (progn
+                (when (< swiper--async-low-start-point
+                         swiper--async-low-end-point)
+                  (goto-char swiper--async-low-end-point)
+                  (while (and (not (input-pending-p))
+                              (< matches-found swiper--async-max-matches-per-search)
+                              (word-search-backward-lax
+                               to-search
+                               (max swiper--async-low-start-point
+                                    (- swiper--async-low-end-point
+                                       swiper--max-search-length
+                                       1))
+                               'on-error-go-to-limit))
+                    (cl-incf matches-found)
+                    (if (>= ivy--index
+                            (funcall func (match-beginning 0) (match-end 0)))
+                        (cl-incf ivy--index)))
+                  (setq swiper--async-low-end-point (point)))
+                (when (< swiper--async-high-start-point
+                         swiper--async-high-end-point)
+                  (goto-char swiper--async-high-end-point)
+                  (while (and (not (input-pending-p))
+                              (< matches-found swiper--async-max-matches-per-search)
+                              (word-search-backward-lax
+                               to-search
+                               (max swiper--async-high-start-point
+                                    (- swiper--async-high-end-point
+                                       swiper--max-search-length
+                                       1))
+                               'on-error-go-to-limit))
+                    (cl-incf matches-found)
+                    (if (>= ivy--index
+                            (funcall func (match-beginning 0) (match-end 0)))
+                        (cl-incf ivy--index)))
+                  (setq swiper--async-high-end-point (point))))))))
       (when (/= matches-found 0)
         (swiper--async-update-output)))
     (when (or (< swiper--async-high-start-point
@@ -533,5 +569,15 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (cl-pushnew ivy-text swiper-history))
       (when swiper--reveal-mode
         (reveal-mode 1)))))
+
+
+(defun ivy-previous-line-hook(orig-fun &rest args)
+  (setq swiper--async-direction-backward t)
+  (apply orig-fun args))
+(advice-add 'ivy-previous-line :around #'ivy-previous-line-hook)
+(defun ivy-next-line-hook(orig-fun &rest args)
+  (setq swiper--async-direction-backward nil)
+  (apply orig-fun args))
+(advice-add 'ivy-next-line :around #'ivy-next-line-hook)
 
 (provide 'swiper-async)
