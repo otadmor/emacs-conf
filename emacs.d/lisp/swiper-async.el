@@ -176,6 +176,7 @@ Update the minibuffer with the amount of lines collected every
     (setq ivy--old-cands nil)
     (setq ivy--all-candidates nil)
     (setq ivy--orig-cands nil)
+    (setq ivy--index 0)
     (swiper--async-init))
   (let (
         (res (if (string= ivy-text "")
@@ -262,7 +263,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                      swiper--max-search-length))
                              'on-error-go-to-limit))
                   (cl-incf matches-found)
-                  (funcall func (match-beginning 0) (match-end 0)))
+                  (if (>= ivy--index
+                          (funcall func (match-beginning 0) (match-end 0)))
+                      (cl-incf ivy--index)))
                 (setq swiper--async-high-start-point (point)))
               (when (< swiper--async-low-start-point
                        swiper--async-low-end-point)
@@ -276,7 +279,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                      swiper--max-search-length))
                              'on-error-go-to-limit))
                   (cl-incf matches-found)
-                  (funcall func (match-beginning 0) (match-end 0)))
+                  (if (>= ivy--index
+                          (funcall func (match-beginning 0) (match-end 0)))
+                      (cl-incf ivy--index)))
                 (setq swiper--async-low-start-point (point)))))))
       (when (/= matches-found 0)
         (swiper--async-update-output)))
@@ -494,6 +499,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq ivy--old-cands nil)
     (setq ivy--all-candidates nil)
     (setq ivy--orig-cands nil)
+    (setq ivy--index 0)
     (setq swiper-use-visual-line nil)
     (add-hook 'after-change-functions #'swiper-async-after-change t t)
     (add-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t t)
