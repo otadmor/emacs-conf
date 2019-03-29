@@ -353,9 +353,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (setq counsel--async-time (current-time))
   (setq counsel--async-start counsel--async-time)
   (with-ivy-window
-    (if (not swiper--async-direction-backward)
-        (setq swiper--async-high-start-point (window-start))
-      (setq swiper--async-high-start-point (window-end)))
+    (setq swiper--async-high-start-point swiper--opoint)
     (setq swiper--async-high-end-point (point-max))
     (setq swiper--async-low-start-point (point-min))
     (setq swiper--async-low-end-point swiper--async-high-start-point)
