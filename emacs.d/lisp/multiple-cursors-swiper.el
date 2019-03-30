@@ -38,7 +38,7 @@
     (ivy-next-line)
     (ivy--exhibit)))
 (defun mcs-mark-previous-like-this () (interactive)
-       (with-ivy-window
+  (with-ivy-window
     (mc/toggle-cursor-at-point (point))
     (ivy-previous-line)
     (ivy--exhibit)))
