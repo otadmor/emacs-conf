@@ -11,7 +11,7 @@
                         )
                     (if pos (save-excursion (goto-char pos) (line-number-at-pos))
                       (swiper--get-line str)))) str))
-(ivy-set-display-transformer 'swiper 'swiper-line-transformer)
+(ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
 
 (defun swiper--async-action(orig-fun &rest args)
@@ -166,29 +166,51 @@ Update the minibuffer with the amount of lines collected every
 (defun swiper-async-function (string)
   "Grep in the current directory for STRING."
   ;; (counsel--elisp-to-pcre (setq ivy--old-re (ivy--regex string)))
-  (setq isearch-string ivy-text)
-  (when (and (/= (length ivy-text) 0)
-             (or (<= (length ivy-text) isearch-swiper-limit)
-                 (= (length to-search) 0)
-                 (not (string-prefix-p to-search ivy-text))))
-    (setq to-search (if (< (length ivy-text) 3) ivy-text (substring ivy-text 0 isearch-swiper-limit)))
-      ; (= (length ivy--orig-cands) 0)
+  (with-ivy-window
+    (setq isearch-string ivy-text)
+    (cond
+     ((= (length ivy-text) 0)
+      (setq to-search nil)
+      (setq ivy--old-cands nil)
+      (setq ivy--all-candidates nil)
+      (setq ivy--orig-cands nil)
+      (setq ivy--index 0)
+      (when (not (null swiper--async-timer))
+        (cancel-timer swiper--async-timer)
+        (setq swiper--async-timer nil))
+      (lazy-highlight-cleanup t)
+      (isearch-dehighlight)
+      nil)
+     ((or (<= (length ivy-text) isearch-swiper-limit)
+          (= (length to-search) 0)
+          (not (string-prefix-p to-search ivy-text)))
+      (setq to-search (if (< (length ivy-text) 3) ivy-text (substring ivy-text 0 isearch-swiper-limit)))
+      ;; (= (length ivy--orig-cands) 0)
+      (setq ivy--old-cands nil)
+      (setq ivy--all-candidates nil)
+      (setq ivy--orig-cands nil)
+      (setq ivy--index 0)
+      (swiper--async-init)
+      nil)
+     ((or (< swiper--async-high-start-point
+             swiper--async-high-end-point)
+          (< swiper--async-low-start-point
+             swiper--async-low-end-point))
+      ivy--orig-cands)
+     (t
+      (setq ivy--old-re nil) ; force recalculation
+      (ivy--filter ivy-text ivy--orig-cands)))))
+
+(defun swiper-async--cleanup ()
+  (with-ivy-window
     (setq ivy--old-cands nil)
     (setq ivy--all-candidates nil)
     (setq ivy--orig-cands nil)
     (setq ivy--index 0)
-    (swiper--async-init))
-  (let (
-        (res (if (string= ivy-text "")
-                 ivy--orig-cands
-               (ivy--filter ivy-text ivy--orig-cands)))
-        )
-    (swiper--async-update-input-ivy)
-    res))
-
-(defun swiper-async--cleanup ()
-  (with-ivy-window
     (setq to-search nil)
+    (when (not (null swiper--async-timer))
+      (cancel-timer swiper--async-timer)
+      (setq swiper--async-timer nil))
     (lazy-highlight-cleanup t)
     (isearch-dehighlight)
     (remove-hook 'after-change-functions #'swiper-async-after-change t)
@@ -229,7 +251,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq ivy--old-re nil) ; force recalculation
     (ivy--insert-minibuffer
      (ivy--format
-      (if (string= ivy-text "")
+      (if (or (string= ivy-text "") (<= (length ivy-text) isearch-swiper-limit))
           ivy--orig-cands
         (ivy--filter ivy-text ivy--orig-cands))))
     (swiper--async-update-input-ivy)))
@@ -265,9 +287,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                          1))
                                  'on-error-go-to-limit))
                       (cl-incf matches-found)
-                      (if (>= ivy--index
-                              (funcall func (match-beginning 0) (match-end 0)))
-                          (cl-incf ivy--index)))
+                      (when (and (>= ivy--index
+                                     (funcall func (match-beginning 0) (match-end 0)))
+                                 (> (length ivy--orig-cands) 1))
+                        (cl-incf ivy--index)))
                     (setq swiper--async-high-start-point (point)))
                   (when (< swiper--async-low-start-point
                            swiper--async-low-end-point)
@@ -282,9 +305,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                          1))
                                  'on-error-go-to-limit))
                       (cl-incf matches-found)
-                      (if (>= ivy--index
-                              (funcall func (match-beginning 0) (match-end 0)))
-                          (cl-incf ivy--index)))
+                      (when (and (>= ivy--index
+                                     (funcall func (match-beginning 0) (match-end 0)))
+                                 (> (length ivy--orig-cands) 1))
+                        (cl-incf ivy--index)))
                     (setq swiper--async-low-start-point (point))))
               (progn
                 (when (< swiper--async-low-start-point
@@ -300,9 +324,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                        1))
                                'on-error-go-to-limit))
                     (cl-incf matches-found)
-                    (if (>= ivy--index
-                            (funcall func (match-beginning 0) (match-end 0)))
-                        (cl-incf ivy--index)))
+                    (when (and (>= ivy--index
+                                   (funcall func (match-beginning 0) (match-end 0)))
+                               (> (length ivy--orig-cands) 1))
+                      (cl-incf ivy--index)))
                   (setq swiper--async-low-end-point (point)))
                 (when (< swiper--async-high-start-point
                          swiper--async-high-end-point)
@@ -317,9 +342,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                        1))
                                'on-error-go-to-limit))
                     (cl-incf matches-found)
-                    (if (>= ivy--index
-                            (funcall func (match-beginning 0) (match-end 0)))
-                        (cl-incf ivy--index)))
+                    (when (and (>= ivy--index
+                                   (funcall func (match-beginning 0) (match-end 0)))
+                               (> (length ivy--orig-cands) 1))
+                      (cl-incf ivy--index)))
                   (setq swiper--async-high-end-point (point))))))))
       (when (/= matches-found 0)
         (swiper--async-update-output)))
@@ -340,6 +366,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (let (
               (insertion-point ivy--orig-cands)
               )
+          (cl-incf idx)
           (while (and
                   (not (null (cdr insertion-point)))
                   (not (funcall comp-func candidate (cadr insertion-point))))
@@ -391,6 +418,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (setq counsel--async-time (current-time))
   (setq counsel--async-start counsel--async-time)
   (with-ivy-window
+    (goto-char swiper--opoint)
     (setq swiper--async-high-start-point swiper--opoint)
     (setq swiper--async-high-end-point (point-max))
     (setq swiper--async-low-start-point (point-min))
@@ -476,7 +504,6 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
        new-window-start (window-end (selected-window) t)))))
 
 (defun swiper--async-update-input-ivy-size-hook (frame)
-  ; (message "size %S" frame)
   (swiper--async-mark-candidates-in-window))
 
 (defun swiper--async-update-input-ivy ()
@@ -487,11 +514,6 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
       (let (
             (item (ivy-state-current ivy-last))
             )
-        (unless (memq this-command '(ivy-yank-word
-                                     ivy-yank-symbol
-                                     ivy-yank-char
-                                     scroll-other-window
-                                     swiper-async))
           (let (
                 (begin (swiper--get-begin item))
                 )
@@ -513,14 +535,22 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                       (mb (match-beginning 0))
                       (me (match-end 0))
                       )
-                  (let (
-                        (should-scroll (isearch-string-out-of-window me))
-                        )
-                    (when should-scroll
-                      (isearch-back-into-window (eq should-scroll 'above) me)))
+                  (when (not (memq this-command '(ivy-yank-word
+                                                    ivy-yank-symbol
+                                                    ivy-yank-char
+                                                    scroll-other-window
+                                                    swiper-async)))
+                    (let (
+                          (should-scroll (isearch-string-out-of-window me))
+                          )
+                      (when should-scroll
+                        (isearch-back-into-window (eq should-scroll 'above) me))))
                   (isearch-highlight mb me))
                 (isearch-dehighlight))))
-          (swiper--async-mark-candidates-in-window))))))
+          (swiper--async-mark-candidates-in-window)))))
+
+(defun swiper--async-re-builder(str)
+  (word-search-regexp str t))
 
 (defun swiper--async-ivy (&optional initial-input)
   "Select one of CANDIDATES and move there.
@@ -528,12 +558,12 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (swiper--init)
   (setq swiper-invocation-face
         (plist-get (text-properties-at (point)) 'face))
-  (let ((preselect
-         (if swiper-use-visual-line
-             (count-screen-lines
-              (point-min)
-              (save-excursion (beginning-of-visual-line) (point)))
-           (1- (line-number-at-pos))))
+  (let ((preselect nil)
+; (if swiper-use-visual-line
+;              (count-screen-lines
+;               (point-min)
+;               (save-excursion (beginning-of-visual-line) (point)))
+;            (1- (line-number-at-pos)))
         (minibuffer-allow-text-properties t)
         res)
     (setq ivy--old-cands nil)
@@ -559,9 +589,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                  :update-fn #'swiper--async-update-input-ivy
                  :unwind #'swiper-async--cleanup
                  :action #'swiper--action
-                 :re-builder #'swiper--re-builder
+                 :re-builder #'swiper--async-re-builder
                  :history 'swiper-history
-                 :caller 'swiper))
+                 :caller 'swiper-async))
           (point))
       (unless (or res swiper-stay-on-quit)
         (goto-char swiper--opoint))
