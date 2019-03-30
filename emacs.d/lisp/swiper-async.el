@@ -5,12 +5,16 @@
 
 (setq swiper-include-line-number-in-search nil)
 (defun swiper-line-transformer (str)
-  (concat (format (swiper--async-format-spec)
-                  (let (
-                        (pos (swiper--get-end str))
-                        )
-                    (if pos (save-excursion (goto-char pos) (line-number-at-pos))
-                      (swiper--get-line str)))) str))
+  (save-excursion
+    (save-restriction
+      (widen)
+      (concat (format (swiper--async-format-spec)
+                      (let (
+                            (pos (swiper--get-end str))
+                            )
+                        (if pos
+                            (progn (goto-char pos) (line-number-at-pos))
+                          (swiper--get-line str)))) str))))
 (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
 
