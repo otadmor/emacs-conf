@@ -622,7 +622,7 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 (define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
 (define-key ivy-minibuffer-map [(meta h)] 'ivy-magit-status)
 (global-set-key (kbd "M-c") 'ivy-resume)
-(global-set-key (kbd "C-s") 'swiper-async)
+(global-set-key (kbd "C-s") (lambda () (interactive) (setq swiper--async-direction-backward nil) (swiper-async)))
 (global-set-key (kbd "C-r") (lambda () (interactive) (setq swiper--async-direction-backward t) (swiper-async)))
 (global-set-key (kbd "C-c C-a") 'mcs-swiper)
 
