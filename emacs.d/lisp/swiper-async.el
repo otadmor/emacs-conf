@@ -84,7 +84,8 @@
 
 (defvar ivy--last-cand nil
   "Store the last inserted candidate for faster insertion sort.")
-
+(defvar ivy--last-cand-index 0
+  "Store the last inserted candidate index so new candidates will have the correct index.")
 (defun swiper--async-iterate-matches (pattern beg end func)
   (when (and (/= (length pattern) 0) (< beg end))
     (goto-char beg)
@@ -145,10 +146,11 @@ Update the minibuffer with the amount of lines collected every
                  (format-spec (swiper--async-format-spec))
                  )
              (lambda (b e)
-               (cl-incf found-matches)
                (let (
                      (new-item (list (swiper--async-create-candidate format-spec b e)))
                      )
+                 (when (string-match-p ivy-text (car new-item))
+                  (cl-incf found-matches))
                  (if (null new-candidates)
                      (progn
                        (setq new-candidates-tail new-item)
@@ -165,10 +167,9 @@ Update the minibuffer with the amount of lines collected every
                 (setq ivy--orig-cands tail-items)
               (setcdr first-item tail-items)))))
       (when (>= ivy--index change-index)
-        ; (if (>= deleted-matches (- ivy--index change-index))
-            ; (setq ivy--index change-index)
-          ; (setq ivy--index (- ivy--index deleted-matches)))
-        (setq ivy--index (- ivy--index deleted-matches))
+        (if (>= deleted-matches (- ivy--index change-index))
+            (setq ivy--index change-index)
+          (setq ivy--index (- ivy--index deleted-matches)))
         (setq ivy--index (+ ivy--index found-matches)))
         (swiper--async-update-output))
     (setq counsel--async-time (current-time))))
@@ -301,10 +302,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                          1))
                                  'on-error-go-to-limit))
                       (cl-incf matches-found)
-                      (when (and (>= ivy--index
-                                     (funcall func (match-beginning 0) (match-end 0)))
-                                 (> (length ivy--orig-cands) 1))
-                        (cl-incf ivy--index)))
+                      (funcall func (match-beginning 0) (match-end 0)))
                     (setq swiper--async-high-start-point (point)))
                   (when (< swiper--async-low-start-point
                            swiper--async-low-end-point)
@@ -319,10 +317,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                          1))
                                  'on-error-go-to-limit))
                       (cl-incf matches-found)
-                      (when (and (>= ivy--index
-                                     (funcall func (match-beginning 0) (match-end 0)))
-                                 (> (length ivy--orig-cands) 1))
-                        (cl-incf ivy--index)))
+                      (funcall func (match-beginning 0) (match-end 0)))
                     (setq swiper--async-low-start-point (point))))
               (progn
                 (when (< swiper--async-low-start-point
@@ -338,10 +333,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                        1))
                                'on-error-go-to-limit))
                     (cl-incf matches-found)
-                    (when (and (>= ivy--index
-                                   (funcall func (match-beginning 0) (match-end 0)))
-                               (> (length ivy--orig-cands) 1))
-                      (cl-incf ivy--index)))
+                    (funcall func (match-beginning 0) (match-end 0)))
                   (setq swiper--async-low-end-point (point)))
                 (when (< swiper--async-high-start-point
                          swiper--async-high-end-point)
@@ -356,10 +348,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                        1))
                                'on-error-go-to-limit))
                     (cl-incf matches-found)
-                    (when (and (>= ivy--index
-                                   (funcall func (match-beginning 0) (match-end 0)))
-                               (> (length ivy--orig-cands) 1))
-                      (cl-incf ivy--index)))
+                    (funcall func (match-beginning 0) (match-end 0)))
                   (setq swiper--async-high-end-point (point))))))))
       (when (/= matches-found 0)
         (swiper--async-update-output)))
@@ -412,6 +401,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
        0
        t b e lb le))))
 
+(defvar swiper--async-follow-filter-index t)
 (defun swiper--async-found-new-candidate (format-spec b e)
   (let (
         (candidate (swiper--async-create-candidate format-spec b e))
@@ -431,7 +421,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                   (if (null ivy--orig-cands)
                       (progn
                         (setq ivy--orig-cands candidate-cons)
-                        (setq  ivy--last-cand ivy--orig-cands)
+                        (setq ivy--last-cand ivy--orig-cands)
                         )
                     (if (candidate--compare candidate (car ivy--orig-cands))
                         (progn
@@ -440,8 +430,15 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                           )
                       (message "error, must be 0")))
                 (setq ivy--last-cand candidate-cons)))
-          (setq ivy--last-cand candidate-cons))
-        idx))))
+          (setq ivy--last-cand candidate-cons)
+          (when swiper--async-follow-filter-index
+            (setq idx (+ ivy--last-cand-index idx))))
+        (when swiper--async-follow-filter-index
+          (setq ivy--last-cand-index idx))
+        (when (string-match-p ivy-text candidate)
+            (when (and (>= ivy--index idx)
+                       (> (length ivy--orig-cands) 1))
+              (cl-incf ivy--index)))))))
 
 (defun swiper--async-format-spec ()
   (let* ((n-lines (count-lines (point-min) (point-max))))
