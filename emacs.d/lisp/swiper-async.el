@@ -363,29 +363,24 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                  swiper--async-low-end-point))
       (schedule-isearch buffer func))))
 
-(defun swiper--async-insertion-sort (candidate comp-func)
+(defun swiper--async-insertion-sort (candidate comp-func insertion-point)
   (let (
         (idx 0)
         )
-    (if (null ivy--orig-cands)
-        (setq ivy--orig-cands (list candidate))
-      (if (funcall comp-func candidate (car ivy--orig-cands))
-          (push candidate ivy--orig-cands)
-        (let (
-              (insertion-point ivy--orig-cands)
-              )
+    (unless (null insertion-point)
+      (unless (funcall comp-func candidate (car insertion-point))
+        (cl-incf idx)
+        (while (and
+                (not (null (cdr insertion-point)))
+                (not (funcall comp-func candidate (cadr insertion-point))))
           (cl-incf idx)
-          (while (and
-                  (not (null (cdr insertion-point)))
-                  (not (funcall comp-func candidate (cadr insertion-point))))
-            (cl-incf idx)
-            (setq insertion-point (cdr insertion-point)))
-          (let (
-                (current-cdr (cdr insertion-point))
-                (current-candidate (list candidate))
-                )
-            (setcdr insertion-point current-candidate)
-            (setcdr current-candidate current-cdr)))))
+          (setq insertion-point (cdr insertion-point)))
+        (let (
+              (current-cdr (cdr insertion-point))
+              (current-candidate (list candidate))
+              )
+          (setcdr insertion-point current-candidate)
+          (setcdr current-candidate current-cdr))))
   idx))
 
 (defun candidate--compare (c1 c2)
@@ -412,9 +407,19 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
        t b e lb le))))
 
 (defun swiper--async-found-new-candidate (format-spec b e)
-  (swiper--async-insertion-sort
-   (swiper--async-create-candidate format-spec b e)
-   'candidate--compare))
+  (let (
+        (candidate (swiper--async-create-candidate format-spec b e))
+        )
+    (let (
+          (idx (swiper--async-insertion-sort candidate 'candidate--compare ivy--orig-cands))
+          )
+      (when (= idx 0)
+        (if (null ivy--orig-cands)
+            (setq ivy--orig-cands (list candidate))
+          (if (candidate--compare candidate (car ivy--orig-cands))
+              (push candidate ivy--orig-cands)
+            (message "error, must be 0"))))
+      idx)))
 
 (defun swiper--async-format-spec ()
   (let* ((n-lines (count-lines (point-min) (point-max))))
