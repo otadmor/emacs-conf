@@ -82,6 +82,9 @@
 (defvar ivy--orig-cands nil
   "Store the original candidates found.")
 
+(defvar ivy--last-cand nil
+  "Store the last inserted candidate for faster insertion sort.")
+
 (defun swiper--async-iterate-matches (pattern beg end func)
   (when (and (/= (length pattern) 0) (< beg end))
     (goto-char beg)
@@ -187,6 +190,7 @@ Update the minibuffer with the amount of lines collected every
       (setq ivy--old-cands nil)
       (setq ivy--all-candidates nil)
       (setq ivy--orig-cands nil)
+      (setq ivy--last-cand nil)
       (setq ivy--index 0)
       (when (not (null swiper--async-timer))
         (cancel-timer swiper--async-timer)
@@ -202,6 +206,7 @@ Update the minibuffer with the amount of lines collected every
       (setq ivy--old-cands nil)
       (setq ivy--all-candidates nil)
       (setq ivy--orig-cands nil)
+      (setq ivy--last-cand nil)
       (setq ivy--index 0)
       (swiper--async-init)
       nil)
@@ -214,6 +219,7 @@ Update the minibuffer with the amount of lines collected every
     (setq ivy--old-cands nil)
     (setq ivy--all-candidates nil)
     (setq ivy--orig-cands nil)
+    (setq ivy--last-cand nil)
     (setq ivy--index 0)
     (setq to-search nil)
     (when (not (null swiper--async-timer))
@@ -241,15 +247,15 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                              swiper--async-isearch-interval
                              nil 'swiper--async-isearch buffer func)))
 
-(setq swiper--async-isearch-interval 0)
+(setq swiper--async-isearch-interval 0.1)
 (setq swiper--async-high-start-point nil)
 (setq swiper--async-high-end-point nil)
 (setq swiper--async-low-start-point nil)
 (setq swiper--async-low-end-point nil)
 (setq swiper--async-direction-backward nil)
 (setq swiper--async-max-matches-per-search 10)
-(setq swiper--async-default-max-matches-per-search 100)
-(setq swiper--max-search-length 4096) ; one page?
+(setq swiper--async-default-max-matches-per-search 1000)
+(setq swiper--max-search-length (* 10 4096)) ; one page?
 
 (defun swiper--async-update-output ()
   (ivy--set-candidates ivy--orig-cands)
@@ -363,9 +369,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                  swiper--async-low-end-point))
       (schedule-isearch buffer func))))
 
-(defun swiper--async-insertion-sort (candidate comp-func insertion-point)
+(defun swiper--async-insertion-sort (candidate-cons comp-func insertion-point)
   (let (
         (idx 0)
+        (candidate (car candidate-cons))
         )
     (unless (null insertion-point)
       (unless (funcall comp-func candidate (car insertion-point))
@@ -377,10 +384,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
           (setq insertion-point (cdr insertion-point)))
         (let (
               (current-cdr (cdr insertion-point))
-              (current-candidate (list candidate))
               )
-          (setcdr insertion-point current-candidate)
-          (setcdr current-candidate current-cdr))))
+          (setcdr insertion-point candidate-cons)
+          (setcdr candidate-cons current-cdr))))
   idx))
 
 (defun candidate--compare (c1 c2)
@@ -411,15 +417,31 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (candidate (swiper--async-create-candidate format-spec b e))
         )
     (let (
-          (idx (swiper--async-insertion-sort candidate 'candidate--compare ivy--orig-cands))
+          (candidate-cons (list candidate))
           )
-      (when (= idx 0)
-        (if (null ivy--orig-cands)
-            (setq ivy--orig-cands (list candidate))
-          (if (candidate--compare candidate (car ivy--orig-cands))
-              (push candidate ivy--orig-cands)
-            (message "error, must be 0"))))
-      idx)))
+      (let (
+            (idx (swiper--async-insertion-sort
+                  candidate-cons 'candidate--compare ivy--last-cand))
+            )
+        (if (= idx 0)
+            (progn
+              (setq idx (swiper--async-insertion-sort
+                         candidate-cons 'candidate--compare ivy--orig-cands))
+              (if (= idx 0)
+                  (if (null ivy--orig-cands)
+                      (progn
+                        (setq ivy--orig-cands candidate-cons)
+                        (setq  ivy--last-cand ivy--orig-cands)
+                        )
+                    (if (candidate--compare candidate (car ivy--orig-cands))
+                        (progn
+                          (push candidate ivy--orig-cands)
+                          (setq ivy--last-cand ivy--orig-cands)
+                          )
+                      (message "error, must be 0")))
+                (setq ivy--last-cand candidate-cons)))
+          (setq ivy--last-cand candidate-cons))
+        idx))))
 
 (defun swiper--async-format-spec ()
   (let* ((n-lines (count-lines (point-min) (point-max))))
@@ -582,6 +604,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq ivy--old-cands nil)
     (setq ivy--all-candidates nil)
     (setq ivy--orig-cands nil)
+    (setq ivy--last-cand nil)
     (setq ivy--index 0)
     (setq swiper-use-visual-line nil)
     (add-hook 'after-change-functions #'swiper-async-after-change t t)
