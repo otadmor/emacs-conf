@@ -8,7 +8,7 @@
   (save-excursion
     (save-restriction
       (widen)
-      (concat (format (swiper--async-format-spec)
+      (concat (format swiper--format-spec
                       (let (
                             (pos (swiper--get-end str))
                             )
@@ -540,7 +540,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 (defun swiper--async-update-input-ivy ()
   "Called when `ivy' input is updated."
- (with-ivy-window
+  (with-ivy-window
     (when (and (/= (length ivy-text) 0)
                (> (length (ivy-state-current ivy-last)) 0))
       (let (
@@ -624,6 +624,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                  :action #'swiper--action
                  :re-builder #'swiper--async-re-builder
                  :history 'swiper-history
+                 :sort nil
                  :caller 'swiper-async))
           (point))
       (unless (or res swiper-stay-on-quit)
