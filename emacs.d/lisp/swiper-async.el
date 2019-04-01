@@ -5,6 +5,24 @@
 
 (setq swiper--async-last-line nil)
 (setq swiper--async-last-line-pos nil)
+(defun swiper--async-line-at-pos (pos)
+  (let (
+        (line-no (if (or (null swiper--async-last-line)
+                         (null swiper--async-last-line-pos))
+                     (progn (goto-char pos) (line-number-at-pos))
+                   (let (
+                         (lines-diff
+                          (- (count-lines
+                              pos
+                              swiper--async-last-line-pos) 1))
+                         )
+                     (if (> pos swiper--async-last-line-pos)
+                         (+ swiper--async-last-line lines-diff)
+                       (- swiper--async-last-line lines-diff)))))
+        )
+    (setq swiper--async-last-line-pos pos)
+    (setq swiper--async-last-line line-no))) ; also, return the line
+
 (defun swiper-line-transformer (str)
   (save-excursion
     (save-restriction
@@ -12,24 +30,10 @@
       (let (
             (pos (swiper--get-begin str))
             )
-        (let (
-              (line-no (if pos (if (or (null swiper--async-last-line)
-                                       (null swiper--async-last-line-pos))
-                                   (progn (goto-char pos) (line-number-at-pos))
-                                 (let (
-                                       (lines-diff
-                                        (- (count-lines
-                                            pos
-                                            swiper--async-last-line-pos) 1))
-                                       )
-                                   (if (> pos swiper--async-last-line-pos)
-                                       (+ swiper--async-last-line lines-diff)
-                                     (- swiper--async-last-line lines-diff))))
-                         (swiper--get-line str)))
-              )
-          (setq swiper--async-last-line line-no)
-          (setq swiper--async-last-line-pos pos)
-          (concat (format swiper--format-spec line-no) str))))))
+        (concat (format swiper--format-spec
+                        (if pos
+                            (swiper--async-line-at-pos pos)
+                          (swiper--get-line str))) str)))))
 
 (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
@@ -39,19 +43,31 @@
         (x (car args))
         )
     (let (
-          (beg (swiper--get-begin x))
-          (pos (swiper--get-end x))
+          (begin (swiper--get-begin x))
+          (ending (swiper--get-end x))
           )
-      (when pos
-        (ivy--pulse-region beg pos)
+      (when begin
         (let (
-              (line-no (save-excursion (goto-char pos) (line-number-at-pos)))
+              (has-match (progn (goto-char begin)
+                                (let (
+                                      (ending (line-end-position))
+                                      )
+                                  (if (< begin ending)
+                                      (word-search-forward-lax
+                                       ivy-text
+                                       ending
+                                       'on-error-go-to-limit)
+                                    nil))))
               )
-          (let (
-                (line-number-str (format "%d" line-no))
-                )
-            (put-text-property
-             0 1 'swiper-line-number line-number-str x))))))
+          (if has-match
+              (let (
+                    (beg (match-beginning 0))
+                    (pos (match-end 0))
+                    )
+                (ivy--pulse-region beg pos)
+                (put-text-property
+                 0 1 'swiper-line-number
+                 (format "%d" (swiper--async-line-at-pos pos)) x)))))))
   (apply 'swiper--action args))
 
 
