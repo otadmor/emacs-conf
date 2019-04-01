@@ -159,6 +159,10 @@ Update the minibuffer with the amount of lines collected every
   (save-excursion
     (swiper--async-filter (current-buffer) begin end deleted-length)))
 
+(defun swiper-async-after-change-prop(begin end)
+  (save-excursion
+    (swiper--async-filter (current-buffer) begin end 0)))
+
 (setq to-search nil)
 (setq isearch-swiper-limit 3)
 (defun swiper-async-function (string)
@@ -209,6 +213,7 @@ Update the minibuffer with the amount of lines collected every
     (lazy-highlight-cleanup t)
     (isearch-dehighlight)
     (remove-hook 'after-change-functions #'swiper-async-after-change t)
+    (remove-hook 'modification-hooks #'swiper-async-after-change-prop t)
     (remove-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t)
     (remove-hook 'window-size-change-functions #'swiper--async-update-input-ivy-size-hook t)
     ; (remove-hook 'window-configuration-change-hook #'swiper--async-update-input-ivy-hook t)
@@ -585,6 +590,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq ivy--index 0)
     (setq swiper-use-visual-line nil)
     (add-hook 'after-change-functions #'swiper-async-after-change t t)
+    (add-hook 'modification-hooks #'swiper-async-after-change-prop t t)
     (add-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t t)
     (add-hook 'window-size-change-functions #'swiper--async-update-input-ivy-size-hook t t)
     ; (add-hook 'window-configuration-change-hook #'swiper--async-update-input-ivy-hook t t)
