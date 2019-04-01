@@ -40,37 +40,29 @@
 (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
 
-(defun swiper--async-action(&rest args)
+(defun swiper--async-action(x)
   (let (
-        (x (car args))
+        (beg (swiper--get-begin x))
+        (pos (swiper--get-end x))
         )
-    (let (
-          (begin (swiper--get-begin x))
-          (ending (swiper--get-end x))
-          )
-      (when begin
-        (let (
-              (has-match (progn (goto-char begin)
-                                (let (
-                                      (ending (line-end-position))
-                                      )
-                                  (if (< begin ending)
-                                      (word-search-forward-lax
-                                       ivy-text
-                                       ending
-                                       'on-error-go-to-limit)
-                                    nil))))
-              )
-          (if has-match
-              (let (
-                    (beg (match-beginning 0))
-                    (pos (match-end 0))
-                    )
-                (ivy--pulse-region beg pos)
-                (put-text-property
-                 0 1 'swiper-line-number
-                 (format "%d" (swiper--async-line-at-pos pos)) x)))))))
-  (apply 'swiper--action args))
+    (when beg
+      (let (
+            (has-match (progn (goto-char beg)
+                              (if (< beg pos)
+                                  (word-search-forward-lax
+                                   ivy-text
+                                   (line-end-position)
+                                   'on-error-go-to-limit)
+                                nil)))
+            )
+        (when has-match
+          (setq beg (match-beginning 0))
+          (setq pos (match-end 0)))
+        (ivy--pulse-region beg pos)
+        (put-text-property
+         0 1 'swiper-line-number
+         (format "%d" (swiper--async-line-at-pos pos)) x))))
+  (swiper--action x))
 
 
 (defcustom swiper-async-filter-update-time 50
@@ -203,6 +195,7 @@ Update the minibuffer with the amount of lines collected every
   "Grep in the current directory for STRING."
   ;; (counsel--elisp-to-pcre (setq ivy--old-re (ivy--regex string)))
   (with-ivy-window
+    (setq ivy--old-re nil)
     (setq isearch-string ivy-text)
     (cond
      ((= (length ivy-text) 0)
@@ -218,12 +211,13 @@ Update the minibuffer with the amount of lines collected every
         (cancel-timer swiper--async-timer)
         (setq swiper--async-timer nil))
       (lazy-highlight-cleanup t)
-      (isearch-dehighlight)
-      nil)
+      (isearch-dehighlight))
      ((or (<= (length ivy-text) isearch-swiper-limit)
           (= (length to-search) 0)
           (not (string-prefix-p to-search ivy-text)))
-      (setq to-search (if (< (length ivy-text) isearch-swiper-limit) ivy-text (substring ivy-text 0 isearch-swiper-limit)))
+      (setq to-search (if (< (length ivy-text) isearch-swiper-limit)
+                          ivy-text
+                        (substring ivy-text 0 isearch-swiper-limit)))
       ;; (= (length ivy--orig-cands) 0)
       (setq ivy--old-cands nil)
       (setq ivy--all-candidates nil)
@@ -232,10 +226,10 @@ Update the minibuffer with the amount of lines collected every
       (setq swiper--async-last-line nil)
       (setq swiper--async-last-line-pos nil)
       (setq ivy--index 0)
-      (swiper--async-init)
-      nil)
-     (t
-      (ivy--re-filter ivy-text ivy--orig-cands)))))
+      (swiper--async-init)))
+    (setq ivy--all-candidates (if (string= ivy-text "")
+                                  ivy--orig-cands
+                                (ivy--re-filter ivy-text ivy--orig-cands)))))
 
 (defun swiper-async--cleanup ()
   (with-ivy-window
@@ -290,9 +284,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq ivy--old-re nil) ; force recalculation
     (ivy--insert-minibuffer
      (ivy--format
-      (if (string= ivy-text "")
-          ivy--orig-cands
-        (ivy--re-filter ivy-text ivy--orig-cands))))
+      (setq ivy--all-candidates (if (string= ivy-text "")
+                                    ivy--orig-cands
+                                  (ivy--re-filter ivy-text ivy--orig-cands)))))
     (swiper--async-update-input-ivy)))
 
 (defun swiper--async-isearch(buffer func)
