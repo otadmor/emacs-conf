@@ -233,14 +233,13 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                              swiper--async-isearch-interval
                              nil 'swiper--async-isearch buffer func)))
 
-(setq swiper--async-isearch-interval 0.1)
+(setq swiper--async-isearch-interval 0)
 (setq swiper--async-high-start-point nil)
 (setq swiper--async-high-end-point nil)
 (setq swiper--async-low-start-point nil)
 (setq swiper--async-low-end-point nil)
 (setq swiper--async-direction-backward nil)
-(setq swiper--async-max-matches-per-search 10)
-(setq swiper--async-default-max-matches-per-search 1000)
+(setq swiper--async-default-max-matches-per-search 100)
 (setq swiper--max-search-length (* 10 4096)) ; one page?
 
 (defun swiper--async-update-output ()
