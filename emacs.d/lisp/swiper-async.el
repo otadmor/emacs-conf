@@ -551,10 +551,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                       (me (match-end 0))
                       )
                   (when (not (memq this-command '(ivy-yank-word
-                                                    ivy-yank-symbol
-                                                    ivy-yank-char
-                                                    scroll-other-window
-                                                    swiper-async)))
+                                                  ivy-yank-symbol
+                                                  ivy-yank-char
+                                                  scroll-other-window
+                                                  swiper-async)))
                     ; (let (
                     ;       (should-scroll (isearch-string-out-of-window me))
                     ;       )
