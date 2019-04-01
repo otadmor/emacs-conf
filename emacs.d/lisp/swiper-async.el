@@ -223,7 +223,7 @@ Update the minibuffer with the amount of lines collected every
      ((or (<= (length ivy-text) isearch-swiper-limit)
           (= (length to-search) 0)
           (not (string-prefix-p to-search ivy-text)))
-      (setq to-search (if (< (length ivy-text) 3) ivy-text (substring ivy-text 0 isearch-swiper-limit)))
+      (setq to-search (if (< (length ivy-text) isearch-swiper-limit) ivy-text (substring ivy-text 0 isearch-swiper-limit)))
       ;; (= (length ivy--orig-cands) 0)
       (setq ivy--old-cands nil)
       (setq ivy--all-candidates nil)
