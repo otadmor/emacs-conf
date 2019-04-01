@@ -448,7 +448,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                           (setq ivy--last-cand ivy--orig-cands)
                           )
                       (message "error, must be 0")))
-                (setq ivy--last-cand candidate-cons)))
+                (setq ivy--last-cand candidate-cons))
+              (run-at-time 0 nil 'swiper--async-update-input-ivy))
           (setq ivy--last-cand candidate-cons)
           (when swiper--async-follow-filter-index
             (setq idx (+ ivy--last-cand-index idx))))
