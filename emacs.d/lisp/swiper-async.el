@@ -39,9 +39,11 @@
         (x (car args))
         )
     (let (
+          (beg (swiper--get-begin x))
           (pos (swiper--get-end x))
           )
       (when pos
+        (ivy--pulse-region beg pos)
         (let (
               (line-no (save-excursion (goto-char pos) (line-number-at-pos)))
               )
