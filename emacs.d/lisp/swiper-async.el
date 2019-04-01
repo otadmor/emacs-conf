@@ -449,8 +449,12 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 (defun swiper--async-format-spec ()
   (let* ((n-lines (count-lines (point-min) (point-max))))
-    (setq swiper--width (1+ (floor (log n-lines 10))))
-    (setq swiper--format-spec (format "%%-%dd: " swiper--width))))
+    (let (
+          (width (1+ (floor (log n-lines 10))))
+          )
+      (when (/= swiper--width width)
+        (setq swiper--width width)
+        (setq swiper--format-spec (format "%%-%dd: " swiper--width))))))
 
 
 (defun swiper--async-init ()
