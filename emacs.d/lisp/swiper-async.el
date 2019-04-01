@@ -59,10 +59,7 @@
           (setq beg (match-beginning 0))
           (setq pos (match-end 0)))
         (ivy--pulse-region beg pos)
-        (put-text-property
-         0 1 'swiper-line-number
-         (format "%d" (swiper--async-line-at-pos pos)) x))))
-  (swiper--action x))
+        (goto-char pos)))))
 
 
 (defcustom swiper-async-filter-update-time 50
