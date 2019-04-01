@@ -18,7 +18,7 @@
 (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
 
-(defun swiper--async-action(orig-fun &rest args)
+(defun swiper--async-action(&rest args)
   (let (
         (x (car args))
         )
@@ -34,8 +34,7 @@
                 )
             (put-text-property
              0 1 'swiper-line-number line-number-str x))))))
-  (apply orig-fun args))
-(advice-add 'swiper--action :around 'swiper--async-action)
+  (apply 'swiper--action args))
 
 
 (defcustom swiper-async-filter-update-time 50
@@ -60,24 +59,6 @@
   (car (swiper--get-line-region item)))
 
 
-(defun swiper--line-with-borders ()
-  (let* ((beg (cond ((and (eq major-mode 'dired-mode)
-                          (bound-and-true-p dired-isearch-filenames))
-                     (dired-move-to-filename)
-                     (point))
-                    (swiper-use-visual-line
-                     (save-excursion
-                       (beginning-of-visual-line)
-                       (point)))
-                    (t
-                     (point))))
-         (end (if swiper-use-visual-line
-                  (save-excursion
-                    (end-of-visual-line)
-                    (point))
-                (line-end-position))))
-    (concat " " (buffer-substring beg end))))
-(defalias 'swiper--line 'swiper--line-with-borders)
 
 (defvar ivy--orig-cands nil
   "Store the original candidates found.")
@@ -212,7 +193,6 @@ Update the minibuffer with the amount of lines collected every
       (swiper--async-init)
       nil)
      (t
-      (setq ivy--old-re nil) ; force recalculation
       (ivy--re-filter ivy-text ivy--orig-cands)))))
 
 (defun swiper-async--cleanup ()
@@ -621,7 +601,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                  :require-match t
                  :update-fn #'swiper--async-update-input-ivy
                  :unwind #'swiper-async--cleanup
-                 :action #'swiper--action
+                 :action #'swiper--async-action
                  :re-builder #'swiper--async-re-builder
                  :history 'swiper-history
                  :sort nil
