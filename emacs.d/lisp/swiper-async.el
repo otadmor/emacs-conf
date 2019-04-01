@@ -33,7 +33,9 @@
         (concat (format swiper--format-spec
                         (if pos
                             (swiper--async-line-at-pos pos)
-                          (swiper--get-line str))) str)))))
+                          (swiper--get-line str)))
+                (buffer-substring (swiper--get-line-begin str)
+                                  (swiper--get-line-end str)))))))
 
 (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
@@ -419,7 +421,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
           (swiper-include-line-number-in-search nil)
           )
       (swiper--fill-candidate-properties
-       (buffer-substring lb le)
+       (buffer-substring-no-properties lb le)
        nil
        0
        t b e lb le))))
