@@ -602,7 +602,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                     )
                   (isearch-highlight mb me))
                 (isearch-dehighlight))))
-          (swiper--async-mark-candidates-in-window)))))
+          (swiper--async-mark-candidates-in-window)))
+    (if which-function-mode
+        (which-func-update-1 (selected-window)))))
 
 (defun swiper--async-re-builder(str)
   (word-search-regexp str t))
