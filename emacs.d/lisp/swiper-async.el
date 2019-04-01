@@ -3,18 +3,34 @@
 (require 'ivy)
 (require 'multiple-cursors-swiper) ; for candidates with advancer and initiater
 
-(setq swiper-include-line-number-in-search nil)
+(setq swiper--async-last-line nil)
+(setq swiper--async-last-line-pos nil)
 (defun swiper-line-transformer (str)
   (save-excursion
     (save-restriction
       (widen)
-      (concat (format swiper--format-spec
-                      (let (
-                            (pos (swiper--get-end str))
-                            )
-                        (if pos
-                            (progn (goto-char pos) (line-number-at-pos))
-                          (swiper--get-line str)))) str))))
+      (let (
+            (pos (swiper--get-begin str))
+            )
+        (let (
+              (line-no (if pos (if (or (null swiper--async-last-line)
+                                       (null swiper--async-last-line-pos))
+                                   (progn (goto-char pos) (line-number-at-pos))
+                                 (let (
+                                       (lines-diff
+                                        (- (count-lines
+                                            pos
+                                            swiper--async-last-line-pos) 1))
+                                       )
+                                   (if (> pos swiper--async-last-line-pos)
+                                       (+ swiper--async-last-line lines-diff)
+                                     (- swiper--async-last-line lines-diff))))
+                         (swiper--get-line str)))
+              )
+          (setq swiper--async-last-line line-no)
+          (setq swiper--async-last-line-pos pos)
+          (concat (format swiper--format-spec line-no) str))))))
+
 (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
 
@@ -121,23 +137,21 @@ Update the minibuffer with the amount of lines collected every
               (new-candidates)
               (new-candidates-tail)
               )
+          (swiper--async-format-spec)
           (swiper--async-iterate-matches
            ivy-text search-start search-end
-           (let (
-                 (format-spec (swiper--async-format-spec))
-                 )
-             (lambda (b e)
-               (let (
-                     (new-item (list (swiper--async-create-candidate format-spec b e)))
-                     )
-                 (when (string-match-p ivy-text (car new-item))
-                  (cl-incf found-matches))
-                 (if (null new-candidates)
-                     (progn
-                       (setq new-candidates-tail new-item)
-                       (setq new-candidates new-item))
-                   (setcdr new-candidates-tail new-item)
-                   (setq new-candidates-tail new-item))))))
+           (lambda (b e)
+             (let (
+                   (new-item (list (swiper--async-create-candidate b e)))
+                   )
+               (when (string-match-p ivy-text (car new-item))
+                 (cl-incf found-matches))
+               (if (null new-candidates)
+                   (progn
+                     (setq new-candidates-tail new-item)
+                     (setq new-candidates new-item))
+                 (setcdr new-candidates-tail new-item)
+                 (setq new-candidates-tail new-item)))))
           (let (
                 (tail-items (if (null new-candidates)
                                 last-item
@@ -177,6 +191,8 @@ Update the minibuffer with the amount of lines collected every
       (setq ivy--all-candidates nil)
       (setq ivy--orig-cands nil)
       (setq ivy--last-cand nil)
+      (setq swiper--async-last-line nil)
+      (setq swiper--async-last-line-pos nil)
       (setq ivy--index 0)
       (when (not (null swiper--async-timer))
         (cancel-timer swiper--async-timer)
@@ -193,6 +209,8 @@ Update the minibuffer with the amount of lines collected every
       (setq ivy--all-candidates nil)
       (setq ivy--orig-cands nil)
       (setq ivy--last-cand nil)
+      (setq swiper--async-last-line nil)
+      (setq swiper--async-last-line-pos nil)
       (setq ivy--index 0)
       (swiper--async-init)
       nil)
@@ -207,6 +225,8 @@ Update the minibuffer with the amount of lines collected every
     (setq ivy--last-cand nil)
     (setq ivy--index 0)
     (setq to-search nil)
+    (setq swiper--async-last-line nil)
+    (setq swiper--async-last-line-pos nil)
     (when (not (null swiper--async-timer))
       (cancel-timer swiper--async-timer)
       (setq swiper--async-timer nil))
@@ -372,23 +392,24 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
              (< (swiper--get-end c1)
                 (swiper--get-end c2))))))
 
-(defun swiper--async-create-candidate (format-spec b e)
+(defun swiper--async-create-candidate (b e)
   (save-restriction
     (widen)
     (let (
           (lb (save-excursion (goto-char b) (point-at-bol)))
           (le (save-excursion (goto-char e) (point-at-eol)))
+          (swiper-include-line-number-in-search nil)
           )
       (swiper--fill-candidate-properties
        (buffer-substring lb le)
-       format-spec
+       nil
        0
        t b e lb le))))
 
 (defvar swiper--async-follow-filter-index t)
-(defun swiper--async-found-new-candidate (format-spec b e)
+(defun swiper--async-found-new-candidate (b e)
   (let (
-        (candidate (swiper--async-create-candidate format-spec b e))
+        (candidate (swiper--async-create-candidate b e))
         )
     (let (
           (candidate-cons (list candidate))
@@ -441,13 +462,11 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (when (not (null swiper--async-timer))
       (cancel-timer swiper--async-timer)
       (setq swiper--async-timer nil))
+    (swiper--async-format-spec)
     (schedule-isearch
      (current-buffer)
-     (let (
-           (swiper--format-spec (swiper--async-format-spec))
-           )
-       (lambda (b e)
-         (swiper--async-found-new-candidate swiper--format-spec b e))))))
+     (lambda (b e)
+       (swiper--async-found-new-candidate b e)))))
 
 
 (defun swiper--async-mark-candidates-in-window ()
@@ -588,6 +607,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq ivy--orig-cands nil)
     (setq ivy--last-cand nil)
     (setq ivy--index 0)
+    (setq swiper--async-last-line nil)
+    (setq swiper--async-last-line-pos nil)
     (setq swiper-use-visual-line nil)
     (add-hook 'after-change-functions #'swiper-async-after-change t t)
     (add-hook 'modification-hooks #'swiper-async-after-change-prop t t)
