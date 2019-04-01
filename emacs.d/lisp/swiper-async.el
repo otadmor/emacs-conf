@@ -452,7 +452,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (let (
           (width (1+ (floor (log n-lines 10))))
           )
-      (when (/= swiper--width width)
+      (when (or (null swiper--width) (/= swiper--width width))
         (setq swiper--width width)
         (setq swiper--format-spec (format "%%-%dd: " swiper--width))))))
 
