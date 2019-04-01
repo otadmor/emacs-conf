@@ -557,11 +557,13 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                                     ivy-yank-char
                                                     scroll-other-window
                                                     swiper-async)))
-                    (let (
-                          (should-scroll (isearch-string-out-of-window me))
-                          )
-                      (when should-scroll
-                        (isearch-back-into-window (eq should-scroll 'above) me))))
+                    ; (let (
+                    ;       (should-scroll (isearch-string-out-of-window me))
+                    ;       )
+                    ;   (when should-scroll
+                                        ;     (isearch-back-into-window (eq should-scroll 'above) me)))
+                    (goto-char me)
+                    )
                   (isearch-highlight mb me))
                 (isearch-dehighlight))))
           (swiper--async-mark-candidates-in-window)))))
