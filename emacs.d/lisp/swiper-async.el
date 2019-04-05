@@ -276,9 +276,12 @@ Update the minibuffer with the amount of lines collected every
       (setq swiper--async-last-line-pos nil)
       (setq ivy--index 0)
       (swiper--async-init)))
-    (setq ivy--all-candidates (if (< (length ivy-text) isearch-swiper-limit)
-                                  ivy--orig-cands
-                                (ivy--re-filter ivy-text ivy--orig-cands)))))
+    (swiper--async-update-all-candidates)))
+
+(defun swiper--async-update-all-candidates()
+  (setq ivy--all-candidates (if (< (length ivy-text) isearch-swiper-limit)
+                                ivy--orig-cands
+                              (ivy--re-filter ivy-text ivy--orig-cands))))
 
 (defun swiper-async--cleanup ()
   (with-ivy-window
@@ -333,9 +336,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq ivy--old-re nil) ; force recalculation
     (ivy--insert-minibuffer
      (ivy--format
-      (setq ivy--all-candidates (if (< (length ivy-text) isearch-swiper-limit)
-                                    ivy--orig-cands
-                                  (ivy--re-filter ivy-text ivy--orig-cands)))))
+      (swiper--async-update-all-candidates)))
     (swiper--async-update-input-ivy)))
 
 (defun swiper--async-isearch(buffer func)
