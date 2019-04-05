@@ -191,7 +191,7 @@ Update the minibuffer with the amount of lines collected every
               )
           (swiper--async-format-spec)
           (swiper--async-iterate-matches
-           ivy-text search-start search-end
+           to-search search-start search-end
            (lambda (b e)
              (let (
                    (new-item (list (swiper--async-create-candidate b e)))
