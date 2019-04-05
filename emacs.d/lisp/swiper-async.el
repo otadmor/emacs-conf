@@ -7,18 +7,25 @@
 (setq swiper--async-last-line-pos nil)
 (defun swiper--async-line-at-pos (pos)
   (let (
-        (line-no (if (or (null swiper--async-last-line)
-                         (null swiper--async-last-line-pos))
-                     (progn (goto-char pos) (line-number-at-pos))
-                   (let (
-                         (lines-diff
-                          (- (count-lines
-                              pos
-                              swiper--async-last-line-pos) 1))
-                         )
-                     (if (> pos swiper--async-last-line-pos)
-                         (+ swiper--async-last-line lines-diff)
-                       (- swiper--async-last-line lines-diff)))))
+        (line-no
+         (if (or (null swiper--async-last-line)
+                 (null swiper--async-last-line-pos))
+             (progn (goto-char pos) (line-number-at-pos))
+           (let (
+                 (small-pos (min pos swiper--async-last-line-pos))
+                 (big-pos (max pos swiper--async-last-line-pos))
+                 )
+             (let (
+                   (big-pos-at-newline
+                    (= big-pos (progn (goto-char big-pos)
+                                      (line-beginning-position))))
+                   (lines-diff (count-lines small-pos big-pos))
+                   )
+               (unless big-pos-at-newline
+                 (setq lines-diff (- lines-diff 1)))
+               (if (> pos swiper--async-last-line-pos)
+                   (+ swiper--async-last-line lines-diff)
+                 (- swiper--async-last-line lines-diff))))))
         )
     (setq swiper--async-last-line-pos pos)
     (setq swiper--async-last-line line-no))) ; also, return the line
