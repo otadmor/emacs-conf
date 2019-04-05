@@ -136,6 +136,10 @@
             'on-error-go-to-limit)
       (funcall func (match-beginning 0) (match-end 0)))))
 
+(defun swiper--async-matchp (item)
+  (or (< (length ivy-text) isearch-swiper-limit)
+      (string-match-p ivy-text item)))
+
 (defun swiper--async-filter (buffer change-begin inserted-end deleted-length)
   "Receive from buffer the output STR.
 Update the minibuffer with the amount of lines collected every
@@ -165,11 +169,11 @@ Update the minibuffer with the amount of lines collected every
                   (item (car iterator))
                   )
               (when (<= (swiper--get-line-begin item) change-end)
-                (when (string-match-p ivy-text item)
+                (when (swiper--async-matchp item)
                   (cl-incf deleted-matches))
                 (setq last-item iterator))
               (when (< (swiper--get-line-end item) change-begin)
-                (when (string-match-p ivy-text item)
+                (when (swiper--async-matchp item)
                   (cl-incf change-index)
                   (cl-decf deleted-matches))
                 (setq first-item iterator)))
@@ -188,7 +192,7 @@ Update the minibuffer with the amount of lines collected every
              (let (
                    (new-item (list (swiper--async-create-candidate b e)))
                    )
-               (when (string-match-p ivy-text (car new-item))
+               (when (swiper--async-matchp (car new-item))
                  (cl-incf found-matches))
                (if (null new-candidates)
                    (progn
@@ -490,7 +494,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
             (setq idx (+ ivy--last-cand-index idx))))
         (when swiper--async-follow-filter-index
           (setq ivy--last-cand-index idx))
-        (when (string-match-p ivy-text candidate)
+        (when (swiper--async-matchp candidate)
             (when (and (>= ivy--index idx)
                        (> (length ivy--orig-cands) 1))
               (cl-incf ivy--index)))))))
