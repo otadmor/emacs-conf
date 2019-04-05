@@ -605,8 +605,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 (defun swiper--async-update-input-ivy ()
   "Called when `ivy' input is updated."
   (with-ivy-window
-    (when (and (/= (length ivy-text) 0)
-               (> (length (ivy-state-current ivy-last)) 0))
+    (when (> (length ivy--all-candidates) 0)
       (let (
             (item (ivy-state-current ivy-last))
             )
