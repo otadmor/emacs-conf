@@ -527,8 +527,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (swiper--async-format-spec)
     (schedule-isearch
      (current-buffer)
-     (lambda (b e)
-       (swiper--async-found-new-candidate b e)))))
+     'swiper--async-found-new-candidate)))
 
 
 (defun swiper--async-mark-candidates-in-window ()
