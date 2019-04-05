@@ -66,6 +66,41 @@
   "The amount of microseconds to wait until updating `swiper--async-filter'."
   :type 'integer)
 
+
+
+
+(defun swiper-async--fill-candidate-properties (str swiper--format-spec line-no use-marker &optional begin end line-begin line-end)
+  (setq str (ivy-cleanup-string str))
+  (if swiper-include-line-number-in-search
+      (let ((line-number-str (format swiper--format-spec line-no)))
+        (setq str (concat line-number-str str))
+        ;; (put-text-property 0 1 'display line-number-str str)
+        (put-text-property
+         0 1 'swiper-line-number line-number-str str)))
+  (put-text-property
+   0 1 'swiper-no-line-number line-no str)
+  (put-text-property
+   0 1 'region-data (if use-marker
+                        (list
+                         (set-marker (make-marker)
+                                     (let ((mark-even-if-inactive t))
+                                       end))
+                         (set-marker (make-marker)
+                                     (let ((mark-even-if-inactive t))
+                                       begin)))
+                      nil) str)
+  (put-text-property
+   0 1 'line-region-data (if use-marker
+                             (list
+                              (set-marker (make-marker)
+                                          (let ((mark-even-if-inactive t))
+                                            line-end))
+                              (set-marker (make-marker)
+                                          (let ((mark-even-if-inactive t))
+                                            line-begin)))
+                      nil) str)
+  str)
+
 (defun swiper--get-line (item)
   (get-text-property 0 'swiper-no-line-number item))
 (defun swiper--get-str-line (item)
@@ -411,7 +446,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
           (le (save-excursion (goto-char e) (point-at-eol)))
           (swiper-include-line-number-in-search nil)
           )
-      (swiper--fill-candidate-properties
+      (swiper-async--fill-candidate-properties
        (buffer-substring-no-properties lb le)
        ; (if (>= (length ivy-text) isearch-swiper-limit)
        ;     (buffer-substring-no-properties lb le)
