@@ -148,6 +148,10 @@ Update the minibuffer with the amount of lines collected every
              ;; (time-less-p (list 0 0 swiper-async-filter-update-time)
              ;; (time-since counsel--async-time))
              )
+    (when (and (not (null swiper--async-last-line-pos))
+               (< change-begin swiper--async-last-line-pos))
+      (setq swiper--async-last-line nil)
+      (setq swiper--async-last-line-pos nil))
     (let (
           (working-candidates ivy--orig-cands)
           (chars-diff (- (- inserted-end change-begin) deleted-length))
