@@ -386,6 +386,10 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 ;(global-set-key [(meta \4)] 'my-uncomment-region)
 
 
+(defun lines-in-region () (interactive)
+       (message "lines %S" (count-lines (region-beginning) (region-end))))
+(global-set-key (kbd "C-;") 'lines-in-region)
+
 (defun my-comment-or-uncomment-region ()
   (interactive)
   (let ((beg (save-excursion (when mark-active (goto-char (region-beginning)))
