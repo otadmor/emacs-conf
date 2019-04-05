@@ -39,6 +39,8 @@
             )
         (concat (format swiper--format-spec
                         (if pos
+                            ;; XXX : need to execute this with something similar
+                            ;; XXX : to with-timeout,
                             (swiper--async-line-at-pos pos)
                           (swiper--get-line str)))
                 (buffer-substring (swiper--get-line-begin str)
