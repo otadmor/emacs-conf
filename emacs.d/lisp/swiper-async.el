@@ -500,7 +500,6 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
        0
        t b e lb le))))
 
-(defvar swiper--async-follow-filter-index t)
 (defun swiper--async-found-new-candidate (b e)
   (let (
         (candidate (swiper--async-create-candidate b e))
@@ -531,10 +530,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                 (setq ivy--last-cand candidate-cons))
               (run-at-time 0 nil 'swiper--async-update-input-ivy))
           (setq ivy--last-cand candidate-cons)
-          (when swiper--async-follow-filter-index
-            (setq idx (+ ivy--last-cand-index idx))))
-        (when swiper--async-follow-filter-index
-          (setq ivy--last-cand-index idx))
+          (setq idx (+ ivy--last-cand-index idx)))
+        (setq ivy--last-cand-index idx)
         (when (swiper--async-matchp candidate)
             (when (and (>= ivy--index idx)
                        (> (length ivy--orig-cands) 1))
