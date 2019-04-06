@@ -284,26 +284,20 @@ Update the minibuffer with the amount of lines collected every
             ivy--orig-cands
           (let (
                 (idx nil)
-                (current-item (ivy-state-current ivy-last))
-                (same-item-idx nil)
-                (same-pos-idx nil)
+                (first-past-opoint-idx nil)
                 )
             (let (
                   (filter-results
                    (ivy--re-filter ivy-text ivy--orig-cands
                                    (lambda (re-str)
                                      (lambda (x)
-                                       (when (and (not (null current-item))
-                                                  (> (length current-item) 0))
-                                         (when (eq x current-item)
-                                           (setq same-item-idx idx))
-                                         (when (= (swiper--get-begin current-item)
-                                                  (swiper--get-begin x))
-                                           (= (swiper--get-end current-item)
-                                              (swiper--get-end x))
-                                           (setq same-pos-idx idx)))
+                                       (when (and (> (swiper--get-begin x)
+                                                     swiper--opoint)
+                                                  (null first-past-opoint-idx))
+                                         (setq first-past-opoint-idx idx))
                                        (let (
-                                             (has-match (string-match-p re-str x))
+                                             (has-match
+                                              (string-match-p re-str x))
                                              )
                                          (when has-match
                                            (if (null idx)
@@ -311,11 +305,9 @@ Update the minibuffer with the amount of lines collected every
                                              (cl-incf idx)))
                                          has-match)))))
                   )
-              (when follow-ivy-index
-                (if (not (null same-item-idx))
-                    (setq ivy--index same-item-idx)
-                  (unless (null same-pos-idx)
-                    (setq ivy--index same-pos-idx))))
+              (when (and follow-ivy-index
+                         (not (null first-past-opoint-idx)))
+                (setq ivy--index first-past-opoint-idx))
               filter-results)))))
 
 (defun swiper-async--cleanup ()
