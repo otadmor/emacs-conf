@@ -291,7 +291,7 @@ Update the minibuffer with the amount of lines collected every
                    (ivy--re-filter ivy-text ivy--orig-cands
                                    (lambda (re-str)
                                      (lambda (x)
-                                       (when (and (> (swiper--get-begin x)
+                                       (when (and (>= (swiper--get-begin x)
                                                      swiper--opoint)
                                                   (null first-past-opoint-idx))
                                          (setq first-past-opoint-idx idx))
