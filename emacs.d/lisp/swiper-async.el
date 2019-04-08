@@ -780,7 +780,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (which-func-update-1 (selected-window)))))
 
 (defun swiper--async-re-builder(str)
-  (word-search-regexp str t))
+  (regexp-quote str))
 
 (defun swiper--async-ivy (&optional initial-input)
   "Select one of CANDIDATES and move there.
