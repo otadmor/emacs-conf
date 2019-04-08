@@ -145,9 +145,23 @@
             'on-error-go-to-limit)
       (funcall func (match-beginning 0) (match-end 0)))))
 
-(defun swiper--async-matchp (item)
+(defun swiper--async-matchp (re-str item)
   (or (< (length ivy-text) isearch-swiper-limit)
-      (string-match-p ivy-text item)))
+      (if (string-prefix-p "^" re-str)
+          (string-match-p re-str item)
+        (let (
+              (rel-begin (- (swiper--get-begin item)
+                            (swiper--get-line-begin item)))
+              (rel-end (- (swiper--get-end item)
+                          (swiper--get-line-begin item)))
+              (line-length (- (swiper--get-line-end item)
+                              (swiper--get-line-begin item)))
+              )
+          (let (
+                (to-match (substring item rel-begin line-length))
+                (patt (concat "^" re-str))
+                )
+            (not (null (string-match-p patt to-match))))))))
 
 (defun swiper--async-filter (buffer change-begin inserted-end deleted-length)
   "Receive from buffer the output STR.
@@ -182,11 +196,11 @@ Update the minibuffer with the amount of lines collected every
                   (item (car iterator))
                   )
               (when (<= (swiper--get-line-begin item) change-end)
-                (when (swiper--async-matchp item)
+                (when (swiper--async-matchp ivy-text item)
                   (cl-incf deleted-matches))
                 (setq last-item iterator))
               (when (< (swiper--get-line-end item) change-begin)
-                (when (swiper--async-matchp item)
+                (when (swiper--async-matchp ivy-text item)
                   (cl-incf change-index)
                   (cl-decf deleted-matches))
                 (setq first-item iterator)))
@@ -205,7 +219,7 @@ Update the minibuffer with the amount of lines collected every
              (let (
                    (new-item (list (swiper--async-create-candidate b e)))
                    )
-               (when (swiper--async-matchp (car new-item))
+               (when (swiper--async-matchp ivy-text (car new-item))
                  (cl-incf found-matches))
                (if (null new-candidates)
                    (progn
@@ -280,6 +294,24 @@ Update the minibuffer with the amount of lines collected every
       (swiper--async-init)))
     (swiper--async-update-all-candidates t)))
 
+(defun swiper--async-matcher (re candidates)
+  (ivy--re-filter re candidates
+                  (lambda (re-str)
+                    (lambda (x)
+                      (when (and (>= (swiper--get-begin x)
+                                     swiper--opoint)
+                                 (null first-past-opoint-idx))
+                        (setq first-past-opoint-idx idx))
+                      (let (
+                            (has-match
+                             (swiper--async-matchp re-str x))
+                            )
+                        (when has-match
+                          (if (null idx)
+                              (setq idx 1)
+                            (cl-incf idx)))
+                        has-match)))))
+
 (defun swiper--async-update-all-candidates(&optional follow-ivy-index)
   (setq ivy--all-candidates
         (if (< (length ivy-text) isearch-swiper-limit)
@@ -290,16 +322,17 @@ Update the minibuffer with the amount of lines collected every
                 )
             (let (
                   (filter-results
+                   ;; (swiper--async-matcher ivy-text ivy--orig-cands))
                    (ivy--re-filter ivy-text ivy--orig-cands
                                    (lambda (re-str)
                                      (lambda (x)
                                        (when (and (>= (swiper--get-begin x)
-                                                     swiper--opoint)
+                                                      swiper--opoint)
                                                   (null first-past-opoint-idx))
                                          (setq first-past-opoint-idx idx))
                                        (let (
                                              (has-match
-                                              (string-match-p re-str x))
+                                              (swiper--async-matchp re-str x))
                                              )
                                          (when has-match
                                            (if (null idx)
@@ -468,7 +501,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                 (not (null (cdr insertion-point)))
                 (not (funcall comp-func candidate (cadr insertion-point))))
           (setq insertion-point (cdr insertion-point))
-          (when (swiper--async-matchp (car insertion-point))
+          (when (swiper--async-matchp ivy-text (car insertion-point))
             (cl-incf idx)))
         (let (
               (current-cdr (cdr insertion-point))
@@ -533,7 +566,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                     )
                 (message "error, must be 0")))))
         (setq ivy--last-cand candidate-cons)
-        (when (swiper--async-matchp candidate)
+        (when (swiper--async-matchp ivy-text candidate)
           (setq idx (+ ivy--next-cand-index idx))
           (setq ivy--next-cand-index (+ idx 1))
           (when (and (>= ivy--index idx)
@@ -731,6 +764,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                  :action #'swiper--async-action
                  :re-builder #'swiper--async-re-builder
                  :history 'swiper-history
+                 :matcher 'swiper--async-matcher ; this is not really used.
                  :sort nil
                  :caller 'swiper-async))
           (point))
