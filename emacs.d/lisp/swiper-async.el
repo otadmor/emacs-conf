@@ -721,7 +721,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                 (null end))
       (ivy-add-face-text-property beg end 'lazy-highlight str)))
   str)
-(add-to-list 'ivy-highlight-functions-alist '(swiper--async-re-builder . swiper--async-highlighter))
+(add-to-list 'ivy-highlight-functions-alist '(swiper--regexp-builder . swiper--async-highlighter))
+(add-to-list 'ivy-highlight-functions-alist '(regexp-quote . swiper--async-highlighter))
+
+
 
 
 (defun swiper--async-update-input-ivy-scroll-hook (window new-window-start)
@@ -779,9 +782,6 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (if which-function-mode
         (which-func-update-1 (selected-window)))))
 
-(defun swiper--async-re-builder(str)
-  (regexp-quote str))
-
 (defun swiper--async-ivy (&optional initial-input)
   "Select one of CANDIDATES and move there.
 When non-nil, INITIAL-INPUT is the initial search pattern."
@@ -824,7 +824,6 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                  :update-fn #'swiper--async-update-input-ivy
                  :unwind #'swiper-async--cleanup
                  :action #'swiper--async-action
-                 :re-builder #'swiper--async-re-builder
                  :history 'swiper-history
                  :matcher 'swiper--async-matcher ; this is not really used.
                  :sort nil
@@ -837,6 +836,15 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
       (when swiper--reveal-mode
         (reveal-mode 1)))))
 
+
+(defun swiper--regexp-builder (x) x)
+
+(setq ivy-preferred-re-builders
+  '((ivy--regex-plus . "ivy")
+    ; (ivy--regex-ignore-order . "order")
+    ; (ivy--regex-fuzzy . "fuzzy")
+    (regexp-quote . "text")
+    (swiper--regexp-builder . "regexp")))
 
 (defun ivy-previous-line-hook(orig-fun &rest args)
   (setq swiper--async-direction-backward t)

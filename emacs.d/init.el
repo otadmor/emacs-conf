@@ -664,6 +664,7 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 (define-key swiper-map (kbd "C-<") 'mcs-mark-previous-like-this)
 (define-key swiper-map (kbd "C-<up>") 'ivy-previous-line)
 (define-key swiper-map (kbd "C-<down>") 'ivy-next-line)
+(define-key swiper-map (kbd "M-r") 'ivy-rotate-preferred-builders)
 
 (define-key swiper-map (kbd "M-C-p") 'swiper--goto-original-point)
 
