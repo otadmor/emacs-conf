@@ -30,22 +30,72 @@
     (setq swiper--async-last-line-pos pos)
     (setq swiper--async-last-line line-no))) ; also, return the line
 
+
+(defun swiper--async-match (re-str item)
+  (if (string-prefix-p "^" re-str)
+      (progn
+        (when (string-match re-str item)
+          (list (match-beginning 0) (match-end 0))))
+    (let (
+          (rel-begin (- (swiper--get-begin item)
+                        (swiper--get-line-begin item)))
+          (rel-end (- (swiper--get-end item)
+                      (swiper--get-line-begin item)))
+          (line-length (- (swiper--get-line-end item)
+                          (swiper--get-line-begin item)))
+          )
+      (let (
+            (to-match (substring item rel-begin line-length))
+            (patt (concat "^" re-str))
+            )
+        (when (string-match patt to-match)
+          (list (+ rel-begin (match-beginning 0))
+                (+ rel-begin (match-end 0))))))))
+
 (defun swiper-line-transformer (str)
   (save-excursion
     (save-restriction
       (widen)
       (let (
             (pos (swiper--get-begin str))
+            (line-beg (swiper--get-line-begin str))
             )
-        (concat (format swiper--format-spec
-                        (if pos
-                            ;; XXX : need to execute this with something similar
-                            ;; XXX : to with-timeout,
-                            (swiper--async-line-at-pos pos)
-                          (swiper--get-line str)))
-                (buffer-substring (swiper--get-line-begin str)
-                                  (swiper--get-line-end str)))))))
-
+        (let (
+              (line-str (format swiper--format-spec
+                                (if pos
+                                    ;; XXX : need to execute this with
+                                    ;; XXX : something similar
+                                    ;; XXX : to with-timeout,
+                                    (swiper--async-line-at-pos pos)
+                                  (swiper--get-line str))))
+              (cand-substr (buffer-substring (swiper--get-line-begin str)
+                                             (swiper--get-line-end str)))
+              )
+          (let (
+                (line-str-len (length line-str))
+                (res (concat line-str cand-substr))
+                )
+            (let (
+                  (line-match (swiper--async-match ivy-text str))
+                  )
+              (when line-match
+                (let (
+                      (beg (car line-match))
+                      (end (cadr line-match))
+                      )
+                  (let (
+                        (highlight-beg (+ line-str-len beg))
+                        (highlight-end (+ line-str-len end))
+                        )
+                    (put-text-property
+                     0 1 'region-data (list
+                                       (set-marker (make-marker)
+                                                   (let ((mark-even-if-inactive t))
+                                                     highlight-end))
+                                       (set-marker (make-marker)
+                                                   (let ((mark-even-if-inactive t))
+                                                     highlight-beg))) res)))))
+            res))))))
 (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
 
@@ -640,7 +690,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 	(setq isearch-overlay (make-overlay beg end))
 	;; 1001 is higher than lazy's 1000 and ediff's 100+
 	(overlay-put isearch-overlay 'priority 1001)
-	(overlay-put isearch-overlay 'face isearch-face))))
+	(overlay-put isearch-overlay 'face isearch-face)
+        (unless (or (eq isearch-lazy-highlight 'all-windows)
+                    isearch-lazy-highlight-buffer)
+          (overlay-put isearch-overlay 'window (selected-window))))))
 
 (defun isearch-dehighlight ()
   (when isearch-overlay
@@ -661,6 +714,18 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (unless (or (eq isearch-lazy-highlight 'all-windows)
                 isearch-lazy-highlight-buffer)
       (overlay-put ov 'window (selected-window)))))
+
+(defun swiper--async-highlighter (str)
+  (let (
+        (beg (swiper--get-begin str))
+        (end (swiper--get-end str))
+        )
+    (unless (or (null beg)
+                (null end))
+      (ivy-add-face-text-property beg end 'lazy-highlight str)))
+  str)
+(add-to-list 'ivy-highlight-functions-alist '(swiper--async-re-builder . swiper--async-highlighter))
+
 
 (defun swiper--async-update-input-ivy-scroll-hook (window new-window-start)
   (when (and (eq window (ivy--get-window ivy-last)) (active-minibuffer-window))
