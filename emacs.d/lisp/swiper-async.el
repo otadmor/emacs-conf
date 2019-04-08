@@ -58,16 +58,20 @@
       (widen)
       (let (
             (pos (swiper--get-begin str))
-            (line-beg (swiper--get-line-begin str))
+            (line-beg (if swiper-include-line-number-in-search
+                          (swiper--get-line-begin str)
+                        nil))
             )
         (let (
-              (line-str (format swiper--format-spec
-                                (if pos
-                                    ;; XXX : need to execute this with
-                                    ;; XXX : something similar
-                                    ;; XXX : to with-timeout,
-                                    (swiper--async-line-at-pos pos)
-                                  (swiper--get-line str))))
+              (line-str (if swiper-include-line-number-in-search
+                            (format swiper--format-spec
+                                    (if pos
+                                        ;; XXX : need to execute this with
+                                        ;; XXX : something similar
+                                        ;; XXX : to with-timeout,
+                                        (swiper--async-line-at-pos pos)
+                                      (swiper--get-line str)))
+                          ""))
               (cand-substr (buffer-substring (swiper--get-line-begin str)
                                              (swiper--get-line-end str)))
               )
@@ -130,12 +134,6 @@
 
 (defun swiper-async--fill-candidate-properties (str swiper--format-spec line-no use-marker &optional begin end line-begin line-end)
   (setq str (ivy-cleanup-string str))
-  (if swiper-include-line-number-in-search
-      (let ((line-number-str (format swiper--format-spec line-no)))
-        (setq str (concat line-number-str str))
-        ;; (put-text-property 0 1 'display line-number-str str)
-        (put-text-property
-         0 1 'swiper-line-number line-number-str str)))
   (put-text-property
    0 1 'swiper-no-line-number line-no str)
   (put-text-property
@@ -576,7 +574,6 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (let (
           (lb (save-excursion (goto-char b) (point-at-bol)))
           (le (save-excursion (goto-char e) (point-at-eol)))
-          (swiper-include-line-number-in-search nil)
           )
       (swiper-async--fill-candidate-properties
        (buffer-substring-no-properties lb le)
