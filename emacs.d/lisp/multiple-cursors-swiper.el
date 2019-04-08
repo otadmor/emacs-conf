@@ -58,12 +58,12 @@
 
 (defun swiper--fill-candidate-properties (str swiper--format-spec line-no use-marker &optional begin end line-begin line-end)
   (setq str (ivy-cleanup-string str))
-  (if swiper-include-line-number-in-search
-      (let ((line-number-str (format swiper--format-spec line-no)))
+  (let ((line-number-str (format swiper--format-spec line-no)))
+    (if swiper-include-line-number-in-search
         (setq str (concat line-number-str str))
-        ;; (put-text-property 0 1 'display line-number-str str)
-        (put-text-property
-         0 1 'swiper-line-number line-number-str str)))
+      (put-text-property 0 1 'display line-number-str str)
+      (put-text-property
+       0 1 'swiper-line-number line-number-str str)))
   (put-text-property
    0 1 'swiper-no-line-number line-no str)
   (put-text-property
