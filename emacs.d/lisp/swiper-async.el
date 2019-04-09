@@ -906,6 +906,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 (defun ivy-rotate-preferred-builders-update()
   (swiper-async-function ivy-text)
+  (setq ivy--highlight-function
+        (or (cdr (assq ivy--regex-function ivy-highlight-functions-alist))
+              #'ivy--highlight-default))
   (setq ivy--prompt (ivy-add-prompt-count
                      (ivy--quote-format-string
                       (or (ivy-state-prompt ivy-last) "")))))
