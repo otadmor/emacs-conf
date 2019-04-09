@@ -322,8 +322,7 @@ Update the minibuffer with the amount of lines collected every
       (when (not (null swiper--async-timer))
         (cancel-timer swiper--async-timer)
         (setq swiper--async-timer nil))
-      (lazy-highlight-cleanup t)
-      (isearch-dehighlight))
+      (swiper--cleanup))
      ((or (<= (length ivy-text) isearch-swiper-limit)
           (= (length to-search) 0)
           (not (string-prefix-p to-search ivy-text)))
@@ -407,8 +406,6 @@ Update the minibuffer with the amount of lines collected every
     (when (not (null swiper--async-timer))
       (cancel-timer swiper--async-timer)
       (setq swiper--async-timer nil))
-    (lazy-highlight-cleanup t)
-    (isearch-dehighlight)
     (remove-hook 'after-change-functions #'swiper-async-after-change t)
     (remove-hook 'modification-hooks #'swiper-async-after-change-prop t)
     (remove-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t)
@@ -416,6 +413,13 @@ Update the minibuffer with the amount of lines collected every
     ; (remove-hook 'window-configuration-change-hook #'swiper--async-update-input-ivy-hook t)
     )
   (swiper--cleanup))
+
+
+(defun swiper--async-swiper--cleanup-hook ()
+  (with-ivy-window
+    (lazy-highlight-cleanup t)
+    (isearch-dehighlight)))
+(advice-add 'swiper--cleanup :after #'swiper--async-swiper--cleanup-hook)
 
 (defun swiper-async (&optional initial-input)
   "`isearch' with an overview.
@@ -661,8 +665,34 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (line-end-position (window-height)))
       swiper--point-max))))
 
+(defcustom ivy-marker-functions-alist
+  '((ivy--regex-plus . swiper--async-mark-candidates-in-range-ivy)
+    (ivy--regex-ignore-order . swiper--async-mark-candidates-in-range-ivy)
+    (ivy--regex-fuzzy . swiper--async-mark-candidates-in-range-ivy)
+    (regexp-quote . swiper--async-mark-candidates-in-range-isearch)
+    (swiper--regexp-builder . swiper--async-mark-candidates-in-range-isearch)
+    )
+  "Alist of preferred markers with the marker function."
+  :type '(alist :key-type function :value-type string))
+
 (defun swiper--async-mark-candidates-in-range (beg end)
-  (swiper--async-mark-candidates-in-range-isearch beg end))
+  (setq ivy--marker-function
+        (or (cdr (assq ivy--regex-function ivy-marker-functions-alist))
+            #'swiper--async-mark-candidates-in-range-ivy))
+  (funcall ivy--marker-function beg end))
+
+(defun swiper--async-mark-candidates-in-range-ivy (beg end)
+  (when (> (length (ivy-state-current ivy-last)) 0)
+      (let* ((regexp-or-regexps (funcall ivy--regex-function ivy-text))
+             (regexps
+              (if (listp regexp-or-regexps)
+                  (mapcar #'car (cl-remove-if-not #'cdr regexp-or-regexps))
+                (list regexp-or-regexps))))
+        (dolist (re regexps)
+          (let* ((re (replace-regexp-in-string
+                      "    " "\t"
+                      re)))
+                 (swiper--add-overlays re beg end))))))
 
 (defun swiper--async-mark-candidates-in-range-isearch (beg end)
   ;; (save-excursion (swiper--add-overlays ivy-text beg end))
@@ -742,6 +772,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 (defun swiper--async-update-input-ivy ()
   "Called when `ivy' input is updated."
   (with-ivy-window
+    (swiper--cleanup)
     (when (> (length ivy--all-candidates) 0)
       (let (
             (item (ivy-state-current ivy-last))
@@ -762,7 +793,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                       'on-error-go-to-limit)
                                    nil))))
                   )
-              (if has-match
+              (when has-match
                 (let (
                       (mb (match-beginning 0))
                       (me (match-end 0))
@@ -779,9 +810,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                         ;     (isearch-back-into-window (eq should-scroll 'above) me)))
                     (goto-char me)
                     )
-                  (isearch-highlight mb me))
-                (isearch-dehighlight))))
-          (swiper--async-mark-candidates-in-window)))))
+                  (isearch-highlight mb me))))))
+            (swiper--async-mark-candidates-in-window))))
 
 (defun swiper--async-ivy (&optional initial-input)
   "Select one of CANDIDATES and move there.
