@@ -662,6 +662,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
       swiper--point-max))))
 
 (defun swiper--async-mark-candidates-in-range (beg end)
+  (swiper--async-mark-candidates-in-range-isearch beg end))
+
+(defun swiper--async-mark-candidates-in-range-isearch (beg end)
   ;; (save-excursion (swiper--add-overlays ivy-text beg end))
   ;; (save-excursion (isearch-lazy-highlight-new-loop beg end))
   (save-excursion
