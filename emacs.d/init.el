@@ -104,7 +104,7 @@
 (ivy-mode t)
 ;(icomplete-mode t)
 (setq ivy-use-virtual-buffers t
-            ivy-count-format "%d/%d ")
+      ivy-count-format "%d/%d ")
 (fset 'yes-or-no-p 'y-or-n-p)
 
 (setq global-mark-ring-max 1000)
