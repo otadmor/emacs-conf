@@ -845,7 +845,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
          (and
           (setq res
                 (ivy-read
-                 "Swiper: "
+                 "Swiper [%BUILDER]: "
                  'swiper-async-function
                  :dynamic-collection t
                  :initial-input initial-input
@@ -868,7 +868,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (reveal-mode 1)))))
 
 (defun ivy-rotate-preferred-builders-update()
-  (swiper-async-function ivy-text))
+  (swiper-async-function ivy-text)
+  (setq ivy--prompt (ivy-add-prompt-count
+                     (ivy--quote-format-string
+                      (or (ivy-state-prompt ivy-last) "")))))
 (advice-add 'ivy-rotate-preferred-builders :after #'ivy-rotate-preferred-builders-update)
 
 (defun swiper--async-which-func-update ()
@@ -885,6 +888,14 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     ; (ivy--regex-fuzzy . "fuzzy")
     (regexp-quote . "text")
     (swiper--regexp-builder . "regexp")))
+
+(defun ivy--quote-format-string-hook(orig-fun str)
+  (funcall orig-fun
+           (replace-regexp-in-string
+            "%BUILDER"
+            (cdr (assq ivy--regex-function ivy-preferred-re-builders))
+            str t t)))
+(advice-add 'ivy--quote-format-string :around #'ivy--quote-format-string-hook)
 
 (defun ivy-previous-line-hook(orig-fun &rest args)
   (setq swiper--async-direction-backward t)
