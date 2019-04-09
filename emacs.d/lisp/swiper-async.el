@@ -885,7 +885,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 (setq ivy-preferred-re-builders
   '((ivy--regex-plus . "ivy")
     ; (ivy--regex-ignore-order . "order")
-    ; (ivy--regex-fuzzy . "fuzzy")
+    (ivy--regex-fuzzy . "fuzzy")
     (regexp-quote . "text")
     (swiper--regexp-builder . "regexp")))
 
