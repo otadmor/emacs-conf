@@ -836,6 +836,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
       (when swiper--reveal-mode
         (reveal-mode 1)))))
 
+(defun ivy-rotate-preferred-builders-update()
+  (swiper-async-function ivy-text))
+(advice-add 'ivy-rotate-preferred-builders :after #'ivy-rotate-preferred-builders-update)
 
 (defun swiper--regexp-builder (x) x)
 
