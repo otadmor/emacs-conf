@@ -778,9 +778,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                     )
                   (isearch-highlight mb me))
                 (isearch-dehighlight))))
-          (swiper--async-mark-candidates-in-window)))
-    (if which-function-mode
-        (which-func-update-1 (selected-window)))))
+          (swiper--async-mark-candidates-in-window)))))
 
 (defun swiper--async-ivy (&optional initial-input)
   "Select one of CANDIDATES and move there.
@@ -839,6 +837,12 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 (defun ivy-rotate-preferred-builders-update()
   (swiper-async-function ivy-text))
 (advice-add 'ivy-rotate-preferred-builders :after #'ivy-rotate-preferred-builders-update)
+
+(defun swiper--async-which-func-update ()
+  (with-ivy-window
+    (if which-function-mode
+        (which-func-update-1 (selected-window)))))
+(advice-add 'swiper--async-update-input-ivy :after #'swiper--async-which-func-update)
 
 (defun swiper--regexp-builder (x) x)
 
