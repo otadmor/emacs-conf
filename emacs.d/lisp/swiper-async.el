@@ -920,9 +920,29 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 (setq ivy-preferred-re-builders
   '((ivy--regex-plus . "ivy")
     (ivy--regex-ignore-order . "order")
-    ; (ivy--regex-fuzzy . "fuzzy")
+    (ivy--regex-fuzzy . "fuzzy")
     (regexp-quote . "text")
     (swiper--regexp-builder . "regexp")))
+
+
+
+(defun ivy--regex-fuzzy (str)
+  "Build a regex sequence from STR.
+Insert .* between each char."
+  (if (string-match "\\`\\(\\^?\\)\\(.*?\\)\\(\\$?\\)\\'" str)
+      (prog1
+          (concat (match-string 1 str)
+                  (let ((lst (string-to-list (match-string 2 str))))
+                    (apply #'concat
+                           (cl-mapcar
+                            #'concat
+                            (cons "" (cdr (mapcar (lambda (c) (format "[^%c\n]*" c))
+                                                  lst)))
+                            (mapcar (lambda (x) (format "\\(%s\\)" (regexp-quote (char-to-string x))))
+                                    lst))))
+                  (match-string 3 str))
+        (setq ivy--subexps (length (match-string 2 str))))
+    str))
 
 (defun ivy--quote-format-string-hook(orig-fun str)
   (funcall orig-fun
