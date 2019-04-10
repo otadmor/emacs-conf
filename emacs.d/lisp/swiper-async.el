@@ -61,6 +61,7 @@
             (line-beg (if swiper-include-line-number-in-search
                           (swiper--get-line-begin str)
                         nil))
+            (positive-re (swiper-async--join-re (funcall ivy--regex-function ivy-text)))
             )
         (let (
               (line-str (if swiper-include-line-number-in-search
@@ -80,9 +81,7 @@
                 (res (concat line-str cand-substr))
                 )
             (let (
-                  (line-match (swiper--async-match
-                               (swiper-async--join-re
-                                (funcall ivy--regex-function ivy-text)) str))
+                  (line-match (swiper--async-match positive-re str))
                   )
               (when line-match
                 (let (
@@ -109,14 +108,14 @@
   (let (
         (beg (swiper--get-begin x))
         (pos (swiper--get-end x))
+        (positive-re (swiper-async--join-re (funcall ivy--regex-function ivy-text)))
         )
     (when beg
       (let (
             (has-match (progn (goto-char beg)
                               (if (< beg pos)
                                   (re-search-forward
-                                   (swiper-async--join-re
-                                    (funcall ivy--regex-function ivy-text))
+                                   positive-re
                                    (line-end-position)
                                    'on-error-go-to-limit)
                                 nil)))
@@ -190,12 +189,14 @@
 (defun swiper--async-iterate-matches (pattern beg end func)
   (when (and (/= (length pattern) 0) (< beg end))
     (goto-char beg)
+    (let (
+          (positive-re (swiper-async--join-re (funcall ivy--regex-function pattern)))
+          )
     (while (re-search-forward
-            (swiper-async--join-re
-             (funcall ivy--regex-function pattern))
+            positive-re
             end
             'on-error-go-to-limit)
-      (funcall func (match-beginning 0) (match-end 0)))))
+      (funcall func (match-beginning 0) (match-end 0))))))
 
 (defun swiper--async-matchp (re-str item)
   (or (< (length ivy-text) isearch-swiper-limit)
@@ -228,6 +229,7 @@ Update the minibuffer with the amount of lines collected every
       (setq swiper--async-last-line nil)
       (setq swiper--async-last-line-pos nil))
     (let (
+          (positive-re (swiper-async--join-re (funcall ivy--regex-function ivy-text)))
           (working-candidates ivy--orig-cands)
           (chars-diff (- (- inserted-end change-begin) deleted-length))
           (deleted-end (+ change-begin deleted-length))
@@ -248,15 +250,11 @@ Update the minibuffer with the amount of lines collected every
                   (item (car iterator))
                   )
               (when (<= (swiper--get-line-begin item) change-end)
-                (when (swiper--async-matchp
-                       (swiper-async--join-re
-                        (funcall ivy--regex-function ivy-text)) item)
+                (when (swiper--async-matchp positive-re item)
                   (cl-incf deleted-matches))
                 (setq last-item iterator))
               (when (< (swiper--get-line-end item) change-begin)
-                (when (swiper--async-matchp
-                       (swiper-async--join-re
-                        (funcall ivy--regex-function ivy-text)) item)
+                (when (swiper--async-matchp positive-re item)
                   (cl-incf change-index)
                   (cl-decf deleted-matches))
                 (setq first-item iterator)))
@@ -275,9 +273,7 @@ Update the minibuffer with the amount of lines collected every
              (let (
                    (new-item (list (swiper--async-create-candidate b e)))
                    )
-               (when (swiper--async-matchp
-                      (swiper-async--join-re
-                       (funcall ivy--regex-function ivy-text)) (car new-item))
+               (when (swiper--async-matchp positive-re (car new-item))
                  (cl-incf found-matches))
                (if (null new-candidates)
                    (progn
@@ -376,12 +372,12 @@ Update the minibuffer with the amount of lines collected every
           (let (
                 (idx nil)
                 (first-past-opoint-idx nil)
+                (positive-re (swiper-async--join-re (funcall ivy--regex-function ivy-text)))
                 )
             (let (
                   (filter-results
                    ;; (swiper--async-matcher ivy-text ivy--orig-cands))
-                   (ivy--re-filter (swiper-async--join-re
-                                    (funcall ivy--regex-function ivy-text))
+                   (ivy--re-filter positive-re
                                    ivy--orig-cands
                                    (lambda (re-str)
                                      (lambda (x)
@@ -490,7 +486,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
              )
     (let (
           (matches-found 0)
-          (search-patt (swiper-async--join-re
+          (positive-re (swiper-async--join-re
                         (funcall ivy--regex-function to-search)))
           )
       (with-ivy-window
@@ -510,7 +506,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                     (while (and (not (input-pending-p))
                                 (< matches-found swiper--async-max-matches-per-search)
                                 (re-search-forward
-                                 search-patt
+                                 positive-re
                                  (min swiper--async-high-end-point
                                       (+ swiper--async-high-start-point
                                          swiper--max-search-length
@@ -525,7 +521,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                     (while (and (not (input-pending-p))
                                 (< matches-found swiper--async-max-matches-per-search)
                                 (re-search-forward
-                                 search-patt
+                                 positive-re
                                  (min swiper--async-low-end-point
                                       (+ swiper--async-low-start-point
                                          swiper--max-search-length
@@ -541,7 +537,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                   (while (and (not (input-pending-p))
                               (< matches-found swiper--async-max-matches-per-search)
                               (re-search-backward
-                               search-patt
+                               positive-re
                                (max swiper--async-low-start-point
                                     (- swiper--async-low-end-point
                                        swiper--max-search-length
@@ -556,7 +552,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                   (while (and (not (input-pending-p))
                               (< matches-found swiper--async-max-matches-per-search)
                               (re-search-backward
-                               search-patt
+                               positive-re
                                (max swiper--async-high-start-point
                                     (- swiper--async-high-end-point
                                        swiper--max-search-length
@@ -577,6 +573,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (let (
         (idx nil)
         (candidate (car candidate-cons))
+        (positive-re (swiper-async--join-re (funcall ivy--regex-function ivy-text)))
         )
     (unless (null insertion-point)
       (when (not (funcall comp-func candidate (car insertion-point)))
@@ -585,9 +582,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                 (not (null (cdr insertion-point)))
                 (not (funcall comp-func candidate (cadr insertion-point))))
           (setq insertion-point (cdr insertion-point))
-          (when (swiper--async-matchp (swiper-async--join-re
-                                       (funcall ivy--regex-function ivy-text))
-                                      (car insertion-point))
+          (when (swiper--async-matchp positive-re (car insertion-point))
             (cl-incf idx)))
         (let (
               (current-cdr (cdr insertion-point))
@@ -651,14 +646,15 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                     )
                 (message "error, must be 0")))))
         (setq ivy--last-cand candidate-cons)
-        (when (swiper--async-matchp (swiper-async--join-re
-                                     (funcall ivy--regex-function ivy-text))
-                                    candidate)
-          (setq idx (+ ivy--next-cand-index idx))
-          (setq ivy--next-cand-index (+ idx 1))
-          (when (and (>= ivy--index idx)
-                     (> (length ivy--orig-cands) 1))
-            (cl-incf ivy--index)))))))
+        (let (
+              (positive-re (swiper-async--join-re (funcall ivy--regex-function ivy-text)))
+              )
+          (when (swiper--async-matchp positive-re candidate)
+            (setq idx (+ ivy--next-cand-index idx))
+            (setq ivy--next-cand-index (+ idx 1))
+            (when (and (>= ivy--index idx)
+                       (> (length ivy--orig-cands) 1))
+              (cl-incf ivy--index))))))))
 
 (defun swiper--async-format-spec ()
   (let* ((n-lines (count-lines (point-min) (point-max))))
@@ -815,6 +811,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
             )
           (let (
                 (begin (swiper--get-begin item))
+                (positive-re (swiper-async--join-re (funcall ivy--regex-function ivy-text)))
                 )
             (let (
                   (has-match (save-excursion
@@ -823,9 +820,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                      (ending (line-end-position))
                                      )
                                  (if (< begin ending)
-                                     (re-search-forward
-                                      (swiper-async--join-re
-                                       (funcall ivy--regex-function ivy-text))
+                                     (re-search-forward positive-re
                                       ending
                                       'on-error-go-to-limit)
                                    nil))))
