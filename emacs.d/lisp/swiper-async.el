@@ -917,12 +917,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 (defun swiper--regexp-builder (x) x)
 
-(setq ivy-preferred-re-builders
-  '((ivy--regex-plus . "ivy")
-    (ivy--regex-ignore-order . "order")
-    (ivy--regex-fuzzy . "fuzzy")
-    (regexp-quote . "text")
-    (swiper--regexp-builder . "regexp")))
+(add-to-list 'ivy-preferred-re-builders '(regexp-quote . "text"))
+(add-to-list 'ivy-preferred-re-builders '(swiper--regexp-builder . "regexp"))
 
 
 
