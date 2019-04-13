@@ -380,44 +380,42 @@ Update the minibuffer with the amount of lines collected every
 
 (defun swiper--async-update-all-candidates(&optional follow-ivy-index)
   (setq ivy--all-candidates
-        (if (< (length ivy-text) isearch-swiper-limit)
-            ivy--orig-cands
+        (let (
+              (re-list (funcall ivy--regex-function ivy-text))
+              )
           (let (
-                (re-list (funcall ivy--regex-function ivy-text))
+                (idx nil)
+                (first-past-opoint-idx nil)
                 )
             (let (
-                  (idx nil)
-                  (first-past-opoint-idx nil)
+                  (filtered-results
+                   ;; (swiper--async-matcher ivy-text ivy--orig-cands))
+                   (ivy--re-filter re-list
+                                   ivy--orig-cands
+                                   (lambda (re-str)
+                                     (lambda (x)
+                                       (let (
+                                             (has-match
+                                              (swiper--async-matchp re-str x))
+                                             )
+                                         ;; TODO this is problematic if
+                                         ;; the re is negated.
+                                         ;; the condition should be:
+                                         ;; (when (xor has-match negated) ...)
+                                         (when has-match
+                                           (if (null idx)
+                                               (setq idx 0)
+                                             (cl-incf idx))
+                                           (when (and (>= (swiper--get-begin x)
+                                                          swiper--opoint)
+                                                      (null first-past-opoint-idx))
+                                             (setq first-past-opoint-idx idx)))
+                                         has-match)))))
                   )
-              (let (
-                    (filtered-results
-                     ;; (swiper--async-matcher ivy-text ivy--orig-cands))
-                     (ivy--re-filter re-list
-                                     ivy--orig-cands
-                                     (lambda (re-str)
-                                       (lambda (x)
-                                         (when (and (>= (swiper--get-begin x)
-                                                        swiper--opoint)
-                                                    (null first-past-opoint-idx))
-                                           (setq first-past-opoint-idx idx))
-                                         (let (
-                                               (has-match
-                                                (swiper--async-matchp re-str x))
-                                               )
-                                           ;; TODO this is problematic if
-                                           ;; the re is negated.
-                                           ;; the condition should be:
-                                           ;; (when (xor has-match negated) ...)
-                                           (when has-match
-                                             (if (null idx)
-                                                 (setq idx 1)
-                                               (cl-incf idx)))
-                                           has-match)))))
-                    )
-                (when (and follow-ivy-index
-                           (not (null first-past-opoint-idx)))
-                  (setq ivy--index first-past-opoint-idx))
-                filtered-results))))))
+              (when (and follow-ivy-index
+                         (not (null first-past-opoint-idx)))
+                (setq ivy--index first-past-opoint-idx))
+              filtered-results)))))
 
 (defun swiper-async--cleanup ()
   (with-ivy-window
