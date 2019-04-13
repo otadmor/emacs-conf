@@ -243,6 +243,7 @@ Use `winstack-push' and
 (advice-add 'winstack-push :around #'wrap-winstack-command-hook)
 (advice-add 'winstack-next :around #'wrap-winstack-command-hook)
 (advice-add 'winstack-pop :around #'wrap-winstack-command-hook)
+(advice-add 'which-func-update-1 :around #'wrap-winstack-command-hook)
 
 ; (add-hook 'post-command-hook #'winstack-push)
 ; (add-hook 'pre-command-hook 'winstack-push)
