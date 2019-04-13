@@ -123,30 +123,26 @@
   :type 'integer)
 
 
-(defun swiper-async--fill-candidate-properties (str swiper--format-spec line-no use-marker &optional begin end line-begin line-end)
+(defun swiper-async--fill-candidate-properties (str swiper--format-spec line-no &optional begin end line-begin line-end)
   (setq str (ivy-cleanup-string str))
   (put-text-property
    0 1 'swiper-no-line-number line-no str)
   (put-text-property
-   0 1 'region-data (if use-marker
-                        (list
-                         (set-marker (make-marker)
-                                     (let ((mark-even-if-inactive t))
-                                       end))
-                         (set-marker (make-marker)
-                                     (let ((mark-even-if-inactive t))
-                                       begin)))
-                      nil) str)
+   0 1 'region-data (list
+                     (set-marker (make-marker)
+                                 (let ((mark-even-if-inactive t))
+                                   end))
+                     (set-marker (make-marker)
+                                 (let ((mark-even-if-inactive t))
+                                   begin))) str)
   (put-text-property
-   0 1 'line-region-data (if use-marker
-                             (list
-                              (set-marker (make-marker)
-                                          (let ((mark-even-if-inactive t))
-                                            line-end))
-                              (set-marker (make-marker)
-                                          (let ((mark-even-if-inactive t))
-                                            line-begin)))
-                      nil) str)
+   0 1 'line-region-data (list
+                          (set-marker (make-marker)
+                                      (let ((mark-even-if-inactive t))
+                                        line-end))
+                          (set-marker (make-marker)
+                                      (let ((mark-even-if-inactive t))
+                                        line-begin))) str)
   str)
 
 (defun swiper--get-line (item)
@@ -616,7 +612,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
        (buffer-substring-no-properties lb le)
        nil
        0
-       t b e lb le))))
+       b e lb le))))
 
 (defun swiper--async-found-new-candidate (b e)
   (let (
