@@ -65,6 +65,7 @@
                             (swiper--get-line-begin str)
                           nil))
               (positive-re (swiper-async--join-re-positive re-str))
+              (negative-re (swiper-async--join-re-negative re-str))
               )
           (let (
                 (line-str (if swiper-include-line-number-in-search
@@ -115,6 +116,7 @@
           (beg (swiper--get-begin x))
           (pos (swiper--get-end x))
           (positive-re (swiper-async--join-re-positive re-str))
+          (negative-re (swiper-async--join-re-negative re-str))
           )
       (when beg
         (let (
@@ -200,6 +202,7 @@
           )
       (let (
             (positive-re (swiper-async--join-re-positive re-str))
+            (negative-re (swiper-async--join-re-negative re-str))
             )
         (while (re-search-forward
                 positive-re
@@ -238,6 +241,7 @@ Update the minibuffer with the amount of lines collected every
       (setq swiper--async-last-line-pos nil))
     (let (
           (positive-re (swiper-async--join-re-positive re-str))
+          (negative-re (swiper-async--join-re-negative re-str))
           (working-candidates ivy--orig-cands)
           (chars-diff (- (- inserted-end change-begin) deleted-length))
           (deleted-end (+ change-begin deleted-length))
@@ -384,6 +388,7 @@ Update the minibuffer with the amount of lines collected every
                   (idx nil)
                   (first-past-opoint-idx nil)
                   (positive-re (swiper-async--join-re-positive re-str))
+                  (negative-re (swiper-async--join-re-negative re-str))
                   )
               (let (
                     (filter-results
@@ -519,6 +524,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
       (let (
             (matches-found 0)
             (positive-re (swiper-async--join-re-positive re-str))
+            (negative-re (swiper-async--join-re-negative re-str))
             )
         (with-ivy-window
           (save-excursion
@@ -612,6 +618,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
           (idx nil)
           (candidate (car candidate-cons))
           (positive-re (swiper-async--join-re-positive re-str))
+          (negative-re (swiper-async--join-re-negative re-str))
           )
       (unless (null insertion-point)
         (when (not (funcall comp-func candidate (car insertion-point)))
@@ -687,6 +694,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (setq ivy--last-cand candidate-cons)
         (let (
               (positive-re (swiper-async--join-re-positive re-str))
+              (negative-re (swiper-async--join-re-negative re-str))
               )
           (when (swiper--async-matchp positive-re candidate)
             (setq idx (+ ivy--next-cand-index idx))
@@ -855,6 +863,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
           (let (
                 (begin (swiper--get-begin item))
                 (positive-re (swiper-async--join-re-positive re-str))
+                (negative-re (swiper-async--join-re-negative re-str))
                 )
             (let (
                   (has-match (save-excursion
