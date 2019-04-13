@@ -54,7 +54,7 @@ Use `winstack-push' and
       (set-window-parameter nil 'winstack-future-stack winstack-future-stack)
       res)))
 (defun winstack-future-stack-length()
-  (length (window-parameter nil 'winstack-futurestack)))
+  (length (window-parameter nil 'winstack-future-stack)))
 (defun winstack-future-stack-clear()
   (set-window-parameter nil 'winstack-future-stack nil))
 
