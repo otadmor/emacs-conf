@@ -614,9 +614,6 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
           )
       (swiper-async--fill-candidate-properties
        (buffer-substring-no-properties lb le)
-       ; (if (>= (length ivy-text) isearch-swiper-limit)
-       ;     (buffer-substring-no-properties lb le)
-       ;   " ")
        nil
        0
        t b e lb le))))
