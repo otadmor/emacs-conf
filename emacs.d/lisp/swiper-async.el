@@ -72,13 +72,9 @@
                         )
                     (put-text-property
                      0 1 'region-data
-                     (list
-                      (set-marker (make-marker)
-                                  (let ((mark-even-if-inactive t))
-                                    highlight-end))
-                      (set-marker (make-marker)
-                                  (let ((mark-even-if-inactive t))
-                                    highlight-beg))) res)))))
+                     (cons
+                      (swiper--async-create-marker highlight-end)
+                      (swiper--async-create-marker highlight-beg)) res)))))
             res))))))
 (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
