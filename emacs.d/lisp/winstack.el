@@ -65,11 +65,14 @@ Use `winstack-push' and
         (buffer (window-buffer window))
         (point (window-point window))
         )
-    (when (and
-           (buffer-file-name buffer)
-           (not (minibufferp buffer))
-           )
-      (winstack-push-inner (if window window (selected-window)) buffer point important))))
+    (let (
+          (bn (buffer-file-name buffer))
+          )
+      (when (and
+             bn
+             (not (minibufferp buffer))
+             )
+        (winstack-push-inner (if window window (selected-window)) bn point important)))))
 
 (defun same-buffer-point(o buffer point)
   (and
@@ -144,22 +147,19 @@ Use `winstack-push' and
     (setq list (cdr list))))
 
 (defun jump-to-buffer-point(window buffer point)
-  (if (buffer-live-p buffer)
-      (let (
-            (window (if (window-live-p window)
-                        window
-                      (let (
-                            (w (selected-window))
-                            )
-                        (if (minibufferp (window-buffer w))
-                            (get-mru-window)
-                          w))))
-            ;(window (display-buffer buffer))
-            )
-        (set-window-buffer window buffer)
-        ;; (switch-to-buffer buffer)
-        (set-window-point window point)
-        (select-window window))))
+  (let (
+        (window (if (window-live-p window)
+                    window
+                  (let (
+                        (w (selected-window))
+                        )
+                    (if (minibufferp (window-buffer w))
+                        (get-mru-window)
+                      w))))
+        )
+    (select-window window)
+    (find-file buffer)
+    (set-window-point window point)))
 
 (defun jump-to-item(item)
   (let (
