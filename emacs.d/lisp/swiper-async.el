@@ -122,6 +122,10 @@
   "The amount of microseconds to wait until updating `swiper--async-filter'."
   :type 'integer)
 
+(defun swiper--async-create-marker (point)
+  (set-marker (make-marker)
+              (let ((mark-even-if-inactive t))
+                point)))
 
 (defun swiper-async--fill-candidate-properties (str swiper--format-spec line-no &optional begin end line-begin line-end)
   (setq str (ivy-cleanup-string str))
@@ -129,20 +133,12 @@
    0 1 'swiper-no-line-number line-no str)
   (put-text-property
    0 1 'region-data (cons
-                     (set-marker (make-marker)
-                                 (let ((mark-even-if-inactive t))
-                                   end))
-                     (set-marker (make-marker)
-                                 (let ((mark-even-if-inactive t))
-                                   begin))) str)
+                     (swiper--async-create-marker end)
+                     (swiper--async-create-marker begin)) str)
   (put-text-property
    0 1 'line-region-data (cons
-                          (set-marker (make-marker)
-                                      (let ((mark-even-if-inactive t))
-                                        line-end))
-                          (set-marker (make-marker)
-                                      (let ((mark-even-if-inactive t))
-                                        line-begin))) str)
+                          (swiper--async-create-marker line-end)
+                          (swiper--async-create-marker line-begin)) str)
   str)
 
 (defun swiper--get-line (item)
