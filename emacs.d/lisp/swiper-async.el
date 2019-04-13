@@ -360,24 +360,6 @@ Update the minibuffer with the amount of lines collected every
       (swiper--async-init)))
     (swiper--async-update-all-candidates t)))
 
-; (defun swiper--async-matcher (re candidates)
-;   (ivy--re-filter re candidates
-;                   (lambda (re-str)
-;                     (lambda (x)
-;                       (when (and (>= (swiper--get-begin x)
-;                                      swiper--opoint)
-;                                  (null first-past-opoint-idx))
-;                         (setq first-past-opoint-idx idx))
-;                       (let (
-;                             (has-match
-;                              (swiper--async-matchp re-str x))
-;                             )
-;                         (when has-match
-;                           (if (null idx)
-;                               (setq idx 1)
-;                             (cl-incf idx)))
-;                         has-match)))))
-
 (defun swiper--async-update-all-candidates(&optional follow-ivy-index)
   (setq ivy--all-candidates
         (let (
@@ -389,7 +371,6 @@ Update the minibuffer with the amount of lines collected every
                 )
             (let (
                   (filtered-results
-                   ;; (swiper--async-matcher ivy-text ivy--orig-cands))
                    (ivy--re-filter re-list
                                    ivy--orig-cands
                                    (lambda (re-str)
@@ -898,7 +879,6 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                  :unwind #'swiper-async--cleanup
                  :action #'swiper--async-action
                  :history 'swiper-history
-                 ; :matcher 'swiper--async-matcher ; this is not really used.
                  :sort nil
                  :caller 'swiper-async))
           (point))
