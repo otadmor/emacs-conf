@@ -648,6 +648,11 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
     (ivy-quit-and-run
       (counsel-ag-preselect ivy-text))))
 
+(define-key ivy-minibuffer-map (kbd "M-f")
+  (lambda () (interactive)
+    (ivy-quit-and-run
+      (counsel-ag-preselect ivy-text))))
+
 (defun swiper--goto-original-point()
   (interactive)
   (with-ivy-window
