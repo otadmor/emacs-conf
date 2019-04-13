@@ -128,7 +128,7 @@
   (put-text-property
    0 1 'swiper-no-line-number line-no str)
   (put-text-property
-   0 1 'region-data (list
+   0 1 'region-data (cons
                      (set-marker (make-marker)
                                  (let ((mark-even-if-inactive t))
                                    end))
@@ -136,7 +136,7 @@
                                  (let ((mark-even-if-inactive t))
                                    begin))) str)
   (put-text-property
-   0 1 'line-region-data (list
+   0 1 'line-region-data (cons
                           (set-marker (make-marker)
                                       (let ((mark-even-if-inactive t))
                                         line-end))
@@ -152,13 +152,13 @@
 (defun swiper--get-region (item)
   (get-text-property 0 'region-data item))
 (defun swiper--get-begin (item)
-  (cadr (swiper--get-region item)))
+  (cdr (swiper--get-region item)))
 (defun swiper--get-end (item)
   (car (swiper--get-region item)))
 (defun swiper--get-line-region (item)
   (get-text-property 0 'line-region-data item))
 (defun swiper--get-line-begin (item)
-  (cadr (swiper--get-line-region item)))
+  (cdr (swiper--get-line-region item)))
 (defun swiper--get-line-end (item)
   (car (swiper--get-line-region item)))
 
