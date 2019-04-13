@@ -308,7 +308,9 @@ Update the minibuffer with the amount of lines collected every
     (swiper--async-filter (current-buffer) begin end 0)))
 
 (defun swiper--async-is-valid-input ()
-  (/= (length ivy-text) 0))
+  (and (/= (length ivy-text) 0)
+       (or (not (eq 'swiper--regexp-builder ivy--regex-function))
+           (ivy--legal-regex-p ivy-text))))
 
 (setq to-search nil)
 (setq isearch-swiper-limit 3)
@@ -669,7 +671,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (setq ivy--marker-function
         (or (cdr (assq ivy--regex-function ivy-marker-functions-alist))
             #'swiper--async-mark-candidates-in-range-ivy))
-  (funcall ivy--marker-function beg end))
+  (when (swiper--async-is-valid-input)
+    (funcall ivy--marker-function beg end)))
 
 (defun swiper--async-mark-candidates-in-range-ivy (beg end)
   (when (> (length (ivy-state-current ivy-last)) 0)
