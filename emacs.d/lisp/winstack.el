@@ -11,30 +11,52 @@ Use `winstack-push' and
 
 (require 'persp-mode-variables nil t)
 
-(when (boundp 'pmv/cursor-specific-vars)
-    (push 'winstack-stack pmv/cursor-specific-vars)
-    (push 'winstack-future-stack pmv/cursor-specific-vars))
+; (when (boundp 'pmv/cursor-specific-vars)
+;     (push 'winstack-stack pmv/cursor-specific-vars)
+;     (push 'winstack-future-stack pmv/cursor-specific-vars))
 
 (defun winstack-stack-push(item)
-    (push item winstack-stack))
+  (let (
+        (winstack-stack (window-parameter nil 'winstack-stack))
+        )
+    (push item winstack-stack)
+    (set-window-parameter nil 'winstack-stack winstack-stack)))
 (defun winstack-stack-first()
-  (first winstack-stack))
+  (first (window-parameter nil 'winstack-stack)))
 (defun winstack-stack-pop()
-  (pop winstack-stack))
+  (let (
+        (winstack-stack (window-parameter nil 'winstack-stack))
+        )
+    (let (
+          (res (pop winstack-stack))
+          )
+      (set-window-parameter nil 'winstack-stack winstack-stack)
+      res)))
 (defun winstack-stack-length()
-  (length winstack-stack))
+  (length (window-parameter nil 'winstack-stack)))
 
 
 (defun winstack-future-stack-push(item)
-    (push item winstack-future-stack))
+  (let (
+        (winstack-future-stack (window-parameter nil 'winstack-future-stack))
+        )
+    (push item winstack-future-stack)
+    (set-window-parameter nil 'winstack-future-stack winstack-future-stack)))
 (defun winstack-future-stack-first()
-  (first winstack-future-stack))
+  (first (window-parameter nil 'winstack-futurestack)))
 (defun winstack-future-stack-pop()
-  (pop winstack-future-stack))
+  (let (
+        (winstack-future-stack (window-parameter nil 'winstack-future-stack))
+        )
+    (let (
+          (res (pop winstack-future-stack))
+          )
+      (set-window-parameter nil 'winstack-future-stack winstack-future-stack)
+      res)))
 (defun winstack-future-stack-length()
-  (length winstack-future-stack))
+  (length (window-parameter nil 'winstack-futurestack)))
 (defun winstack-future-stack-clear()
-  (length winstack-future-stack))
+  (set-window-parameter nil 'winstack-future-stack nil))
 
 (setq in-winstack nil)
 
