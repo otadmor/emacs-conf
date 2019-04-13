@@ -682,6 +682,7 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 (global-set-key (kbd "C-x C-f") 'counsel-find-file)
 (global-set-key (kbd "M-x") 'counsel-M-x)
 (global-set-key (kbd "C-x C-a") 'counsel-locate)
+(global-set-key (kbd "C-x p") 'counsel-git)
 (defun ivy-previous-line-or-history-2 (arg)
   "Move cursor vertically up ARG candidates.
 If the input is empty, select the previous history element instead."
