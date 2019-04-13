@@ -307,6 +307,9 @@ Update the minibuffer with the amount of lines collected every
   (save-excursion
     (swiper--async-filter (current-buffer) begin end 0)))
 
+(defun swiper--async-is-valid-input ()
+  (/= (length ivy-text) 0))
+
 (setq to-search nil)
 (setq isearch-swiper-limit 3)
 (defun swiper-async-function (string)
@@ -316,7 +319,7 @@ Update the minibuffer with the amount of lines collected every
     (setq ivy--old-re nil)
     (setq isearch-string ivy-text)
     (cond
-     ((= (length ivy-text) 0) (swiper--async-reset-state))
+     ((not (swiper--async-is-valid-input)) (swiper--async-reset-state))
      ((or (<= (length ivy-text) isearch-swiper-limit)
           (= (length to-search) 0)
           (not (string-prefix-p to-search ivy-text)))
