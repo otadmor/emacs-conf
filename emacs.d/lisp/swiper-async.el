@@ -310,7 +310,7 @@ Update the minibuffer with the amount of lines collected every
 (defun swiper--async-is-valid-input ()
   (and (/= (length ivy-text) 0)
        (or (not (eq 'swiper--regexp-builder ivy--regex-function))
-           (ivy--legal-regex-p ivy-text))))
+           (swiper--async-legal-pcre-regex-p ivy-text))))
 
 (setq to-search nil)
 (setq isearch-swiper-limit 3)
@@ -329,8 +329,9 @@ Update the minibuffer with the amount of lines collected every
       (setq to-search (if (< (length ivy-text) isearch-swiper-limit)
                           ivy-text
                         (substring ivy-text 0 isearch-swiper-limit)))
-      (swiper--async-init)))
-    (swiper--async-update-all-candidates t)))
+      (swiper--async-init)
+      (swiper--async-update-all-candidates t))
+     (t (swiper--async-update-all-candidates t)))))
 
 (defun swiper--async-update-all-candidates(&optional follow-ivy-index)
   (setq ivy--all-candidates
@@ -870,7 +871,17 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (which-func-update-1 (selected-window)))))
 (advice-add 'swiper--async-update-input-ivy :after #'swiper--async-which-func-update)
 
-(defun swiper--regexp-builder (x) x)
+(require 'pcre2el)
+
+(defun swiper--async-legal-pcre-regex-p (x)
+  "Return t if STR is valid regular expression."
+  (condition-case nil
+      (progn
+        (rxt-pcre-to-elisp x)
+        t)
+    (rxt-invalid-regexp nil))) ; invalid-regexp, error
+
+(defun swiper--regexp-builder (x) (rxt-pcre-to-elisp x))
 
 (add-to-list 'ivy-preferred-re-builders '(regexp-quote . "text"))
 (add-to-list 'ivy-preferred-re-builders '(swiper--regexp-builder . "regexp"))
