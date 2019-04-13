@@ -368,13 +368,11 @@ Update the minibuffer with the amount of lines collected every
 (defun swiper-async--cleanup ()
   (with-ivy-window
     (swiper--async-reset-state)
+    ;; (remove-hook 'window-configuration-change-hook #'swiper--async-update-input-ivy-hook t)
     (remove-hook 'after-change-functions #'swiper-async-after-change t)
     (remove-hook 'modification-hooks #'swiper-async-after-change-prop t)
     (remove-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t)
-    (remove-hook 'window-size-change-functions #'swiper--async-update-input-ivy-size-hook t)
-    ; (remove-hook 'window-configuration-change-hook #'swiper--async-update-input-ivy-hook t)
-    )
-  (swiper--cleanup))
+    (remove-hook 'window-size-change-functions #'swiper--async-update-input-ivy-size-hook t)))
 
 
 (defun swiper--async-swiper--cleanup-hook ()
