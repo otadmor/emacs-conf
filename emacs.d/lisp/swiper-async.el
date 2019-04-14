@@ -324,9 +324,11 @@ Update the minibuffer with the amount of lines collected every
      ((not (swiper--async-is-valid-input)) (swiper--async-reset-state))
      ((or (<= (length ivy-text) isearch-swiper-limit)
           (= (length to-search) 0)
-          (not (string-prefix-p to-search ivy-text)))
+          (not (string-prefix-p to-search ivy-text))
+          (eq 'swiper--regexp-builder ivy--regex-function))
       (swiper--async-reset-state)
-      (setq to-search (if (< (length ivy-text) isearch-swiper-limit)
+      (setq to-search (if (or (< (length ivy-text) isearch-swiper-limit)
+                              (eq 'swiper--regexp-builder ivy--regex-function))
                           ivy-text
                         (substring ivy-text 0 isearch-swiper-limit)))
       (swiper--async-init)
