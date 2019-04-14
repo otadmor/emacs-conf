@@ -269,7 +269,7 @@ Update the minibuffer with the amount of lines collected every
               )
           (swiper--async-format-spec)
           (swiper--async-iterate-matches
-           to-search search-start search-end
+           swiper--async-to-search search-start search-end
            (lambda (b e)
              (let (
                    (new-item (list (swiper--async-create-candidate b e)))
@@ -312,7 +312,7 @@ Update the minibuffer with the amount of lines collected every
        (or (not (eq 'swiper--regexp-builder ivy--regex-function))
            (swiper--async-legal-pcre-regex-p ivy-text))))
 
-(setq to-search nil)
+(setq swiper--async-to-search nil)
 (setq isearch-swiper-limit 3)
 (defun swiper-async-function (string)
   "Grep in the current directory for STRING."
@@ -323,14 +323,15 @@ Update the minibuffer with the amount of lines collected every
     (cond
      ((not (swiper--async-is-valid-input)) (swiper--async-reset-state))
      ((or (<= (length ivy-text) isearch-swiper-limit)
-          (= (length to-search) 0)
-          (not (string-prefix-p to-search ivy-text))
+          (= (length swiper--async-to-search) 0)
+          (not (string-prefix-p swiper--async-to-search ivy-text))
           (eq 'swiper--regexp-builder ivy--regex-function))
       (swiper--async-reset-state)
-      (setq to-search (if (or (< (length ivy-text) isearch-swiper-limit)
-                              (eq 'swiper--regexp-builder ivy--regex-function))
-                          ivy-text
-                        (substring ivy-text 0 isearch-swiper-limit)))
+      (setq swiper--async-to-search
+            (if (or (< (length ivy-text) isearch-swiper-limit)
+                    (eq 'swiper--regexp-builder ivy--regex-function))
+                ivy-text
+              (substring ivy-text 0 isearch-swiper-limit)))
       (swiper--async-init)
       (swiper--async-update-all-candidates t))
      (t (swiper--async-update-all-candidates t)))))
@@ -441,11 +442,11 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
       final-re)))
 
 (defun swiper--async-isearch(buffer func)
-  (when (and (/= (length to-search) 0)
+  (when (and (/= (length swiper--async-to-search) 0)
              (active-minibuffer-window)
              )
     (let (
-          (re-str (funcall ivy--regex-function to-search))
+          (re-str (funcall ivy--regex-function swiper--async-to-search))
           )
       (let (
             (matches-found 0)
@@ -797,7 +798,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (swiper--async-mark-candidates-in-window)))
 
 (defun swiper--async-reset-state ()
-  (setq to-search nil)
+  (setq swiper--async-to-search nil)
   (setq ivy--old-cands nil)
   (setq ivy--all-candidates nil)
   (setq ivy--orig-cands nil)
