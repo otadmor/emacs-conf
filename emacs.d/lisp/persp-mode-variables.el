@@ -103,7 +103,11 @@
                         ;; each dynamic collection should check
                         ;; ivy-text--persp-variables to see if ew resuming.
                         (setq ivy-text--persp-variables ivy-text)
-                        (ivy-resume)))))))
+                        (setq ivy-index--persp-variables ivy--index)
+                        (let (
+                              (this-command 'ivy-resume)
+                              )
+                          (ivy-resume))))))))
 
 (defun persp-variables-before-deactivate-hook(frame-or-window)
   (ivy-cancel-timers)
