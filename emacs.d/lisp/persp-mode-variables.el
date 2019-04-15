@@ -126,17 +126,17 @@
 (defun persp-variables-post-resume()
   (when (active-minibuffer-window)
     (with-ivy-window
-      (when (and (not (null swiper--async-high-start-point))
-                 (or (< swiper--async-high-start-point
-                        swiper--async-high-end-point)
-                     (< swiper--async-low-start-point
-                        swiper--async-low-end-point)))
+      (when (not (null swiper--async-high-start-point))
         (swiper--async-add-hooks)
-        ; (add-hook 'post-command-hook #'ivy--queue-exhibit nil t)
-        (schedule-isearch
-         (current-buffer)
-         'swiper--async-found-new-candidate)
-        (swiper--async-update-input-ivy)))))
+        (when (or (< swiper--async-high-start-point
+                     swiper--async-high-end-point)
+                  (< swiper--async-low-start-point
+                     swiper--async-low-end-point))
+          ;; (add-hook 'post-command-hook #'ivy--queue-exhibit nil t)
+          (schedule-isearch
+           (current-buffer)
+           'swiper--async-found-new-candidate)
+          (swiper--async-update-input-ivy))))))
 
 (defun persp-variables-after-activate-hook(frame-or-window)
   (run-at-time nil nil
