@@ -314,24 +314,35 @@ Update the minibuffer with the amount of lines collected every
 
 (setq swiper--async-to-search nil)
 (setq isearch-swiper-limit 3)
+(setq ivy-text--persp-variables nil)
 (defun swiper-async-function (string)
   "Grep in the current directory for STRING."
   ;; (counsel--elisp-to-pcre (setq ivy--old-re (ivy--regex string)))
   (with-ivy-window
     (setq ivy--old-re nil)
     (setq isearch-string ivy-text)
+    (unless (= (length ivy-text--persp-variables) 0)
+      (setq string ivy-text--persp-variables)
+      (setq ivy-text ivy-text--persp-variables)
+      (setq ivy-text--persp-variables ""))
     (cond
      ((not (swiper--async-is-valid-input)) (swiper--async-reset-state))
-     ((or (<= (length ivy-text) isearch-swiper-limit)
-          (= (length swiper--async-to-search) 0)
-          (not (string-prefix-p swiper--async-to-search ivy-text))
-          (eq 'swiper--regexp-builder ivy--regex-function))
+     ((and (not (eq 'swiper--regexp-builder ivy--regex-function))
+               (or (<= (length ivy-text) isearch-swiper-limit)
+                   (= (length swiper--async-to-search) 0)
+                   (not (string-prefix-p swiper--async-to-search ivy-text))))
       (swiper--async-reset-state)
       (setq swiper--async-to-search
-            (if (or (< (length ivy-text) isearch-swiper-limit)
-                    (eq 'swiper--regexp-builder ivy--regex-function))
+            (if (< (length ivy-text) isearch-swiper-limit)
                 ivy-text
               (substring ivy-text 0 isearch-swiper-limit)))
+      (swiper--async-init)
+      (swiper--async-update-all-candidates t))
+     ((and (eq 'swiper--regexp-builder ivy--regex-function)
+           (or (null swiper--async-to-search)
+               (not (string= swiper--async-to-search ivy-text))))
+      (swiper--async-reset-state)
+      (setq swiper--async-to-search ivy-text)
       (swiper--async-init)
       (swiper--async-update-all-candidates t))
      (t (swiper--async-update-all-candidates t)))))
@@ -374,14 +385,24 @@ Update the minibuffer with the amount of lines collected every
                 (setq ivy--index first-past-opoint-idx))
               filtered-results)))))
 
+(defun swiper--async-add-hooks()
+  (add-hook 'after-change-functions #'swiper-async-after-change t t)
+  (add-hook 'modification-hooks #'swiper-async-after-change-prop t t)
+  (add-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t t)
+  ;; (add-hook 'window-configuration-change-hook #'swiper--async-update-input-ivy-hook t t)
+  (add-hook 'window-size-change-functions #'swiper--async-update-input-ivy-size-hook t t))
+
+(defun swiper-async--remove-hooks()
+  (remove-hook 'after-change-functions #'swiper-async-after-change t)
+  (remove-hook 'modification-hooks #'swiper-async-after-change-prop t)
+  (remove-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t)
+  (remove-hook 'window-size-change-functions #'swiper--async-update-input-ivy-size-hook t))
+
 (defun swiper-async--cleanup ()
   (with-ivy-window
     (swiper--async-reset-state)
     ;; (remove-hook 'window-configuration-change-hook #'swiper--async-update-input-ivy-hook t)
-    (remove-hook 'after-change-functions #'swiper-async-after-change t)
-    (remove-hook 'modification-hooks #'swiper-async-after-change-prop t)
-    (remove-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t)
-    (remove-hook 'window-size-change-functions #'swiper--async-update-input-ivy-size-hook t)))
+    (swiper-async--remove-hooks)))
 
 
 (defun swiper--async-swiper--cleanup-hook ()
@@ -779,22 +800,28 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
             (item (ivy-state-current ivy-last))
             )
         (let (
-              (res (swiper--async-match-in-buffer item))
+              ;; XXX : a bug here with invalid marker when executed from
+              ;; XXX : ivy--exhibit from timer and using persp-mode.
+              ;; XXX : exit gracefully, but need a better way of stoping
+              ;; XXX : the exhibit.
+              (res (condition-case nil
+                       (swiper--async-match-in-buffer item) (error (progn nil))))
               )
-          (let (
-                (beg (car res))
-                (pos (cdr res))
-                )
-            (when (not (memq this-command '(ivy-yank-word
-                                            ivy-yank-symbol
-                                            ivy-yank-char
-                                            scroll-other-window
-                                            swiper-async)))
-              (goto-char pos))
+          (unless (null res)
             (let (
-                  (search-highlight t)
+                  (beg (car res))
+                  (pos (cdr res))
                   )
-              (isearch-highlight beg pos))))))
+              (when (not (memq this-command '(ivy-yank-word
+                                              ivy-yank-symbol
+                                              ivy-yank-char
+                                              scroll-other-window
+                                              swiper-async)))
+                (goto-char pos))
+              (let (
+                    (search-highlight t)
+                    )
+                (isearch-highlight beg pos)))))))
     (swiper--async-mark-candidates-in-window)))
 
 (defun swiper--async-reset-state ()
@@ -828,11 +855,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (minibuffer-allow-text-properties t)
         res)
     (swiper--async-reset-state)
-    (add-hook 'after-change-functions #'swiper-async-after-change t t)
-    (add-hook 'modification-hooks #'swiper-async-after-change-prop t t)
-    (add-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t t)
-    (add-hook 'window-size-change-functions #'swiper--async-update-input-ivy-size-hook t t)
-    ; (add-hook 'window-configuration-change-hook #'swiper--async-update-input-ivy-hook t t)
+    (swiper--async-add-hooks)
     (unwind-protect
          (and
           (setq res
