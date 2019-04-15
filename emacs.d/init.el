@@ -1121,7 +1121,7 @@ of a speedbar-window.  It will be created if necessary."
 (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
 
 ;(setq persp-autokill-buffer-on-remove nil)
-(setq persp-auto-resume-time 0.1)
+(setq persp-auto-resume-time 0.01)
 (setq persp-auto-save-fname "autosave")
 (setq persp-auto-save-opt 1)
 (setq persp-nil-hidden t)
@@ -1210,12 +1210,16 @@ of a speedbar-window.  It will be created if necessary."
                     (persp-window-switch . nil)
                     (persp-frame-switch  . nil)))))
 
+  (run-with-idle-timer 5 t (lambda ()
+                             (let ((inhibit-message t))
+                               (persp-save-state-to-file))))
+
   ;; switch off the animation of restoring window configuration
   (add-hook 'after-init-hook
             #'(lambda ()
                 (progn
                   (persp-mode 1)
-                  (run-at-time "1 sec" nil 'perspsw1)
+                  (run-at-time 0.1 nil 'perspsw1)
                   )))
   )
 
