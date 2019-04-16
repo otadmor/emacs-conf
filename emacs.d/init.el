@@ -285,6 +285,12 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
                           (swiper--cleanup))
                 :caller 'counsel-ag))))
 
+(defun counselag-which-func-update (x)
+  (with-ivy-window
+    (if which-function-mode
+        (which-func-update-1 (selected-window)))))
+(advice-add 'counsel-git-grep-action :after #'counselag-which-func-update)
+
 (global-set-key [(meta f)] 'counsel-ag-preselect)
 (global-set-key [f4] 'next-error)
 (global-set-key [(shift f4)] 'previous-error)
