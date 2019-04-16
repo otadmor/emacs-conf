@@ -886,6 +886,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (reveal-mode 1)))))
 
 (defun ivy-rotate-preferred-builders-update()
+  (setq ivy--old-text nil) ; force re-running dynamic function.
   (swiper-async-function ivy-text)
   (setq ivy--highlight-function
         (or (cdr (assq ivy--regex-function ivy-highlight-functions-alist))
