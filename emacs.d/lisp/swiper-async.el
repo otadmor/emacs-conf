@@ -313,6 +313,7 @@ Update the minibuffer with the amount of lines collected every
 (setq swiper--async-to-search nil)
 (setq isearch-swiper-limit 3)
 (setq ivy-text--persp-variables nil)
+(setq ivy-index--persp-variables nil)
 (defun swiper-async-function (string)
   "Grep in the current directory for STRING."
   ;; (counsel--elisp-to-pcre (setq ivy--old-re (ivy--regex string)))
