@@ -16,53 +16,99 @@ Use `winstack-push' and
 ;     (push 'winstack-future-stack pmv/cursor-specific-vars))
 
 
+(defun winstack-to-persistent-parameter (stack)
+  (if (null stack)
+      nil
+    (cl-mapcar
+     (lambda (i)
+       (list (first i) (second i) (third i) (winstack-point-from-marker (fourth i))))
+     stack)))
+
+(defun winstack-to-marker-stack (stack)
+  (if (null stack)
+      nil
+    (let (
+          (fn (buffer-file-name (current-buffer)))
+          )
+      (cl-mapcar
+       (lambda (i)
+         (if (not (string= (third i) fn))
+             i
+           (list (first i) (second i) (third i) (winstack-create-marker (fourth i)))))
+       stack))))
+
+
+
+(defun winstack-convert-to-marker ()
+  (winstack-winstack-set (winstack-to-marker-stack (winstack-winstack-get)))
+  (winstack-winstack-future-set (winstack-to-marker-stack (winstack-winstack-future-get))))
+
+(defun winstack-point-from-marker (m)
+  (if (markerp m)
+      (marker-position m)
+    m))
+
 (defun winstack-create-marker (point)
   (set-marker (make-marker)
               (let ((mark-even-if-inactive t))
                 point)))
 
+(defun winstack-winstack-set (winstack-stack &optional window)
+  (set-window-parameter window 'winstack-stack-marker winstack-stack))
+
+(defun winstack-winstack-get (&optional window)
+  (window-parameter window 'winstack-stack-marker))
+
+(defun winstack-winstack-future-set (winstack-future-stack &optional window)
+  (set-window-parameter window 'winstack-future-stack-marker winstack-future-stack))
+
+(defun winstack-winstack-future-get (&optional window)
+  (window-parameter window 'winstack-future-stack-marker))
+
+
 (defun winstack-stack-push(item)
   (let (
-        (winstack-stack (window-parameter nil 'winstack-stack))
+        (winstack-stack (winstack-winstack-get))
         )
     (push item winstack-stack)
-    (set-window-parameter nil 'winstack-stack winstack-stack)))
+    (winstack-winstack-set winstack-stack)))
+
 (defun winstack-stack-first()
-  (first (window-parameter nil 'winstack-stack)))
+  (first (winstack-winstack-get)))
 (defun winstack-stack-pop()
   (let (
-        (winstack-stack (window-parameter nil 'winstack-stack))
+        (winstack-stack (winstack-winstack-get))
         )
     (let (
           (res (pop winstack-stack))
           )
-      (set-window-parameter nil 'winstack-stack winstack-stack)
+      (winstack-winstack-set winstack-stack)
       res)))
 (defun winstack-stack-length()
-  (length (window-parameter nil 'winstack-stack)))
+  (length (winstack-winstack-get)))
 
 
 (defun winstack-future-stack-push(item)
   (let (
-        (winstack-future-stack (window-parameter nil 'winstack-future-stack))
+        (winstack-future-stack (winstack-winstack-future-get))
         )
     (push item winstack-future-stack)
-    (set-window-parameter nil 'winstack-future-stack winstack-future-stack)))
+    (winstack-winstack-future-set winstack-future-stack)))
 (defun winstack-future-stack-first()
-  (first (window-parameter nil 'winstack-futurestack)))
+  (first (winstack-winstack-future-get)))
 (defun winstack-future-stack-pop()
   (let (
-        (winstack-future-stack (window-parameter nil 'winstack-future-stack))
+        (winstack-future-stack (winstack-winstack-future-get))
         )
     (let (
           (res (pop winstack-future-stack))
           )
-      (set-window-parameter nil 'winstack-future-stack winstack-future-stack)
+      (winstack-winstack-future-set winstack-future-stack)
       res)))
 (defun winstack-future-stack-length()
-  (length (window-parameter nil 'winstack-future-stack)))
+  (length (winstack-winstack-future-get)))
 (defun winstack-future-stack-clear()
-  (set-window-parameter nil 'winstack-future-stack nil))
+  (winstack-winstack-future-set nil))
 
 (setq in-winstack nil)
 
@@ -89,8 +135,7 @@ Use `winstack-push' and
 (defun buffer-point-action(o buffer point important)
   (if (not (same-buffer-point o buffer point))
       0 ; put new
-    (if (or important
-            (not (window-live-p (second o))))
+    (if important
         1 ; replace
       2 ; do nothing
     )))
@@ -127,16 +172,10 @@ Use `winstack-push' and
           (when (= action 1) ; replace - pop existing items
               (winstack-stack-pop)
             )
-          (let (
-                (item '())
-                )
-            (push point item)
-            (push buffer item)
-            (push window item)
-            (push important item)
-            ;(message "winstack-push %S" item)
-            (winstack-stack-push item)
-            )
+          ;; (winstack-stack-push (list important window buffer point))
+          ;;(message "winstack-push %S" item)
+          (winstack-stack-push (list important nil buffer point))
+
           ;; (message (concat "pushed " (number-to-string (length (window-list (selected-frame)))) " window state"))
           )
         )

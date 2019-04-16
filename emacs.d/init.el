@@ -1030,6 +1030,54 @@ of a speedbar-window.  It will be created if necessary."
 
 (require 'persp-mode)
 
+(add-to-list 'window-persistent-parameters '(winstack-future-stack . writable))
+(add-to-list 'window-persistent-parameters '(winstack-stack . writable))
+
+(defun window-set-winstack (window)
+  (condition-case err
+      (let (
+            (winstack-stack
+             (winstack-to-persistent-parameter (winstack-winstack-get window)))
+            (winstack-future-stack
+             (winstack-to-persistent-parameter (winstack-winstack-future-get window)))
+            )
+        (set-window-parameter window 'winstack-stack winstack-stack)
+        (set-window-parameter window 'winstack-future-stack winstack-future-stack))
+    (error (message "[persp-mode] Error: Can not autoload winstack -- %s"
+                    err))))
+
+(defun window-get-winstack (window)
+  (condition-case err
+      (let (
+            (winstack-stack
+             (window-parameter window 'winstack-stack))
+            (winstack-future-stack
+             (window-parameter window 'winstack-future-stack))
+            )
+        (winstack-winstack-set winstack-stack window)
+        (winstack-winstack-future-set winstack-future-stack window))
+    (error (message "[persp-mode] Error: Can not autosave winstack -- %s"
+                    err))))
+
+(add-hook 'find-file-hook 'winstack-convert-to-marker)
+
+(defun window-state-get-hook (orig-fun &rest args)
+  (let (
+        (window (or (car args) (frame-root-window (selected-frame))))
+        )
+    (walk-windows 'window-set-winstack nil window))
+  (apply orig-fun args))
+(advice-add 'window-state-get :around #'window-state-get-hook)
+
+(defun window-state-put-hook (orig-fun &rest args)
+  (let (
+        (window (or (car args) (frame-root-window (selected-frame))))
+        (res (apply orig-fun args))
+        )
+    (walk-windows 'window-get-winstack nil window)
+    res))
+(advice-add 'window-state-put :around #'window-state-put-hook)
+
 ; (defun* persp-def-buffer-save/load
 ;     (&rest
 ;      keyargs
@@ -1194,7 +1242,7 @@ of a speedbar-window.  It will be created if necessary."
 ; (add-hook 'persp-activated-functions
 ;           #'(lambda (_)
 ;               (persp-add-buffer persp-shared-buffers)))
-
+(setq persp-mode-hide-autosave-errors t)
 (with-eval-after-load "persp-mode"
   (setq wg-morph-on nil)
   (set-persp-parameter 'dont-save-to-file t nil)
@@ -1217,7 +1265,8 @@ of a speedbar-window.  It will be created if necessary."
                     (persp-frame-switch  . nil)))))
 
   (run-with-idle-timer 5 t (lambda ()
-                             (let ((inhibit-message t))
+                             (let ((inhibit-message
+                                    persp-mode-hide-autosave-errors))
                                (persp-save-state-to-file))))
 
   ;; switch off the animation of restoring window configuration
