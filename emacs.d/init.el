@@ -1290,7 +1290,11 @@ Ignore PROJ"
                                :keymap dumb-jump-ivy-map
                                ;;:unwind #'swiper--cleanup
                                :caller 'dumb-jump-ivy-jump-to-selected
-                               :action (lambda (x) (dumb-jump-to-selected results choices x))
+                               :action (lambda (x)
+                                         (dumb-jump-to-selected results choices x)
+                                         (with-ivy-window
+                                           (when which-function-mode
+                                             (which-func-update-1 (selected-window)))))
                                ;;   :require-match t
                                :history 'swiper-history
                                ))
