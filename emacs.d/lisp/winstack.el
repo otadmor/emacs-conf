@@ -15,6 +15,12 @@ Use `winstack-push' and
 ;     (push 'winstack-stack pmv/cursor-specific-vars)
 ;     (push 'winstack-future-stack pmv/cursor-specific-vars))
 
+
+(defun winstack-create-marker (point)
+  (set-marker (make-marker)
+              (let ((mark-even-if-inactive t))
+                point)))
+
 (defun winstack-stack-push(item)
   (let (
         (winstack-stack (window-parameter nil 'winstack-stack))
@@ -67,12 +73,13 @@ Use `winstack-push' and
         )
     (let (
           (bn (buffer-file-name buffer))
+          (mark (winstack-create-marker point))
           )
       (when (and
              bn
              (not (minibufferp buffer))
              )
-        (winstack-push-inner (if window window (selected-window)) bn point important)))))
+        (winstack-push-inner (if window window (selected-window)) bn mark important)))))
 
 (defun same-buffer-point(o buffer point)
   (and
@@ -146,20 +153,15 @@ Use `winstack-push' and
     (message "%S" (car list))
     (setq list (cdr list))))
 
-(defun jump-to-buffer-point(window buffer point)
+(defun jump-to-buffer-point(window fn point)
   (let (
-        (window (if (window-live-p window)
-                    window
-                  (let (
-                        (w (selected-window))
-                        )
-                    (if (minibufferp (window-buffer w))
-                        (get-mru-window)
-                      w))))
+        (window (selected-window))
         )
-    (select-window window)
-    (find-file buffer)
-    (set-window-point window point)))
+    (let (
+          (buffer (find-file fn))
+          )
+      (set-window-buffer window buffer)
+      (goto-char point))))
 
 (defun jump-to-item(item)
   (let (
