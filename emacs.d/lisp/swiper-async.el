@@ -119,9 +119,7 @@
   :type 'integer)
 
 (defun swiper--async-create-marker (point)
-  (set-marker (make-marker)
-              (let ((mark-even-if-inactive t))
-                point)))
+  point)
 
 (defun swiper-async--fill-candidate-properties (str swiper--format-spec line-no &optional begin end line-begin line-end)
   (setq str (ivy-cleanup-string str))
