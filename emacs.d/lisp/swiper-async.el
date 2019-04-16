@@ -829,6 +829,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (swiper--async-mark-candidates-in-window)))
 
 (defun swiper--async-reset-state ()
+  (setq ivy-text--persp-variables nil)
+  (setq ivy-index--persp-variables nil)
   (setq swiper--async-to-search nil)
   (setq ivy--old-cands nil)
   (setq ivy--all-candidates nil)
