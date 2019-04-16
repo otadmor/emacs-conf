@@ -1227,7 +1227,6 @@ of a speedbar-window.  It will be created if necessary."
 
 (require 'dumb-jump)
 (global-set-key (kbd "M-C-j") 'dumb-jump-go)
-(global-set-key (kbd "M-C-q") 'dumb-jump-quick-look)
 
 (defun dumb-jump-ivy-minibuffer-keyboard-quit () (interactive)
   (with-ivy-window
