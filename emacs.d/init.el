@@ -1378,6 +1378,11 @@ Ignore PROJ"
 
 (advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook)
 (advice-add 'jedi:goto-definition--nth :around #'wrap-winstack-hook)
+(advice-add 'swiper-async :around #'wrap-winstack-hook)
+(advice-add 'swiper :around #'wrap-winstack-hook)
+(advice-add 'mcs-swiper :around #'wrap-winstack-hook)
+(advice-add 'counsel-ag :around #'wrap-winstack-hook)
+(advice-add 'find-file :around #'wrap-winstack-hook)
 
 (advice-add 'persp-asave-on-exit :around #'disable-winstack-hook)
 	
