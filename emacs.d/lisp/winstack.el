@@ -37,7 +37,22 @@ Use `winstack-push' and
            (list (first i) (second i) (third i) (winstack-create-marker (fourth i)))))
        stack))))
 
+(defun winstack-to-number-stack (stack)
+  (if (null stack)
+      nil
+    (let (
+          (fn (buffer-file-name (current-buffer)))
+          )
+      (cl-mapcar
+       (lambda (i)
+         (if (not (string= (third i) fn))
+             i
+           (list (first i) (second i) (third i) (winstack-point-from-marker (fourth i)))))
+       stack))))
 
+(defun winstack-convert-to-number ()
+  (winstack-winstack-set (winstack-to-number-stack (winstack-winstack-get)))
+  (winstack-winstack-future-set (winstack-to-number-stack (winstack-winstack-future-get))))
 
 (defun winstack-convert-to-marker ()
   (winstack-winstack-set (winstack-to-marker-stack (winstack-winstack-get)))
@@ -45,7 +60,12 @@ Use `winstack-push' and
 
 (defun winstack-point-from-marker (m)
   (if (markerp m)
-      (marker-position m)
+      (let (
+            (position (marker-position m))
+            )
+        (if (null position)
+            (point-min)
+          position))
     m))
 
 (defun winstack-create-marker (point)

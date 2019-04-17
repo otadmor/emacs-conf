@@ -1063,6 +1063,7 @@ of a speedbar-window.  It will be created if necessary."
                     err))))
 
 (add-hook 'find-file-hook 'winstack-convert-to-marker)
+(add-hook 'kill-buffer-hook 'winstack-convert-to-number)
 
 (defun window-state-get-hook (orig-fun &rest args)
   (let (
