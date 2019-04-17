@@ -134,23 +134,27 @@ Use `winstack-push' and
 
 (defun winstack-push(&optional window important)
   (let (
-        (buffer (window-buffer window))
-        (point (window-point window))
+        (window (if window window (selected-window)))
         )
-    (let (
-          (bn (buffer-file-name buffer))
-          (mark (winstack-create-marker point))
-          )
-      (when (and
-             bn
-             (not (minibufferp buffer))
-             )
-        (winstack-push-inner (if window window (selected-window)) bn mark important)))))
+    (with-selected-window window
+      (let (
+            (buffer (window-buffer window))
+            (point (window-point window))
+            )
+        (let (
+              (bn (buffer-file-name buffer))
+              (mark (winstack-create-marker point))
+              )
+          (when (and
+                 bn
+                 (not (minibufferp buffer))
+                 )
+            (winstack-push-inner window bn mark important)))))))
 
 (defun same-buffer-point(o buffer point)
   (and
    (equal (third o) buffer)
-   (equal (fourth o) point)))
+   (equal (winstack-point-from-marker (fourth o)) (winstack-point-from-marker point))))
 
 (defun buffer-point-action(o buffer point important)
   (if (not (same-buffer-point o buffer point))
@@ -309,6 +313,12 @@ Use `winstack-push' and
     (unwind-protect
         (apply orig-fun args)
       (setq in-winstack nil))))
+
+
+(defun winstack-change-hooks(&rest args)
+  (winstack-push))
+(add-hook 'after-change-functions #'winstack-change-hooks)
+(add-hook 'before-change-functions #'winstack-change-hooks)
 
 (advice-add 'winstack-push :around #'wrap-winstack-command-hook)
 (advice-add 'winstack-next :around #'wrap-winstack-command-hook)
