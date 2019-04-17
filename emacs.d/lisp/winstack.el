@@ -301,6 +301,15 @@ Use `winstack-push' and
         (apply orig-fun args)
       (setq in-winstack nil))))
 
+(defun disable-winstack-hook(orig-fun &rest args)
+  (interactive)
+  (if in-winstack
+      (apply orig-fun args)
+    (setq in-winstack t)
+    (unwind-protect
+        (apply orig-fun args)
+      (setq in-winstack nil))))
+
 (advice-add 'winstack-push :around #'wrap-winstack-command-hook)
 (advice-add 'winstack-next :around #'wrap-winstack-command-hook)
 (advice-add 'winstack-pop :around #'wrap-winstack-command-hook)

@@ -1181,7 +1181,7 @@ of a speedbar-window.  It will be created if necessary."
 ;(setq persp-autokill-buffer-on-remove nil)
 (setq persp-auto-resume-time 0.01)
 (setq persp-auto-save-fname "autosave")
-(setq persp-auto-save-opt 1)
+; (setq persp-auto-save-opt 1)
 (setq persp-nil-hidden t)
 (setq persp-nil-name "nil")
 (setq persp-add-buffer-on-after-change-major-mode 'free)
@@ -1364,7 +1364,7 @@ Ignore PROJ"
 (setq dumb-jump-selector 'ivy)
 
 
-(advice-add 'ivy-read :around #'wrap-winstack-hook)
+; (advice-add 'ivy-read :around #'wrap-winstack-hook)
 (advice-add 'switch-to-buffer :around #'wrap-winstack-hook)
 ; (advice-add 'other-window :around #'wrap-winstack-hook)
 ; (advice-add 'select-window :around #'wrap-winstack-hook)
@@ -1379,7 +1379,7 @@ Ignore PROJ"
 (advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook)
 (advice-add 'jedi:goto-definition--nth :around #'wrap-winstack-hook)
 
-(advice-add 'persp-asave-on-exit :around #'wrap-winstack-command-hook)
+(advice-add 'persp-asave-on-exit :around #'disable-winstack-hook)
 	
 (which-function-mode 1)
 
