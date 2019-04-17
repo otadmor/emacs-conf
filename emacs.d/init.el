@@ -1269,8 +1269,7 @@ of a speedbar-window.  It will be created if necessary."
                     (persp-frame-switch  . nil)))))
 
   (run-with-idle-timer 5 t (lambda ()
-                             (let ((inhibit-message
-                                    persp-mode-hide-autosave-errors))
+                             (let ((inhibit-message persp-mode-hide-autosave-errors))
                                (persp-save-state-to-file))))
 
   ;; switch off the animation of restoring window configuration
