@@ -6,6 +6,9 @@
 (package-initialize)
 (require 'package)
 
+(setq enable-local-eval nil)
+(setq enable-local-variables nil)
+
 (setq abbrev-file-name             ;; tell emacs where to read abbrev
         "~/.emacs.d/abbrev_defs")  ;; definitions from...
 (setq save-abbrevs 'silent)        ;; save abbrevs when files are saved
