@@ -1366,19 +1366,20 @@ Ignore PROJ"
 
 (advice-add 'ivy-read :around #'wrap-winstack-hook)
 (advice-add 'switch-to-buffer :around #'wrap-winstack-hook)
-(advice-add 'other-window :around #'wrap-winstack-hook)
-(advice-add 'select-window :around #'wrap-winstack-hook)
-(advice-add 'quit-window :around #'wrap-winstack-hook)
-(advice-add 'windmove-left :around #'wrap-winstack-hook)
-(advice-add 'windmove-right :around #'wrap-winstack-hook)
-(advice-add 'windmove-up :around #'wrap-winstack-hook)
-(advice-add 'windmove-down :around #'wrap-winstack-hook)
+; (advice-add 'other-window :around #'wrap-winstack-hook)
+; (advice-add 'select-window :around #'wrap-winstack-hook)
+; (advice-add 'quit-window :around #'wrap-winstack-hook)
+; (advice-add 'windmove-left :around #'wrap-winstack-hook)
+; (advice-add 'windmove-right :around #'wrap-winstack-hook)
+; (advice-add 'windmove-up :around #'wrap-winstack-hook)
+; (advice-add 'windmove-down :around #'wrap-winstack-hook)
 (advice-add 'goto-line :around #'wrap-winstack-hook)
 ; (advice-add 'goto-char :around #'wrap-winstack-hook)
 
 (advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook)
 (advice-add 'jedi:goto-definition--nth :around #'wrap-winstack-hook)
 
+(advice-add 'persp-asave-on-exit :around #'wrap-winstack-command-hook)
 	
 (which-function-mode 1)
 
