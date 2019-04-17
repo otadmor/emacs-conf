@@ -1082,91 +1082,6 @@ of a speedbar-window.  It will be created if necessary."
     res))
 (advice-add 'window-state-put :around #'window-state-put-hook)
 
-; (defun* persp-def-buffer-save/load
-;     (&rest
-;      keyargs
-;      &key buffer-name file-name mode mode-name minor-mode minor-mode-name
-;      predicate tag-symbol save-vars save-function load-function after-load-function
-;      mode-restore-function
-;      append)
-;   (let ((generated-save-predicate
-;          (apply #'persp--generate-buffer-predicate keyargs))
-;         save-body load-fun)
-;     (when save-vars
-;       (unless (listp save-vars) (setq save-vars (list save-vars)))
-;       (when (and (or mode mode-name) (not (memq 'major-mode save-vars)))
-;         (push 'major-mode save-vars)))
-;     (unless tag-symbol (setq tag-symbol 'def-buffer-with-vars))
-
-;     (setq save-body
-;           `(let ((vars-list
-;                   (with-current-buffer buffer
-;                     (delete-if-not
-;                      #'(lambda (lvar)
-;                          (and
-;                           ,(persp--generate-predicate-loop-any-all
-;                             save-vars
-;                             '(if (persp-regexp-p item)
-;                                  (persp-string-match-p item
-;                                                        (symbol-name lvar))
-;                                (eq item lvar))
-;                             t)
-;                           (persp-elisp-object-readable-p
-;                            (symbol-value lvar))))
-;                      (buffer-local-variables)
-;                      :key #'car-safe))))
-;              ,(if save-function
-;                   `(funcall (with-no-warnings ',save-function)
-;                             buffer ',tag-symbol vars-list)
-;                 `(list ',tag-symbol (buffer-name buffer) vars-list)))
-;           save-body `(when (funcall (with-no-warnings ',generated-save-predicate)
-;                                     buffer)
-;                        ,save-body))
-
-;     (setq load-fun
-;           `(lambda (savelist)
-;              (destructuring-bind
-;                  (buffer-name vars-list &rest _rest) (cdr savelist)
-;                (let ((buf-file (alist-get 'buffer-file-name vars-list))
-;                      (buf-mmode (alist-get 'major-mode vars-list)))
-;                  ,(when mode-restore-function
-;                     `(push (cons 'persp-load-buffer-mode-restore-function
-;                                  (with-no-warnings ',mode-restore-function))
-;                            vars-list))
-;                  (lexical-let
-;                      ((persp-loaded-buffer
-;                        (persp-buffer-from-savelist
-;                         (list 'def-buffer buffer-name buf-file buf-mmode
-;                               (list (cons 'local-vars vars-list)))))
-;                       (persp-after-load-function (with-no-warnings
-;                                                    ',after-load-function))
-;                       persp-after-load-lambda)
-;                    (when (and persp-loaded-buffer persp-after-load-function)
-;                      (setq persp-after-load-lambda
-;                            #'(lambda (&rest pall-args)
-;                                (apply persp-after-load-function
-;                                       persp-loaded-buffer pall-args)
-;                                (remove-hook 'persp-after-load-state-functions
-;                                             persp-after-load-lambda)))
-;                      (add-hook 'persp-after-load-state-functions
-;                                persp-after-load-lambda t))
-;                    persp-loaded-buffer)))))
-
-;     (add-hook 'persp-save-buffer-functions
-;               (eval `(lambda (buffer) ,save-body)) append)
-;     (add-hook 'persp-load-buffer-functions
-;               (eval
-;                `(lambda (savelist)
-;                   (when (eq (car savelist) ',tag-symbol)
-;                     (let ((default-load-fun (with-no-warnings ',load-fun)))
-;                       ,(if load-function
-;                            `(funcall (with-no-warnings ',load-function)
-;                                      savelist default-load-fun
-;                                      (with-no-warnings ',after-load-function))
-;                          `(funcall default-load-fun savelist))))))
-;               append)))
-
-
 (global-set-key (kbd "M-1") (defun perspsw1() (interactive) (persp-switch "1")))
 (global-set-key (kbd "M-2") (defun perspsw2() (interactive) (persp-switch "2")))
 (global-set-key (kbd "M-3") (defun perspsw3() (interactive) (persp-switch "3")))
@@ -1213,6 +1128,11 @@ of a speedbar-window.  It will be created if necessary."
 
 
 ;   )
+
+(def-persp-buffer-save/load
+ :mode 'py-python-shell-mode
+ :load-function #'(lambda (savelist default-load-function after-load-function) (message "hi %S" savelist) (new-python-in-dir default-directory))
+ :save-vars '(default-directory))
 
 ; (persp-def-buffer-save/load
 ;  :mode 'shell-mode
