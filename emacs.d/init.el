@@ -882,15 +882,29 @@ the output."
 
 (defun new-python-in-dir(dir) (interactive)
   (let (
-        (b (generate-new-buffer "*python*"))
+        (b (generate-new-buffer "*Python*"))
         )
     (switch-to-buffer b)
     (setq default-directory dir)
-    (python :fast nil :buffer (buffer-name b) :shell (py-choose-shell nil nil))
+    (with-temp-buffer
+      (python :fast nil :buffer (buffer-name b) :shell (py-choose-shell nil nil)))
     (let (
           (proc (get-buffer-process (get-buffer b)))
           )
       (py-send-string py-shell-completion-setup-code proc))))
+
+
+(defun new-python-in-buffer(buffer) (interactive)
+       (message "bn %S" (buffer-name buffer))
+  (with-temp-buffer ; py-shell requires the expected buffer not to be the current buffer
+    (python :fast nil
+            :buffer (buffer-name buffer)
+            :shell (py-choose-shell nil nil))
+    (let (
+          (proc (get-buffer-process buffer))
+          )
+      (py-send-string py-shell-completion-setup-code proc)))
+  buffer)
 
 (defun new-python() (interactive)
        (let (
@@ -1129,9 +1143,33 @@ of a speedbar-window.  It will be created if necessary."
 
 ;   )
 
+
+(defun persp-buffer-name-from-savelist (savelist)
+  (destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
+    buffer-name))
+
+(defun persp-load-variables-from-savelist (savelist)
+  (destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
+    (mapc #'(lambda (varcons)
+              (destructuring-bind (vname . vvalue) varcons
+                (unless (or (eq vname 'buffer-file-name)
+                            (eq vname 'major-mode))
+                  (set (make-local-variable vname) vvalue))))
+          vars-list)
+    buffer-name))
+
 (def-persp-buffer-save/load
  :mode 'py-python-shell-mode
- :load-function #'(lambda (savelist default-load-function after-load-function) (message "hi %S" savelist) (new-python-in-dir default-directory))
+ :load-function #'(lambda (savelist default-load-function after-load-function)
+                    (let (
+                          (buffer-name (persp-buffer-name-from-savelist savelist))
+                          )
+                      (let (
+                            (buffer (get-buffer-create buffer-name))
+                            )
+                        (with-current-buffer buffer
+                          (persp-load-variables-from-savelist savelist))
+                        (new-python-in-buffer buffer))))
  :save-vars '(default-directory))
 
 ; (persp-def-buffer-save/load
