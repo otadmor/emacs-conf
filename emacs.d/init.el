@@ -1157,18 +1157,44 @@ of a speedbar-window.  It will be created if necessary."
           vars-list)
     buffer-name))
 
+(defun persp-is-same-major-mode-from-savelist (savelist mode)
+  (destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
+    (let ((buf-mmode (alist-get 'major-mode vars-list)))
+      (eq buf-mmode mode))))
+
 (def-persp-buffer-save/load
  :mode 'py-python-shell-mode
  :load-function #'(lambda (savelist default-load-function after-load-function)
-                    (let (
-                          (buffer-name (persp-buffer-name-from-savelist savelist))
-                          )
+                    (when (persp-is-same-major-mode-from-savelist
+                           savelist 'py-python-shell-mode)
                       (let (
-                            (buffer (get-buffer-create buffer-name))
+                            (buffer-name (persp-buffer-name-from-savelist savelist))
                             )
-                        (with-current-buffer buffer
-                          (persp-load-variables-from-savelist savelist))
-                        (new-python-in-buffer buffer))))
+                        (let (
+                              (buffer (get-buffer-create buffer-name))
+                              )
+                          (with-current-buffer buffer
+                            (persp-load-variables-from-savelist savelist))
+                          (new-python-in-buffer buffer)
+                          buffer))))
+ :save-vars '(default-directory))
+
+
+(def-persp-buffer-save/load
+ :mode 'shell-mode
+ :load-function #'(lambda (savelist default-load-function after-load-function)
+                    (when (persp-is-same-major-mode-from-savelist
+                           savelist 'shell-mode)
+                      (let (
+                            (buffer-name (persp-buffer-name-from-savelist savelist))
+                            )
+                        (let (
+                              (buffer (get-buffer-create buffer-name))
+                              )
+                          (with-current-buffer buffer
+                            (persp-load-variables-from-savelist savelist)
+                            (shell buffer))
+                          buffer))))
  :save-vars '(default-directory))
 
 ; (persp-def-buffer-save/load
