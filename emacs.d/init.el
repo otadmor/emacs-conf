@@ -895,7 +895,6 @@ the output."
 
 
 (defun new-python-in-buffer(buffer) (interactive)
-       (message "bn %S" (buffer-name buffer))
   (with-temp-buffer ; py-shell requires the expected buffer not to be the current buffer
     (python :fast nil
             :buffer (buffer-name buffer)
