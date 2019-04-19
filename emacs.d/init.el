@@ -1207,6 +1207,19 @@ of a speedbar-window.  It will be created if necessary."
 ;;           #'(lambda (_)
 ;;               (persp-add-buffer persp-shared-buffers)))
 
+(defun persp-parameters-to-savelist-hide-message (persp)
+  `(def-params ,(remove-if
+                 #'(lambda (param)
+                     (and (not (persp-elisp-object-readable-p param))
+                          (progn
+                            (unless persp-mode-hide-autosave-errors
+                              (message "[persp-mode] Info: The parameter %S \
+of the perspective %s can't be saved."
+                                       param (safe-persp-name persp)))
+                            t)
+                          t))
+                 (safe-persp-parameters persp))))
+(defalias 'persp-parameters-to-savelist 'persp-parameters-to-savelist-hide-message)
 (setq persp-mode-hide-autosave-errors t)
 (with-eval-after-load "persp-mode"
   (setq wg-morph-on nil)
