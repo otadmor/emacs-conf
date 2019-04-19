@@ -289,9 +289,7 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
                 :caller 'counsel-ag))))
 
 (defun counselag-which-func-update (x)
-  (with-ivy-window
-    (if which-function-mode
-        (which-func-update-1 (selected-window)))))
+  (swiper--async-which-func-update))
 (advice-add 'counsel-git-grep-action :after #'counselag-which-func-update)
 
 (global-set-key [(meta f)] 'counsel-ag-preselect)
@@ -1301,7 +1299,7 @@ of the perspective %s can't be saved."
 
 (ivy-set-display-transformer 'dumb-jump-ivy-jump-to-selected 'counsel-git-grep-transformer)
 
-
+(add-hook 'dumb-jump-after-jump-hook 'swiper--async-which-func-update)
 (defun dumb-jump-ivy-jump-to-selected-with-call (results choices proj)
   "Offer CHOICES as canidates through ivy-read then execute
 dumb-jump-to-selected on RESULTS CHOICES and selected choice.
@@ -1320,10 +1318,7 @@ Ignore PROJ"
                                ;;:unwind #'swiper--cleanup
                                :caller 'dumb-jump-ivy-jump-to-selected
                                :action (lambda (x)
-                                         (dumb-jump-to-selected results choices x)
-                                         (with-ivy-window
-                                           (when which-function-mode
-                                             (which-func-update-1 (selected-window)))))
+                                         (dumb-jump-to-selected results choices x))
                                ;;   :require-match t
                                :history 'swiper-history
                                ))

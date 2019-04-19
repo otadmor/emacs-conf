@@ -900,8 +900,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 (defun swiper--async-which-func-update ()
   (with-ivy-window
-    (if which-function-mode
-        (which-func-update-1 (selected-window)))))
+    (which-func-update-1 (selected-window))))
 (advice-add 'swiper--async-update-input-ivy :after #'swiper--async-which-func-update)
 
 (require 'pcre2el)
