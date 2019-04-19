@@ -1114,35 +1114,6 @@ of a speedbar-window.  It will be created if necessary."
 (setq persp-nil-name "nil")
 (setq persp-add-buffer-on-after-change-major-mode 'free)
 
-; (with-eval-after-load "persp"
-;   (setq persp-filter-save-buffers-functions (list #'(lambda (b) nil)))
-;   (add-to-list 'persp-save-buffer-functions
-;                #'(lambda (b)
-;                    (when (eq 'inferior-python-mode (buffer-local-value 'major-mode b))
-;                      `(def-inferior-python-buffer ,(buffer-name b)
-;                         ,(let ((process (get-buffer-process b)))
-;                            (if process
-;                                (progn
-;                                  (python-shell-send-string "import os" process)
-;                                  (python-shell-send-string-no-output "os.getcwd()" process))
-;                              (concat "'" (buffer-local-value 'default-directory b) "'")))))))
-;   (add-to-list 'persp-load-buffer-functions
-;                #'(lambda (savelist)
-;                    (when (eq (car savelist) 'def-inferior-python-buffer)
-;                      (destructuring-bind (bname dir) (cdr savelist)
-;                        (run-python nil nil nil)
-;                        (with-current-buffer (python-shell-get-buffer)
-;                          (rename-buffer bname)
-;                          (cd dir)
-;                          (python-shell-send-string "import os")
-;                          (python-shell-send-string (format "os.chdir(%s)" dir))
-;                          (current-buffer))))))
-
-
-
-;   )
-
-
 (defun persp-buffer-name-from-savelist (savelist)
   (destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
     buffer-name))
@@ -1197,23 +1168,6 @@ of a speedbar-window.  It will be created if necessary."
                           buffer))))
  :save-vars '(default-directory))
 
-; (persp-def-buffer-save/load
-;  :mode 'shell-mode
-;  :mode-restore-function #'(lambda (_mode) (shell)) ; or #'identity if you do not want to start shell process
-;  :tag-symbol 'def-shell
-;  :save-vars '(major-mode default-directory))
-
-; ;; eshell
-; (persp-def-buffer-save/load
-;  :mode 'eshell-mode :tag-symbol 'def-eshell-buffer
-;  :save-vars '(major-mode default-directory))
-
-; ;; compile
-; (persp-def-buffer-save/load
-;  :mode 'compilation-mode :tag-symbol 'def-compilation-buffer
-;  :save-vars '(major-mode default-directory compilation-directory
-;                          compilation-environment compilation-arguments))
-
 ; ;; magit-status
 ; (with-eval-after-load "magit-autoloads"
 ;   (autoload 'magit-status-mode "magit")
@@ -1225,10 +1179,11 @@ of a speedbar-window.  It will be created if necessary."
 ;                                   (with-current-buffer b (magit-refresh)))))
 
 
-; (setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*"))
-; (add-hook 'persp-activated-functions
-;           #'(lambda (_)
-;               (persp-add-buffer persp-shared-buffers)))
+;; (setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*"))
+;; (add-hook 'persp-activated-functions
+;;           #'(lambda (_)
+;;               (persp-add-buffer persp-shared-buffers)))
+
 (setq persp-mode-hide-autosave-errors t)
 (with-eval-after-load "persp-mode"
   (setq wg-morph-on nil)
