@@ -8,6 +8,9 @@
 (defvar pmv/specific-vars nil
   "A list of vars that need to be tracked on a per-perspective basis.")
 
+(defvar pmv/saved-specific-vars nil
+  "A list of vars that need to be tracked on a per-perspective basis.")
+
 (defvar pmv/clear-vars nil
   "A list of vars that will be set to nil when switching back to a perspective.")
 
@@ -39,13 +42,32 @@
 
 ; (defun ivy-state-collection(x) )
 
+(defun persp-elisp-object-readable-p-hook (orig-fun &rest args)
+  (let (
+        (param (car args))
+        )
+    (if (consp param)
+        (let (
+              (param-name (car param))
+              )
+          (when (not (or (memq param-name pmv/specific-vars)
+                         (memq param-name pmv/clear-vars)))
+            (apply orig-fun args)))
+      (apply orig-fun args))))
+(advice-add 'persp-elisp-object-readable-p :around #'persp-elisp-object-readable-p-hook)
+
+
 (defun* pmv/store-current-state-in-persp (&optional (persp (get-current-persp)))
   (dolist (var pmv/specific-vars)
+    (when (boundp var) (set-persp-parameter var (symbol-value var) persp)))
+  (dolist (var pmv/saved-specific-vars)
     (when (boundp var) (set-persp-parameter var (symbol-value var) persp)))
   persp)
 
 (defun* pmv/restore-state-from-persp (&optional (persp (get-current-persp)))
   (dolist (var pmv/specific-vars)
+    (set var (persp-parameter var persp)))
+  (dolist (var pmv/saved-specific-vars)
     (set var (persp-parameter var persp)))
   (dolist (var pmv/clear-vars)
     (set var nil))
