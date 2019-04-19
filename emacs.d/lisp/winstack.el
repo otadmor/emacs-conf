@@ -11,9 +11,9 @@ Use `winstack-push' and
 
 (require 'persp-mode-variables nil t)
 
-; (when (boundp 'pmv/cursor-specific-vars)
-;     (push 'winstack-stack pmv/cursor-specific-vars)
-;     (push 'winstack-future-stack pmv/cursor-specific-vars))
+; (when (boundp 'pmv/specific-vars)
+;     (push 'winstack-stack pmv/specific-vars)
+;     (push 'winstack-future-stack pmv/specific-vars))
 
 
 (defun winstack-to-persistent-parameter (stack)
