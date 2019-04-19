@@ -1128,6 +1128,10 @@ of a speedbar-window.  It will be created if necessary."
           vars-list)
     buffer-name))
 
+(defun persp-load-get-default-directory-from-savelist (savelist)
+  (destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
+    (alist-get 'default-directory vars-list)))
+
 (defun persp-is-same-major-mode-from-savelist (savelist mode)
   (destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
     (let ((buf-mmode (alist-get 'major-mode vars-list)))
@@ -1168,15 +1172,34 @@ of a speedbar-window.  It will be created if necessary."
                           buffer))))
  :save-vars '(default-directory))
 
-; ;; magit-status
-; (with-eval-after-load "magit-autoloads"
-;   (autoload 'magit-status-mode "magit")
-;   (autoload 'magit-refresh "magit")
-;   (persp-def-buffer-save/load
-;    :mode 'magit-status-mode :tag-symbol 'def-magit-status-buffer
-;    :save-vars '(major-mode default-directory)
-;    :after-load-function #'(lambda (b &rest _)
-;                                   (with-current-buffer b (magit-refresh)))))
+;; magit-status
+(with-eval-after-load "magit-autoloads"
+  (autoload 'magit-status-mode "magit")
+  (autoload 'magit-refresh "magit")
+  (def-persp-buffer-save/load
+   :mode 'magit-status-mode
+   :load-function #'(lambda (savelist default-load-function after-load-function)
+                      (when (persp-is-same-major-mode-from-savelist
+                             savelist 'magit-status-mode)
+                        (let (
+                              (magit-directory
+                               (persp-load-get-default-directory-from-savelist
+                                savelist))
+                              )
+                          (let (
+                                (magit-buffer)
+                                )
+                            (let (
+                                  (refresh-buffer-hook
+                                   #'(lambda ()
+                                       (setq magit-buffer (current-buffer))))
+                                  )
+                              (add-hook 'magit-refresh-buffer-hook
+                                        refresh-buffer-hook)
+                              (magit-status magit-directory)
+                              (remove-hook 'magit-refresh-buffer-hook
+                                           refresh-buffer-hook))))))
+   :save-vars '(default-directory)))
 
 
 ;; (setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*"))
