@@ -34,48 +34,57 @@
   (save-excursion
     (save-restriction
       (widen)
-      (let (
-            (pos (swiper--get-begin str))
-            (line-beg (if swiper-include-line-number-in-search
-                          (swiper--get-line-begin str)
-                        nil))
-            )
-        (let (
-              (line-str (if swiper-include-line-number-in-search
-                            (format swiper--format-spec
-                                    (if pos
-                                        ;; XXX : need to execute this with
-                                        ;; XXX : something similar
-                                        ;; XXX : to with-timeout,
-                                        (swiper--async-line-at-pos pos)
-                                      (swiper--get-line str)))
-                          ""))
-              (cand-substr (buffer-substring (swiper--get-line-begin str)
-                                             (swiper--get-line-end str)))
-              )
-          (let (
-                (line-str-len (length line-str))
-                (res (concat line-str cand-substr))
-                (re-str (funcall ivy--regex-function ivy-text))
-                )
-            (let (
-                  (line-match (swiper--async-match re-str str))
-                  )
-              (when line-match
-                (let (
-                      (beg (car line-match))
-                      (end (cdr line-match))
-                      )
-                  (let (
-                        (highlight-beg (+ line-str-len beg))
-                        (highlight-end (+ line-str-len end))
+      (let* (
+             (pos (swiper--get-begin str))
+             (beg-end (swiper--async-match-in-buffer str))
+             (line-beg (swiper--get-line-begin str))
+             (line-end (swiper--get-line-end str))
+             (line-str (if swiper-include-line-number-in-search
+                           (format swiper--format-spec
+                                   ;; XXX : need to execute this with
+                                   ;; XXX : something similar
+                                   ;; XXX : to with-timeout,
+                                   (swiper--async-line-at-pos pos))
+                         ""))
+             (beg (if (not (null beg-end)) (car beg-end)
+                    (swiper--get-begin str)))
+             (end (if (not (null beg-end)) (cdr beg-end)
+                    (swiper--get-end str)))
+             (line-str-len (length line-str))
+             (match-len (- end beg))
+             (line-len (- line-end line-beg))
+              ; (minibuffer-prompt-width)
+             (available-width (max (- (with-selected-window
+                                          (active-minibuffer-window)
+                                        (window-width)) line-str-len) 0))
+             (after-match-len (- line-end end))
+             (before-match-len (- beg line-beg))
+             (clip-range
+              (cond
+               ((< line-len available-width) (cons line-beg line-end))
+               ((> match-len available-width) (cons pos (+ pos available-width)))
+               ((< (+ before-match-len match-len) available-width)
+                (cons line-beg (+ line-beg available-width)))
+               ((< (+ match-len after-match-len) available-width)
+                (cons (- line-end available-width) line-end))
+               (t (let (
+                        (half-diff (/ (- available-width match-len) 2))
                         )
-                    (put-text-property
-                     0 1 'region-data
-                     (cons
-                      (swiper--async-create-marker highlight-end)
-                      (swiper--async-create-marker highlight-beg)) res)))))
-            res))))))
+                    (cons (- beg half-diff) (+ end half-diff))))))
+             (clip-beg (car clip-range))
+             (clip-end (cdr clip-range))
+             (highlight-beg (+ line-str-len (- beg clip-beg)))
+             (highlight-end (+ line-str-len (- (min clip-end
+                                                    end) clip-beg)))
+             (cand-substr (buffer-substring clip-beg clip-end))
+             (res (concat line-str cand-substr))
+             )
+        (put-text-property
+         0 1 'region-data
+         (cons
+          (swiper--async-create-marker highlight-end)
+          (swiper--async-create-marker highlight-beg)) res)
+        res))))
 (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
 (defun swiper--async-match-in-buffer (item)
