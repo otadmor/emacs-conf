@@ -160,7 +160,23 @@
   (cdr (swiper--get-line-region item)))
 (defun swiper--get-line-end (item)
   (car (swiper--get-line-region item)))
-
+(defun swiper--async-move (item chars-diff)
+  (let (
+        (begin (swiper--get-begin item))
+        (end (swiper--get-end item))
+        (line-begin (swiper--get-line-begin item))
+        (line-end (swiper--get-line-end item))
+        )
+    (put-text-property
+     0 1 'region-data (cons
+                       (swiper--async-create-marker (+ end chars-diff))
+                       (swiper--async-create-marker
+                        (+ begin chars-diff))) item)
+    (put-text-property
+     0 1 'line-region-data (cons
+                            (swiper--async-create-marker (+ line-end chars-diff))
+                            (swiper--async-create-marker
+                             (+ line-begin chars-diff))) item)))
 
 
 (defvar ivy--orig-cands nil
@@ -297,7 +313,9 @@ Update the minibuffer with the amount of lines collected every
                 )
             (if (null first-item)
                 (setq ivy--orig-cands tail-items)
-              (setcdr first-item tail-items)))))
+              (setcdr first-item tail-items))
+            (dolist (to-update last-item)
+              (swiper--async-move to-update chars-diff)))))
       (when (>= ivy--index change-index)
         (if (>= deleted-matches (- ivy--index change-index))
             (setq ivy--index change-index)
