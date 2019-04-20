@@ -635,9 +635,13 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 (define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
 (define-key ivy-minibuffer-map [(meta h)] 'ivy-magit-status)
 (global-set-key (kbd "M-c") 'ivy-resume)
+
+(require 'swiper-async)
 (global-set-key (kbd "C-s") (lambda () (interactive) (setq swiper--async-direction-backward nil) (swiper-async)))
 (global-set-key (kbd "C-r") (lambda () (interactive) (setq swiper--async-direction-backward t) (swiper-async)))
 (global-set-key (kbd "C-c C-a") 'mcs-swiper)
+
+(setq swiper-include-line-number-in-search nil)
 
 ;;(global-set-key (kbd "C-/") (lambda () (interactive) (ivy-exit-with-action (lambda (_) (my-comment-or-uncomment-region)))))
 (define-key swiper-map (kbd "C-/")
@@ -755,8 +759,6 @@ If the input is empty, select the previous history element instead."
 ;                    (forward-line (1- linenum))))))))
 
 ; (global-set-key [(meta f)] 'ivy-grep)
-
-(require 'swiper-async)
 
 ; (defun complete-or-indent ()
 ;     (interactive)
