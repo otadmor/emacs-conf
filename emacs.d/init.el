@@ -1199,7 +1199,13 @@ of a speedbar-window.  It will be created if necessary."
                               (magit-status magit-directory)
                               (remove-hook 'magit-refresh-buffer-hook
                                            refresh-buffer-hook))))))
-   :save-vars '(default-directory)))
+   :save-vars '(default-directory))
+
+  (add-hook 'persp-common-buffer-filter-functions
+            #'(lambda (b) (string-prefix-p "magit-diff" (buffer-name b))))
+  (add-hook 'persp-common-buffer-filter-functions
+            #'(lambda (b) (string-prefix-p "magit-process" (buffer-name b))))
+  )
 
 
 ;; (setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*"))
