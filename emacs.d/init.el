@@ -518,7 +518,7 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
                                             (goto-line (string-to-number line-number))
 ;                                            (message "went to line")
 ;                                            (set-window-point my-window cur-point)
-                                            (winstack-push my-window t)
+                                            (winstack-push nil t)
                                         )
 
                                 )
