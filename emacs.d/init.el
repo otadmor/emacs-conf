@@ -1070,8 +1070,10 @@ of a speedbar-window.  It will be created if necessary."
             (winstack-future-stack
              (window-parameter window 'winstack-future-stack))
             )
-        (winstack-winstack-set winstack-stack window)
-        (winstack-winstack-future-set winstack-future-stack window))
+        (winstack-winstack-set
+         (winstack-to-marker-stack winstack-stack) window)
+        (winstack-winstack-future-set
+         (winstack-to-marker-stack winstack-future-stack) window))
     (error (message "[persp-mode] Error: Can not autosave winstack -- %s"
                     err))))
 

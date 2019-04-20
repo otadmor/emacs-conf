@@ -27,15 +27,18 @@ Use `winstack-push' and
 (defun winstack-to-marker-stack (stack)
   (if (null stack)
       nil
-    (let (
-          (fn (buffer-file-name (current-buffer)))
-          )
-      (cl-mapcar
-       (lambda (i)
-         (if (not (string= (third i) fn))
+    (cl-mapcar
+     (lambda (i)
+       (let* (
+              (file-name (third i))
+              (buffer (get-file-buffer file-name))
+              )
+         (if (null buffer)
              i
-           (list (first i) (second i) (third i) (winstack-create-marker (fourth i)))))
-       stack))))
+           (list (first i) (second i) file-name
+                 (with-current-buffer buffer
+                   (winstack-create-marker (fourth i)))))))
+       stack)))
 
 (defun winstack-to-number-stack (stack)
   (if (null stack)
