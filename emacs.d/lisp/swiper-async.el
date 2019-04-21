@@ -376,7 +376,10 @@ Update the minibuffer with the amount of lines collected every
       (setq swiper--async-to-search ivy-text)
       (swiper--async-init)
       (swiper--async-update-all-candidates t))
-     (t (swiper--async-update-all-candidates t)))))
+     (t
+      (setq ivy--last-cand nil)
+      (setq ivy--next-cand-index 0)
+      (swiper--async-update-all-candidates t)))))
 
 (defun swiper--async-update-all-candidates(&optional follow-ivy-index)
   (setq ivy--all-candidates
@@ -611,14 +614,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     idx))
 
 (defun candidate--compare (c1 c2)
-  (let (
-        (l1 (swiper--get-line c1))
-        (l2 (swiper--get-line c2))
-        )
-    (or (< l1 l2)
-        (and (= l1 l2)
-             (< (swiper--get-end c1)
-                (swiper--get-end c2))))))
+  (< (swiper--get-begin c1)
+     (swiper--get-begin c2)))
 
 (defun swiper--async-create-candidate (b e)
   (save-restriction
@@ -653,14 +650,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
             (if (null ivy--orig-cands)
                 (progn
                   (setq ivy--orig-cands candidate-cons)
-                  (run-at-time 0 nil 'swiper--async-update-input-ivy)
-                  )
-              (if (candidate--compare candidate (car ivy--orig-cands))
-                  (progn
-                    (setcdr candidate-cons ivy--orig-cands)
-                    (setq ivy--orig-cands candidate-cons)
-                    )
-                (message "error, must be 0")))))
+                  (run-at-time 0 nil 'swiper--async-update-input-ivy))
+              (setcdr candidate-cons ivy--orig-cands)
+              (setq ivy--orig-cands candidate-cons))))
         (setq ivy--last-cand candidate-cons)
         (let (
               (re-str (funcall ivy--regex-function ivy-text))
