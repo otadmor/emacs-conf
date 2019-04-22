@@ -5,30 +5,36 @@
 
 (setq swiper--async-last-line nil)
 (setq swiper--async-last-line-pos nil)
-(defun swiper--async-line-at-pos (pos)
+(setq swiper--async-max-line-count-size 4096)
+(defun swiper--async-line-at-pos (pos &optional force)
   (let (
         (line-no
-         (if (or (null swiper--async-last-line)
+         (if (or (= (point-min) pos)
+                 (null swiper--async-last-line)
                  (null swiper--async-last-line-pos))
              (progn (goto-char pos) (line-number-at-pos))
            (let (
                  (small-pos (min pos swiper--async-last-line-pos))
                  (big-pos (max pos swiper--async-last-line-pos))
                  )
-             (let (
-                   (big-pos-at-newline
-                    (= big-pos (progn (goto-char big-pos)
-                                      (line-beginning-position))))
-                   (lines-diff (count-lines small-pos big-pos))
-                   )
-               (unless big-pos-at-newline
-                 (setq lines-diff (- lines-diff 1)))
-               (if (> pos swiper--async-last-line-pos)
-                   (+ swiper--async-last-line lines-diff)
-                 (- swiper--async-last-line lines-diff))))))
+             (when (or
+                    (<= (- big-pos small-pos) swiper--async-max-line-count-size)
+                    force)
+               (let (
+                     (big-pos-at-newline
+                      (= big-pos (progn (goto-char big-pos)
+                                        (line-beginning-position))))
+                     (lines-diff (count-lines small-pos big-pos))
+                     )
+                 (unless big-pos-at-newline
+                   (setq lines-diff (- lines-diff 1)))
+                 (if (> pos swiper--async-last-line-pos)
+                     (+ swiper--async-last-line lines-diff)
+                   (- swiper--async-last-line lines-diff)))))))
         )
-    (setq swiper--async-last-line-pos pos)
-    (setq swiper--async-last-line line-no))) ; also, return the line
+    (unless (null line-no)
+      (setq swiper--async-last-line-pos pos)
+      (setq swiper--async-last-line line-no)))) ; also, return the line
 
 (defun swiper-line-transformer (str)
   (save-excursion
@@ -44,7 +50,8 @@
                                    ;; XXX : need to execute this with
                                    ;; XXX : something similar
                                    ;; XXX : to with-timeout,
-                                   (swiper--async-line-at-pos pos))
+                                   (or (swiper--async-line-at-pos pos)
+                                       0))
                          ""))
              (beg (if (not (null beg-end)) (car beg-end)
                     (swiper--get-begin str)))
@@ -84,6 +91,11 @@
          (cons
           (swiper--async-create-marker highlight-end)
           (swiper--async-create-marker highlight-beg)) res)
+        (put-text-property
+         0 1 'line-region-data
+         (cons
+          nil
+          line-beg) res)
         res))))
 (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
@@ -379,6 +391,7 @@ Update the minibuffer with the amount of lines collected every
      (t
       (setq ivy--last-cand nil)
       (setq ivy--next-cand-index 0)
+      (swiper--async-kick-async)
       (swiper--async-update-all-candidates t)))))
 
 (defun swiper--async-update-all-candidates(&optional follow-ivy-index)
@@ -454,6 +467,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 (setq swiper--async-timer nil)
 (defun schedule-isearch(buffer func)
+  (when (not (null swiper--async-timer))
+    (cancel-timer swiper--async-timer)
+    (setq swiper--async-timer nil))
   (setq swiper--async-timer (run-at-time
                              swiper--async-isearch-interval
                              nil 'swiper--async-isearch buffer func)))
@@ -496,100 +512,179 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
             (setq final-re (concat final-re sep re)))))
       final-re)))
 
-(defun swiper--async-isearch(buffer func)
-  (when (and (/= (length swiper--async-to-search) 0)
-             (active-minibuffer-window)
-             )
+(setq swiper--async-old-wnd-cands nil)
+(defun ivy--wnd-cands-to-str-hook(orig-fun &rest args)
+  (when (eq (ivy-state-caller ivy-last) 'swiper-async)
+    (setq swiper--async-old-wnd-cands (car args))
     (let (
-          (re-str (funcall ivy--regex-function swiper--async-to-search))
+          (zero-line-prefix (format swiper--format-spec 0))
+          (has-missing-lines nil)
           )
-      (let (
-            (matches-found 0)
-            (positive-re (swiper-async--join-re-positive re-str))
-            )
-        (with-ivy-window
-          (save-excursion
-            (deactivate-mark)
+      (dolist (wndcand swiper--async-old-wnd-cands)
+        (when (string-prefix-p zero-line-prefix wndcand)
+          (setq has-missing-lines t)))
+      (when has-missing-lines
+        (swiper--async-kick-async))))
+  (apply orig-fun args))
+(advice-add 'ivy--wnd-cands-to-str :around #'ivy--wnd-cands-to-str-hook)
+
+
+(defun swiper--async-isearch(buffer func)
+  (when (active-minibuffer-window)
+    (with-ivy-window
+      (save-excursion
+        (deactivate-mark)
+        (let (
+              (finished-wndcands nil)
+              (filled-minibuffer-candidates
+               (>= (length ivy--orig-cands) (+ ivy-height ivy--index)))
+              )
+          (when (and swiper-include-line-number-in-search
+                     filled-minibuffer-candidates)
+            (setq finished-wndcands t)
             (let (
-                  (swiper--async-max-matches-per-search
-                   (if (< (length ivy--orig-cands) (+ ivy-height ivy--index))
-                       (- (+ ivy-height ivy--index) (length ivy--orig-cands))
-                     swiper--async-default-max-matches-per-search))
+                  (zero-line-prefix (format swiper--format-spec 0))
+                  (should-update-wndcands nil)
+                  (new-wnd-cands)
                   )
-              (if (not swiper--async-direction-backward)
-                  (progn
-                    (when (< swiper--async-high-start-point
-                             swiper--async-high-end-point)
-                      (goto-char swiper--async-high-start-point)
-                      (while (and (not (input-pending-p))
-                                  (< matches-found
-                                     swiper--async-max-matches-per-search)
-                                  (re-search-forward
-                                   positive-re
-                                   (min swiper--async-high-end-point
-                                        (+ swiper--async-high-start-point
-                                           swiper--max-search-length
-                                           1))
-                                   'on-error-go-to-limit))
-                        (cl-incf matches-found)
-                        (funcall func (match-beginning 0) (match-end 0)))
-                      (setq swiper--async-high-start-point (point)))
-                    (when (< swiper--async-low-start-point
-                           swiper--async-low-end-point)
-                      (goto-char swiper--async-low-start-point)
-                      (while (and (not (input-pending-p))
-                                  (< matches-found
-                                     swiper--async-max-matches-per-search)
-                                  (re-search-forward
-                                   positive-re
-                                   (min swiper--async-low-end-point
-                                        (+ swiper--async-low-start-point
-                                           swiper--max-search-length
-                                           1))
-                                   'on-error-go-to-limit))
-                        (cl-incf matches-found)
-                        (funcall func (match-beginning 0) (match-end 0)))
-                      (setq swiper--async-low-start-point (point))))
-                (progn
-                  (when (< swiper--async-low-start-point
-                           swiper--async-low-end-point)
-                    (goto-char swiper--async-low-end-point)
+              (when (null swiper--async-last-line-pos)
+                (swiper--async-line-at-pos (point-min) t))
+              (dolist (wndcand swiper--async-old-wnd-cands)
+                (if (not (string-prefix-p zero-line-prefix wndcand))
+                    (push wndcand new-wnd-cands)
+                  (let (
+                        (line-begin (swiper--get-line-begin wndcand))
+                        (overlay-begin (swiper--get-begin wndcand))
+                        (overlay-end (swiper--get-end wndcand))
+                        )
                     (while (and (not (input-pending-p))
-                                (< matches-found
-                                   swiper--async-max-matches-per-search)
-                                (re-search-backward
-                                 positive-re
-                                 (max swiper--async-low-start-point
-                                      (- swiper--async-low-end-point
-                                         swiper--max-search-length
-                                         1))
-                                 'on-error-go-to-limit))
-                      (cl-incf matches-found)
-                      (funcall func (match-beginning 0) (match-end 0)))
-                    (setq swiper--async-low-end-point (point)))
-                  (when (< swiper--async-high-start-point
-                           swiper--async-high-end-point)
-                    (goto-char swiper--async-high-end-point)
-                    (while (and (not (input-pending-p))
-                                (< matches-found
-                                   swiper--async-max-matches-per-search)
-                                (re-search-backward
-                                 positive-re
-                                 (max swiper--async-high-start-point
-                                      (- swiper--async-high-end-point
-                                         swiper--max-search-length
-                                         1))
-                                 'on-error-go-to-limit))
-                      (cl-incf matches-found)
-                      (funcall func (match-beginning 0) (match-end 0)))
-                    (setq swiper--async-high-end-point (point))))))))
-        (when (/= matches-found 0)
-          (swiper--async-update-output)))
-      (when (or (< swiper--async-high-start-point
-                   swiper--async-high-end-point)
-                (< swiper--async-low-start-point
-                   swiper--async-low-end-point))
-        (schedule-isearch buffer func)))))
+                                (/= line-begin swiper--async-last-line-pos))
+                      (swiper--async-line-at-pos
+                       (if (> line-begin swiper--async-last-line-pos)
+                           (+ swiper--async-last-line-pos
+                              (min (- line-begin swiper--async-last-line-pos)
+                                   swiper--async-max-line-count-size))
+                         (- swiper--async-last-line-pos
+                            (min (- swiper--async-last-line-pos line-begin)
+                                 swiper--async-max-line-count-size)))))
+                    (if (/= line-begin swiper--async-last-line-pos)
+                        (progn
+                          (push wndcand new-wnd-cands)
+                          (setq finished-wndcands nil))
+                      (setq should-update-wndcands t)
+                      (let (
+                            (new-wnd-cand
+                             (concat (format swiper--format-spec
+                                             swiper--async-last-line)
+                                     (substring wndcand
+                                                (length zero-line-prefix)
+                                                (length wndcand))))
+                            )
+                        (put-text-property
+                         0 1 'region-data
+                         (cons
+                          (swiper--async-create-marker overlay-end)
+                          (swiper--async-create-marker overlay-begin))
+                         new-wnd-cand)
+                        (put-text-property
+                         0 1 'line-region-data
+                         (cons
+                          nil
+                          line-begin)
+                         new-wnd-cand)
+                        (push new-wnd-cand new-wnd-cands))))))
+              (when should-update-wndcands
+                (ivy--insert-minibuffer
+                 (ivy--wnd-cands-to-str (reverse new-wnd-cands))))))
+          (when (/= (length swiper--async-to-search) 0)
+            (let (
+                  (re-str (funcall ivy--regex-function swiper--async-to-search))
+                  )
+              (let (
+                    (matches-found 0)
+                    (positive-re (swiper-async--join-re-positive re-str))
+                    )
+                (let (
+                      (swiper--async-max-matches-per-search
+                       (if (< (length ivy--orig-cands) (+ ivy-height ivy--index))
+                           (- (+ ivy-height ivy--index) (length ivy--orig-cands))
+                         swiper--async-default-max-matches-per-search))
+                      )
+                  (if (not swiper--async-direction-backward)
+                      (progn
+                        (when (< swiper--async-high-start-point
+                                 swiper--async-high-end-point)
+                          (goto-char swiper--async-high-start-point)
+                          (while (and (not (input-pending-p))
+                                      (< matches-found
+                                         swiper--async-max-matches-per-search)
+                                      (re-search-forward
+                                       positive-re
+                                       (min swiper--async-high-end-point
+                                            (+ swiper--async-high-start-point
+                                               swiper--max-search-length
+                                               1))
+                                       'on-error-go-to-limit))
+                            (cl-incf matches-found)
+                            (funcall func (match-beginning 0) (match-end 0)))
+                          (setq swiper--async-high-start-point (point)))
+                        (when (< swiper--async-low-start-point
+                                 swiper--async-low-end-point)
+                          (goto-char swiper--async-low-start-point)
+                          (while (and (not (input-pending-p))
+                                      (< matches-found
+                                         swiper--async-max-matches-per-search)
+                                      (re-search-forward
+                                       positive-re
+                                       (min swiper--async-low-end-point
+                                            (+ swiper--async-low-start-point
+                                               swiper--max-search-length
+                                               1))
+                                       'on-error-go-to-limit))
+                            (cl-incf matches-found)
+                            (funcall func (match-beginning 0) (match-end 0)))
+                          (setq swiper--async-low-start-point (point))))
+                    (progn
+                      (when (< swiper--async-low-start-point
+                               swiper--async-low-end-point)
+                        (goto-char swiper--async-low-end-point)
+                        (while (and (not (input-pending-p))
+                                    (< matches-found
+                                       swiper--async-max-matches-per-search)
+                                    (re-search-backward
+                                     positive-re
+                                     (max swiper--async-low-start-point
+                                          (- swiper--async-low-end-point
+                                             swiper--max-search-length
+                                             1))
+                                     'on-error-go-to-limit))
+                          (cl-incf matches-found)
+                          (funcall func (match-beginning 0) (match-end 0)))
+                        (setq swiper--async-low-end-point (point)))
+                      (when (< swiper--async-high-start-point
+                               swiper--async-high-end-point)
+                        (goto-char swiper--async-high-end-point)
+                        (while (and (not (input-pending-p))
+                                    (< matches-found
+                                       swiper--async-max-matches-per-search)
+                                    (re-search-backward
+                                     positive-re
+                                     (max swiper--async-high-start-point
+                                          (- swiper--async-high-end-point
+                                             swiper--max-search-length
+                                             1))
+                                     'on-error-go-to-limit))
+                          (cl-incf matches-found)
+                          (funcall func (match-beginning 0) (match-end 0)))
+                        (setq swiper--async-high-end-point (point))))))
+                (when (/= matches-found 0)
+                  (swiper--async-update-output)))))
+          (when (or (not finished-wndcands)
+                    (< swiper--async-high-start-point
+                       swiper--async-high-end-point)
+                    (< swiper--async-low-start-point
+                       swiper--async-low-end-point))
+            (schedule-isearch buffer func)))))))
 
 (defun swiper--async-insertion-sort (candidate-cons comp-func insertion-point)
   (let (
@@ -682,14 +777,13 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq swiper--async-high-end-point (point-max))
     (setq swiper--async-low-start-point (point-min))
     (setq swiper--async-low-end-point swiper--async-high-start-point)
-    (when (not (null swiper--async-timer))
-      (cancel-timer swiper--async-timer)
-      (setq swiper--async-timer nil))
     (swiper--async-format-spec)
-    (schedule-isearch
-     (current-buffer)
-     'swiper--async-found-new-candidate)))
+    (swiper--async-kick-async)))
 
+(defun swiper--async-kick-async ()
+  (schedule-isearch
+   (current-buffer)
+   'swiper--async-found-new-candidate))
 
 (defun swiper--async-mark-candidates-in-window ()
   (with-ivy-window
@@ -848,6 +942,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (swiper--async-mark-candidates-in-window)))
 
 (defun swiper--async-reset-state ()
+  (setq swiper--async-old-wnd-cands nil)
   (setq ivy-text--persp-variables nil)
   (setq ivy-index--persp-variables nil)
   (setq swiper--async-to-search nil)
