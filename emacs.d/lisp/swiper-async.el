@@ -46,8 +46,9 @@
                    (when (/= big-pos small-pos)
                      (setq swiper--async-max-line-count-size
                            (max
-                            (min (ceiling (/ (* (- big-pos small-pos) lines-time)
-                                             swiper--async-max-line-count-time))
+                            (min (ceiling (/ (* (- big-pos small-pos)
+                                                swiper--async-max-line-count-time)
+                                             lines-time))
                                  1048576) 128)))
                    (unless big-pos-at-newline
                      (setq lines-diff (- lines-diff 1)))
