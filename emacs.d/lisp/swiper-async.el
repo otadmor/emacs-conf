@@ -649,7 +649,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (let (
               (finished-wndcands (not swiper-include-line-number-in-search))
               (filled-minibuffer-candidates
-               (or (>= (length ivy--orig-cands) (+ ivy-height ivy--index))
+               (or (>= (length ivy--orig-cands) (+ max-mini-window-height
+                                                   ivy--index))
                    (and (= swiper--async-high-start-point
                            swiper--async-high-end-point)
                         (= swiper--async-low-start-point
