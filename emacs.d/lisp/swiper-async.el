@@ -385,7 +385,7 @@ Update the minibuffer with the amount of lines collected every
       (goto-char (point-min))
       (while (< (point) (point-max))
         (let (
-              (beg (+ (thing-at-point 'number) 1))
+              (beg (thing-at-point 'number))
               (bbeg (progn (search-forward ":") (point)))
               )
           (let (
@@ -394,6 +394,9 @@ Update the minibuffer with the amount of lines collected every
             (let (
                   (end (+ beg len))
                   )
+              (with-ivy-window
+                (setq beg (filepos-to-bufferpos beg))
+                (setq end (filepos-to-bufferpos end)))
               (when (or (and (>= beg swiper--async-low-start-point)
                              (<= beg swiper--async-low-end-point))
                         (and (>= beg swiper--async-high-start-point)
