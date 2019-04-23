@@ -724,8 +724,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                     )
                 (let (
                       (swiper--async-max-matches-per-search
-                       (if (< (length ivy--orig-cands) (+ ivy-height ivy--index))
-                           (- (+ ivy-height ivy--index) (length ivy--orig-cands))
+                       (if (< (length ivy--orig-cands)
+                              (+ max-mini-window-height ivy--index))
+                           (- (+ max-mini-window-height ivy--index)
+                              (length ivy--orig-cands))
                          swiper--async-default-max-matches-per-search))
                       )
                   (if (not swiper--async-direction-backward)
