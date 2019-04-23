@@ -1,7 +1,7 @@
 ;; -*- lexical-binding: t; -*-
 (require 'swiper)
 (require 'ivy)
-(require 'multiple-cursors-swiper) ; for candidates with advancer and initiater
+(require 'counsel) ; for counsel--async
 
 (setq swiper--async-last-line nil)
 (setq swiper--async-last-line-pos nil)
@@ -349,6 +349,92 @@ Update the minibuffer with the amount of lines collected every
        (or (not (eq 'swiper--regexp-builder ivy--regex-function))
            (swiper--async-legal-pcre-regex-p ivy-text))))
 
+(setq swiper--async-grep-limit 2)
+(defun swiper--async-same-as-disk()
+  (and (>= (length ivy-text) swiper--async-grep-limit)
+       (not (null counsel-grep-command))
+       (buffer-file-name)
+       (null (funcall buffer-stale-function t))
+       (not (buffer-modified-p))))
+
+(defun swiper--async-process-sentinel (process _msg)
+  "Sentinel function for an asynchronous counsel PROCESS."
+  (when (eq (process-status process) 'exit)
+    (if (zerop (process-exit-status process))
+        (progn
+          (swiper--async-parse-process-output process)
+          (setq counsel-grep-last-line nil)
+          (when counsel--async-start
+            (setq counsel--async-duration
+                  (time-to-seconds (time-since counsel--async-start)))))
+      (let (
+            (status (process-exit-status process))
+            (plist (plist-get counsel--async-exit-code-plist
+                              (ivy-state-caller ivy-last)))
+            )
+        (when (= (plist-get plist status) 0)
+          (message "swiper-async: disabled grep because of process error")
+          (setq counsel-grep-command nil))))))
+
+(defun swiper--async-parse-process-output (process)
+  (let (
+        (beg-ends)
+        (last-end)
+        )
+    (with-current-buffer (process-buffer process)
+      (goto-char (point-min))
+      (while (< (point) (point-max))
+        (let (
+              (beg (+ (thing-at-point 'number) 1))
+              (bbeg (progn (search-forward ":") (point)))
+              )
+          (let (
+                (len (- (line-end-position) bbeg))
+                )
+            (let (
+                  (end (+ beg len))
+                  )
+              (when (or (and (>= beg swiper--async-low-start-point)
+                             (<= beg swiper--async-low-end-point))
+                        (and (>= beg swiper--async-high-start-point)
+                             (<= beg swiper--async-high-end-point)))
+                (setq last-end end)
+                (push (cons beg end) beg-ends)))))
+        (forward-line)))
+    (unless (null last-end)
+      (if (> last-end swiper--async-high-start-point)
+          (setq swiper--async-high-start-point last-end)
+        (when (> last-end swiper--async-low-start-point)
+          (setq swiper--async-low-start-point last-end))))
+    (with-ivy-window
+      (dolist (beg-end beg-ends)
+        (swiper--async-found-new-candidate (car beg-end) (cdr beg-end)))
+      (when (> (length beg-ends) 0)
+        (swiper--async-update-output)))))
+
+(defun swiper--async-process-filter (process str)
+  "Receive from PROCESS the output STR.
+Update the minibuffer with the amount of lines collected every
+`counsel-async-filter-update-time' microseconds since the last update."
+  (with-current-buffer (process-buffer process)
+    (insert str))
+  (when (time-less-p (list 0 0 counsel-async-filter-update-time)
+                     (time-since counsel--async-time))
+    (swiper--async-parse-process-output process)
+    (setq counsel--async-time (current-time))))
+
+(defun swiper--async-call-counsel-grep()
+  (let (
+        (regex (counsel--elisp-to-pcre
+                (funcall ivy--regex-function swiper--async-to-search)))
+        )
+    (counsel--async-command
+     (format counsel-grep-command (shell-quote-argument regex))
+     'swiper--async-process-sentinel
+     'swiper--async-process-filter
+     swiper--async-process-name)))
+
+
 (setq swiper--async-to-search nil)
 (setq isearch-swiper-limit 3)
 (setq ivy-text--persp-variables nil)
@@ -600,7 +686,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
               (when should-update-wndcands
                 (ivy--insert-minibuffer
                  (ivy--wnd-cands-to-str (reverse new-wnd-cands))))))
-          (when (/= (length swiper--async-to-search) 0)
+          (when (and (/= (length swiper--async-to-search) 0)
+                     (not (swiper--async-same-as-disk)))
+            (counsel-delete-process swiper--async-process-name)
             (let (
                   (re-str (funcall ivy--regex-function swiper--async-to-search))
                   )
@@ -684,10 +772,11 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                 (when (/= matches-found 0)
                   (swiper--async-update-output)))))
           (when (or (not finished-wndcands)
-                    (< swiper--async-high-start-point
-                       swiper--async-high-end-point)
-                    (< swiper--async-low-start-point
-                       swiper--async-low-end-point))
+                    (and (not (swiper--async-same-as-disk))
+                         (< swiper--async-high-start-point
+                            swiper--async-high-end-point)
+                         (< swiper--async-low-start-point
+                            swiper--async-low-end-point)))
             (schedule-isearch buffer func)))))))
 
 (defun swiper--async-insertion-sort (candidate-cons comp-func insertion-point)
@@ -782,7 +871,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq swiper--async-low-start-point (point-min))
     (setq swiper--async-low-end-point swiper--async-high-start-point)
     (swiper--async-format-spec)
-    (swiper--async-kick-async)))
+    (if (swiper--async-same-as-disk)
+        (swiper--async-call-counsel-grep)
+      (swiper--async-kick-async))))
 
 (defun swiper--async-kick-async ()
   (schedule-isearch
@@ -945,8 +1036,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                 (isearch-highlight beg pos)))))))
     (swiper--async-mark-candidates-in-window)))
 
+(setq swiper--async-process-name "*swiper--async*")
 (defun swiper--async-reset-state ()
   (setq swiper--async-old-wnd-cands nil)
+  (setq counsel-grep-last-line nil)
   (setq ivy-text--persp-variables nil)
   (setq ivy-index--persp-variables nil)
   (setq swiper--async-to-search nil)
@@ -959,10 +1052,13 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (setq swiper--async-last-line-pos nil)
   (setq ivy--index 0)
   (setq swiper-use-visual-line nil)
+  (counsel-delete-process swiper--async-process-name)
   (when (not (null swiper--async-timer))
     (cancel-timer swiper--async-timer)
     (setq swiper--async-timer nil))
   (swiper--cleanup))
+
+(setq swiper--async-grep-base-command (concat "grep -a -o -b -u -E -e %s %s"))
 
 (defun swiper--async-ivy (&optional initial-input)
   "Select one of CANDIDATES and move there.
@@ -980,6 +1076,22 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         res)
     (swiper--async-reset-state)
     (swiper--async-add-hooks)
+    (if (and buffer-file-name
+             (not (ignore-errors (file-remote-p buffer-file-name)))
+             (not (jka-compr-get-compression-info buffer-file-name))
+             (not (<= (buffer-size)
+                      (/ counsel-grep-swiper-limit
+                         (if (eq major-mode 'org-mode) 4 1))))
+             (condition-case err
+                 (counsel-require-program
+                  (car (split-string swiper--async-grep-base-command)))
+               (user-error (message "no grep: %S" err) nil)))
+        (setq counsel-grep-command
+              (format swiper--async-grep-base-command
+                      "%s" (shell-quote-argument
+                            (file-name-nondirectory
+                             buffer-file-name))))
+      (setq counsel-grep-command nil))
     (unwind-protect
          (and
           (setq res
