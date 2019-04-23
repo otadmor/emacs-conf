@@ -802,10 +802,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                   (swiper--async-update-output)))))
           (when (or (not finished-wndcands)
                     (and (not (swiper--async-same-as-disk))
-                         (< swiper--async-high-start-point
-                            swiper--async-high-end-point)
-                         (< swiper--async-low-start-point
-                            swiper--async-low-end-point)))
+                         (or (< swiper--async-high-start-point
+                                swiper--async-high-end-point)
+                             (< swiper--async-low-start-point
+                                swiper--async-low-end-point))))
             (schedule-isearch buffer func)))))))
 
 (defun swiper--async-insertion-sort (candidate-cons comp-func insertion-point)
