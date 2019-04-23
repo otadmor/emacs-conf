@@ -3,9 +3,21 @@
 (require 'ivy)
 (require 'counsel) ; for counsel--async
 
+(defmacro benchmark-and-get-result (&rest forms)
+  "Return the time in seconds elapsed for execution of FORMS."
+  (declare (indent 0) (debug t))
+  (let ((t1 (make-symbol "t1"))(res (make-symbol "res")))
+    `(let (,t1)
+       (setq ,t1 (current-time))
+       (let (
+             (,res (progn ,@forms))
+             )
+       (cons (float-time (time-since ,t1)) ,res)))))
+
 (setq swiper--async-last-line nil)
 (setq swiper--async-last-line-pos nil)
 (setq swiper--async-max-line-count-size 4096)
+(setq swiper--async-max-line-count-time 0.01)
 (defun swiper--async-line-at-pos (pos &optional force)
   (let (
         (line-no
@@ -24,13 +36,24 @@
                      (big-pos-at-newline
                       (= big-pos (progn (goto-char big-pos)
                                         (line-beginning-position))))
-                     (lines-diff (count-lines small-pos big-pos))
+                     (lines-diff-and-time (benchmark-and-get-result
+                                           (count-lines small-pos big-pos)))
                      )
-                 (unless big-pos-at-newline
-                   (setq lines-diff (- lines-diff 1)))
-                 (if (> pos swiper--async-last-line-pos)
-                     (+ swiper--async-last-line lines-diff)
-                   (- swiper--async-last-line lines-diff)))))))
+                 (let (
+                       (lines-time (car lines-diff-and-time))
+                       (lines-diff (cdr lines-diff-and-time))
+                       )
+                   (when (/= big-pos small-pos)
+                     (setq swiper--async-max-line-count-size
+                           (max
+                            (min (ceiling (/ (* (- big-pos small-pos) lines-time)
+                                             swiper--async-max-line-count-time))
+                                 1048576) 128)))
+                   (unless big-pos-at-newline
+                     (setq lines-diff (- lines-diff 1)))
+                   (if (> pos swiper--async-last-line-pos)
+                       (+ swiper--async-last-line lines-diff)
+                     (- swiper--async-last-line lines-diff))))))))
         )
     (unless (null line-no)
       (setq swiper--async-last-line-pos pos)
