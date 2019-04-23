@@ -1070,11 +1070,6 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (setq swiper-invocation-face
         (plist-get (text-properties-at (point)) 'face))
   (let ((preselect nil)
-; (if swiper-use-visual-line
-;              (count-screen-lines
-;               (point-min)
-;               (save-excursion (beginning-of-visual-line) (point)))
-;            (1- (line-number-at-pos)))
         (minibuffer-allow-text-properties t)
         res)
     (swiper--async-reset-state)
