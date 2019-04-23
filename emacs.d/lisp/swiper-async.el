@@ -593,8 +593,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 (setq swiper--async-low-start-point nil)
 (setq swiper--async-low-end-point nil)
 (setq swiper--async-direction-backward nil)
-(setq swiper--async-default-max-matches-per-search 100)
+(setq swiper--async-default-max-matches-per-search 9999)
 (setq swiper--max-search-length (* 10 4096)) ; one page?
+(setq swiper--max-search-time 0.1)
 
 (defun swiper--async-update-output ()
   (ivy--set-candidates ivy--orig-cands)
@@ -723,7 +724,11 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
               (let (
                     (matches-found 0)
                     (positive-re (swiper-async--join-re-positive re-str))
+                    (searched-bytes 0)
                     )
+                (let (
+                      (matches-found-time (car (benchmark-and-get-result
+
                 (let (
                       (swiper--async-max-matches-per-search
                        (if (< (length ivy--orig-cands)
@@ -749,6 +754,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                        'on-error-go-to-limit))
                             (cl-incf matches-found)
                             (funcall func (match-beginning 0) (match-end 0)))
+                          (setq searched-bytes
+                                (+ searched-bytes
+                                   (- (point) swiper--async-high-start-point)))
                           (setq swiper--async-high-start-point (point)))
                         (when (< swiper--async-low-start-point
                                  swiper--async-low-end-point)
@@ -765,6 +773,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                        'on-error-go-to-limit))
                             (cl-incf matches-found)
                             (funcall func (match-beginning 0) (match-end 0)))
+                          (setq searched-bytes
+                                (+ searched-bytes
+                                   (- (point) swiper--async-low-start-point)))
                           (setq swiper--async-low-start-point (point))))
                     (progn
                       (when (< swiper--async-low-start-point
@@ -782,6 +793,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                      'on-error-go-to-limit))
                           (cl-incf matches-found)
                           (funcall func (match-beginning 0) (match-end 0)))
+                        (setq searched-bytes
+                                (+ searched-bytes
+                                   (- swiper--async-low-end-point (point))))
                         (setq swiper--async-low-end-point (point)))
                       (when (< swiper--async-high-start-point
                                swiper--async-high-end-point)
@@ -798,7 +812,17 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                                      'on-error-go-to-limit))
                           (cl-incf matches-found)
                           (funcall func (match-beginning 0) (match-end 0)))
+                        (setq searched-bytes
+                                (+ searched-bytes
+                                   (- swiper--async-high-end-point (point))))
                         (setq swiper--async-high-end-point (point))))))
+                )))
+                      )
+                  (when (/= searched-bytes 0)
+                    (setq swiper--max-search-length ;(* 10 4096)
+                          (ceiling (/ (* searched-bytes
+                                               swiper--max-search-time)
+                                            matches-found-time)))))
                 (when (/= matches-found 0)
                   (swiper--async-update-output)))))
           (when (or (not finished-wndcands)
