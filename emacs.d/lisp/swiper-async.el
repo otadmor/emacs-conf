@@ -130,7 +130,7 @@
     (let (
           (beg (swiper--get-begin item))
           (pos (swiper--get-end item))
-          (positive-re (swiper-async--join-re-positive re-str))
+          (positive-re swiper--async-ivy-text-positive-re)
           ; (negative-re (swiper-async--join-re-negative re-str))
           )
       (when beg
@@ -230,18 +230,11 @@
 (defun swiper--async-iterate-matches (regex beg end func)
   (when (< beg end)
     (goto-char beg)
-    (let (
-          (re-str regex)
-          )
-      (let (
-            (positive-re (swiper-async--join-re-positive re-str))
-            ; (negative-re (swiper-async--join-re-negative re-str))
-            )
-        (while (re-search-forward
-                positive-re
-                end
-                'on-error-go-to-limit)
-          (funcall func (match-beginning 0) (match-end 0)))))))
+    (while (re-search-forward
+            regex
+            end
+            'on-error-go-to-limit)
+      (funcall func (match-beginning 0) (match-end 0)))))
 
 (defun swiper--async-make-startwith-match (re-str)
   (if (string-prefix-p "^" re-str) re-str (concat "^" re-str "")))
@@ -332,7 +325,7 @@ Update the minibuffer with the amount of lines collected every
               )
           (swiper--async-format-spec)
           (swiper--async-iterate-matches
-           swiper--async-to-search-re search-start search-end
+           swiper--async-to-search-positive-re search-start search-end
            (lambda (b e)
              (let (
                    (new-item (list (swiper--async-create-candidate b e)))
@@ -519,14 +512,18 @@ Update the minibuffer with the amount of lines collected every
   (unless (string= swiper--async-to-search swiper--async-to-search-old)
     (setq swiper--async-to-search-old swiper--async-to-search)
     (setq swiper--async-to-search-re
-          (funcall ivy--regex-function swiper--async-to-search))))
+          (funcall ivy--regex-function swiper--async-to-search))
+    (setq swiper--async-to-search-positive-re
+          (swiper-async--join-re-positive swiper--async-to-search-re))))
 
 (setq swiper--async-ivy-text-old nil)
 (setq swiper--async-ivy-text-re nil)
 (defun swiper--async-build-cache-ivy-text()
   (unless (string= swiper--async-ivy-text-old ivy-text)
     (setq swiper--async-ivy-text-old ivy-text)
-    (setq swiper--async-ivy-text-re (funcall ivy--regex-function ivy-text))))
+    (setq swiper--async-ivy-text-re (funcall ivy--regex-function ivy-text))
+    (setq swiper--async-ivy-text-positive-re
+          (swiper-async--join-re-positive swiper--async-ivy-text-re))))
 
 (defun swiper--async-build-cache()
   (swiper--async-build-cache-to-search)
@@ -748,7 +745,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                   )
               (let (
                     (matches-found 0)
-                    (positive-re (swiper-async--join-re-positive re-str))
+                    (positive-re swiper--async-to-search-positive-re)
                     (searched-bytes 0)
                     )
                 (let (
@@ -1012,7 +1009,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (save-excursion
     (lazy-highlight-cleanup t)
     (swiper--async-iterate-matches
-     swiper--async-ivy-text-re beg end
+     swiper--async-ivy-text-positive-re beg end
      ;; TODO : should we check for negative-re here?
      'swiper--async-mark-candidate)))
 
