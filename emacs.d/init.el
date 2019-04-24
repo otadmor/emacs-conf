@@ -153,8 +153,9 @@
 (powerline-default-theme)
 
 (require 'cl) ; required for defun*
+(require 'utils)
 
-(global-set-key [(control x) (control c)] (defun dont-kill-emacs() (interactive) (message "Use C-x c to leave")))
+(global-set-key [(control x) (control c)] 'dont-kill-emacs)
 
 (require 'server)
 
@@ -189,9 +190,9 @@
 (global-set-key [(control k)] 'kill-whole-line)
 (global-set-key [(control u)] 'yank-rectangle)
 (global-set-key [(meta g)] 'goto-line)
-(global-set-key [f6] (defun last-buffer() (interactive) (switch-to-buffer (other-buffer))))
-(global-set-key [(control tab)] (defun next-buff() (interactive) (other-window 1)))
-(global-set-key (kbd "C-S-<iso-lefttab>") (defun prev-buffer() (interactive) (other-window -1)))
+(global-set-key [f6] 'last-buffer)
+(global-set-key [(control tab)] 'next-buffer)
+(global-set-key (kbd "C-S-<iso-lefttab>") 'prev-buffer)
 (global-set-key [(pause)] 'kill-this-buffer)
 (global-set-key (kbd "C-M-k") 'kill-this-buffer)
 (global-set-key [(scroll-lock)] 'kill-this-buffer)
@@ -214,14 +215,6 @@
 (global-set-key (kbd "C-M-<up>") 'windmove-up)
 (global-set-key (kbd "C-M-<down>") 'windmove-down)
 
-(defun switch-to-minibuffer ()
-  "Switch to minibuffer window."
-  (interactive)
-  (when (active-minibuffer-window)
-      (if (eq (active-minibuffer-window) (frame-selected-window))
-          (select-window (get-mru-window))
-          (select-window (active-minibuffer-window))
-          )))
 (global-set-key (kbd "M-d") 'switch-to-minibuffer)
 
 (require 'redo+)
