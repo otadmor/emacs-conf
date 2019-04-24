@@ -68,4 +68,12 @@
   (interactive)
   (counsel-find-file-as-root ivy-text))
 
+(defun ivy-previous-line-or-history-2 (arg)
+  "Move cursor vertically up ARG candidates.
+If the input is empty, select the previous history element instead."
+  (interactive "p")
+  (when (string= ivy-text "")
+    (ivy-previous-history-element 1))
+  (ivy-previous-line arg))
+
 (provide 'ivy-utils)
