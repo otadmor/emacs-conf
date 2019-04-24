@@ -64,4 +64,8 @@
     (setq swiper--current-line (string-to-number (format-mode-line "%l")))
     (goto-char swiper--opoint)))
 
+(defun ivy-find-file-as-root ()
+  (interactive)
+  (counsel-find-file-as-root ivy-text))
+
 (provide 'ivy-utils)

@@ -348,7 +348,7 @@
 (define-key swiper-map (kbd "M-C-p") 'swiper--goto-original-point)
 
 (require 'counsel)
-(define-key counsel-find-file-map (kbd "C-o") (lambda () (interactive) (counsel-find-file-as-root ivy-text)))
+(define-key counsel-find-file-map (kbd "C-o") 'ivy-find-file-as-root)
 
 
 (global-set-key (kbd "C-x C-f") 'counsel-find-file)
