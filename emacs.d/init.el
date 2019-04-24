@@ -247,16 +247,6 @@
 (global-set-key (kbd "C-;") 'lines-in-region)
 (global-set-key (kbd "C-/") 'my-comment-or-uncomment-region)
 
-(defun gud-gdb-marker-filter-hook(orig-fun &rest args)
-  (let (
-        (res (apply orig-fun args))
-        )
-    (ansi-color-process-output res)
-    )
-)
-(advice-add 'gud-gdb-marker-filter :around #'gud-gdb-marker-filter-hook)
-
-
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
