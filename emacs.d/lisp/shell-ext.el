@@ -1,3 +1,4 @@
+(setq comint-get-old-input (lambda () ""))
 
 (defun new-shell ()
   "create new shell"
