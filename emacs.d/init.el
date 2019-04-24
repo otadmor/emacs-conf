@@ -191,7 +191,7 @@
 (global-set-key [(control u)] 'yank-rectangle)
 (global-set-key [(meta g)] 'goto-line)
 (global-set-key [f6] 'last-buffer)
-(global-set-key [(control tab)] 'next-buffer)
+(global-set-key [(control tab)] 'next-buff)
 (global-set-key (kbd "C-S-<iso-lefttab>") 'prev-buffer)
 (global-set-key [(pause)] 'kill-this-buffer)
 (global-set-key (kbd "C-M-k") 'kill-this-buffer)
