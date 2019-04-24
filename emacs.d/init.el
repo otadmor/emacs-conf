@@ -302,7 +302,8 @@
 
 (require 'xwidget-ext)
 
-(with-eval-after-load 'magit-mode (define-key magit-mode-map [(control tab)] 'other-window))
+(with-eval-after-load 'magit-mode
+  (define-key magit-mode-map [(control tab)] 'other-window))
 (setq magit-completing-read-function 'ivy-completing-read)
 
 (setq ivy-use-virtual-buffers t)
