@@ -296,6 +296,12 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
   (swiper--async-which-func-update))
 (advice-add 'counsel-git-grep-action :after #'counselag-which-func-update)
 
+
+(defvar next-key (kbd "C-M-n"))
+(defvar pop-key (kbd "C-M-p"))
+(defvar goto-def-key (kbd "C-M-g"))
+(defvar sc-status-key (kbd "M-h"))
+
 (global-set-key [(meta f)] 'counsel-ag-preselect)
 (global-set-key [f4] 'next-error)
 (global-set-key [(shift f4)] 'previous-error)
@@ -637,7 +643,7 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 (define-key ivy-minibuffer-map [(meta t)] 'ivy-shell)
 (define-key ivy-minibuffer-map [(meta shift t)] 'ivy-new-shell)
 (define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
-(define-key ivy-minibuffer-map [(meta h)] 'ivy-magit-status)
+(define-key ivy-minibuffer-map sc-status-key 'ivy-magit-status)
 (global-set-key (kbd "M-c") 'ivy-resume)
 
 (require 'swiper-async)
@@ -792,8 +798,8 @@ If the input is empty, select the previous history element instead."
 
 (require 'completion-epc) ; required for frida completion
 (require 'ahg) ; for mercurial source control, like magit
-;(global-set-key [(meta h)] 'ahg-status)
-(global-set-key [(meta h)] 'magit-status)
+;(global-set-key sc-status-key 'ahg-status)
+(global-set-key sc-status-key 'magit-status)
 
 ;(require 'ascope)
 ;(global-set-key [(meta f9)] 'ascope-find-this-text-stringy)
@@ -804,10 +810,6 @@ If the input is empty, select the previous history element instead."
 ; (global-set-key [(control f7)] 'ascope-find-files-including-file)
 ; (global-set-key [(control f8)] 'ascope-find-all-symbol-assignments)
 ;(ascope-init "/home/ubuntu/sources/chromium/")
-
-(defvar next-key (kbd "C-M-n"))
-(defvar pop-key (kbd "C-M-p"))
-(defvar goto-def-key (kbd "C-M-g"))
 
 (require 'jss) ; remote js debugger
 (require 'winstack)
