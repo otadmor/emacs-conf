@@ -157,8 +157,6 @@
 (global-set-key [(control x) (control c)] (defun dont-kill-emacs() (interactive) (message "Use C-x c to leave")))
 
 (require 'server)
-(defun exit-emacs-or-close-frame() (interactive)
-       (if server-inside-emacs-client (delete-frame) (save-buffers-kill-emacs)))
 
 (global-set-key [(control x) (c)] 'exit-emacs-or-close-frame)
 ;(global-set-key [(control a)] 'mark-whole-buffer)
