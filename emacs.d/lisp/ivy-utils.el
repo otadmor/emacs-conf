@@ -57,4 +57,11 @@
   (ivy-quit-and-run
     (counsel-ag-preselect ivy-text)))
 
+(defun swiper--goto-original-point()
+  (interactive)
+  (with-ivy-window
+    (setq swiper--current-match-start swiper--opoint)
+    (setq swiper--current-line (string-to-number (format-mode-line "%l")))
+    (goto-char swiper--opoint)))
+
 (provide 'ivy-utils)

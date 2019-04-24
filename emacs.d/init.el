@@ -335,14 +335,6 @@
 (define-key swiper-map (kbd "M-f") 'swiper-convert-to-ag)
 (define-key ivy-minibuffer-map (kbd "M-f") 'swiper-convert-to-ag)
 
-(defun swiper--goto-original-point()
-  (interactive)
-  (with-ivy-window
-    (setq swiper--current-match-start swiper--opoint)
-    (setq swiper--current-line (string-to-number (format-mode-line "%l")))
-    (goto-char swiper--opoint)
-    ))
-
 (require 'multiple-cursors-swiper)
 
 (define-key swiper-map (kbd "C-g") 'mcs-minibuffer-keyboard-quit)
