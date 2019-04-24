@@ -360,20 +360,6 @@
 (define-key ivy-minibuffer-map (kbd "C-d") 'ivy-occur)
 (define-key ivy-minibuffer-map (kbd "C-w") 'ivy-yank-word)
 
-(defun counsel-find-file-occur-hook()
-  (let (
-        (caller (ivy-state-caller ivy-last))
-        )
-    (rename-buffer
-     (format "*ivy-occur%s \"%s\" dir: %s*"
-             (if caller
-                 (concat " " (prin1-to-string caller))
-               "")
-             ivy-text
-             ivy--directory)
-     t)))
-(advice-add 'counsel-find-file-occur :after #'counsel-find-file-occur-hook)
-
 (defun my-toggle-truncate-lines ()
   "Toggle truncate lines in quietly."
   (interactive)

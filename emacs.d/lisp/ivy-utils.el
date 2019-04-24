@@ -76,4 +76,18 @@ If the input is empty, select the previous history element instead."
     (ivy-previous-history-element 1))
   (ivy-previous-line arg))
 
+(defun counsel-find-file-occur-hook()
+  (let (
+        (caller (ivy-state-caller ivy-last))
+        )
+    (rename-buffer
+     (format "*ivy-occur%s \"%s\" dir: %s*"
+             (if caller
+                 (concat " " (prin1-to-string caller))
+               "")
+             ivy-text
+             ivy--directory)
+     t)))
+(advice-add 'counsel-find-file-occur :after #'counsel-find-file-occur-hook)
+
 (provide 'ivy-utils)
