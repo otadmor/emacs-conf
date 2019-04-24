@@ -1394,4 +1394,14 @@ This is a fix from the official repo which does not exist on the current emacs."
   (apply orig-fun args))
 (advice-add 'ivy-next-line :around #'ivy-next-line-hook)
 
+(defun swiper-async-search-forward ()
+  (interactive)
+  (setq swiper--async-direction-backward nil)
+  (swiper-async))
+
+(defun swiper-async-search-backward ()
+  (interactive)
+  (setq swiper--async-direction-backward t)
+  (swiper-async))
+
 (provide 'swiper-async)

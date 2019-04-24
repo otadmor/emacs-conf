@@ -324,8 +324,8 @@
 (global-set-key (kbd "M-c") 'ivy-resume)
 
 (require 'swiper-async)
-(global-set-key (kbd "C-s") (lambda () (interactive) (setq swiper--async-direction-backward nil) (swiper-async)))
-(global-set-key (kbd "C-r") (lambda () (interactive) (setq swiper--async-direction-backward t) (swiper-async)))
+(global-set-key (kbd "C-s") 'swiper-async-search-forward)
+(global-set-key (kbd "C-r") 'swiper-async-search-backward)
 (global-set-key (kbd "C-c C-a") 'mcs-swiper)
 
 (setq swiper-include-line-number-in-search t)
