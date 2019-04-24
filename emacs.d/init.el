@@ -805,11 +805,15 @@ If the input is empty, select the previous history element instead."
 ; (global-set-key [(control f8)] 'ascope-find-all-symbol-assignments)
 ;(ascope-init "/home/ubuntu/sources/chromium/")
 
+(defvar next-key (kbd "C-M-n"))
+(defvar pop-key (kbd "C-M-p"))
+(defvar goto-def-key (kbd "C-M-g"))
+
 (require 'jss) ; remote js debugger
 (require 'winstack)
 (require 'simple)
-(global-set-key [(control meta p)] 'winstack-pop)
-(global-set-key [(control meta n)] 'winstack-next)
+(global-set-key pop-key 'winstack-pop)
+(global-set-key next-key 'winstack-next)
 
 
 ; clipboard useful shortcuts
@@ -957,7 +961,7 @@ the output."
 (require 'jedi-core)
 (add-hook 'python-mode-hook 'jedi:setup)
 (setq jedi:complete-on-dot t)                 ; optional
-(define-key jedi-mode-map (kbd "M-C-j") 'jedi:goto-definition)
+(define-key jedi-mode-map goto-def-key 'jedi:goto-definition)
 
 (require 'bash-completion)
 (bash-completion-setup)
@@ -1273,7 +1277,7 @@ of the perspective %s can't be saved."
 (add-to-list 'speedbar-frame-parameters (cons 'persp-ignore-wconf t))
 
 (require 'dumb-jump)
-(global-set-key (kbd "M-C-j") 'dumb-jump-go)
+(global-set-key goto-def-key 'dumb-jump-go)
 
 (defun dumb-jump-ivy-minibuffer-keyboard-quit () (interactive)
   (with-ivy-window
