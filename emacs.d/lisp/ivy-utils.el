@@ -40,4 +40,21 @@
     (user-error
      "Not completing files currently")))
 
+(defun swiper-comment-or-uncomment-line ()
+  (interactive)
+  (with-ivy-window
+    (my-comment-or-uncomment-region)
+    (ivy--exhibit)))
+
+(defun swiper-kill-line ()
+  (interactive)
+  (with-ivy-window
+    (kill-whole-line)
+    (ivy--exhibit)))
+
+(defun swiper-convert-to-ag ()
+  (interactive)
+  (ivy-quit-and-run
+    (counsel-ag-preselect ivy-text)))
+
 (provide 'ivy-utils)

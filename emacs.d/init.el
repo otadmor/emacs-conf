@@ -330,28 +330,10 @@
 
 (setq swiper-include-line-number-in-search t)
 
-;;(global-set-key (kbd "C-/") (lambda () (interactive) (ivy-exit-with-action (lambda (_) (my-comment-or-uncomment-region)))))
-(define-key swiper-map (kbd "C-/")
-  (lambda () (interactive)
-    (with-ivy-window
-      (my-comment-or-uncomment-region)
-      (ivy--exhibit))))
-
-(define-key swiper-map (kbd "C-k")
-  (lambda () (interactive)
-    (with-ivy-window
-      (kill-whole-line)
-      (ivy--exhibit))))
-
-(define-key swiper-map (kbd "M-f")
-  (lambda () (interactive)
-    (ivy-quit-and-run
-      (counsel-ag-preselect ivy-text))))
-
-(define-key ivy-minibuffer-map (kbd "M-f")
-  (lambda () (interactive)
-    (ivy-quit-and-run
-      (counsel-ag-preselect ivy-text))))
+(define-key swiper-map (kbd "C-/") 'swiper-comment-or-uncomment-line)
+(define-key swiper-map (kbd "C-k") 'swiper-kill-line)
+(define-key swiper-map (kbd "M-f") 'swiper-convert-to-ag)
+(define-key ivy-minibuffer-map (kbd "M-f") 'swiper-convert-to-ag)
 
 (defun swiper--goto-original-point()
   (interactive)
