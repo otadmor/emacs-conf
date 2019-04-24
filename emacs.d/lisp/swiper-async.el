@@ -1251,13 +1251,9 @@ Insert .* between each char."
             str t t)))
 (advice-add 'ivy--quote-format-string :around #'ivy--quote-format-string-hook)
 
-(defun ivy-previous-line-hook(orig-fun &rest args)
-  (setq swiper--async-direction-backward t)
+(defun ivy-set-index-hook(orig-fun &rest args)
+  (setq swiper--async-direction-backward (>= (car args) ivy--index))
   (apply orig-fun args))
-(advice-add 'ivy-previous-line :around #'ivy-previous-line-hook)
-(defun ivy-next-line-hook(orig-fun &rest args)
-  (setq swiper--async-direction-backward nil)
-  (apply orig-fun args))
-(advice-add 'ivy-next-line :around #'ivy-next-line-hook)
+(advice-add 'ivy-set-index :around #'ivy-set-index-hook)
 
 (provide 'swiper-async)
