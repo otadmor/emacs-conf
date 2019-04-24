@@ -186,7 +186,6 @@
 (global-set-key [(meta f11)] 'edit-named-kbd-macro)
 (global-set-key [(control f12)] 'call-last-kbd-macro)
 (global-set-key [(meta f12)] 'edit-last-kbd-macro)
-(global-set-key [(control meta b)] 'toggle-truncate-lines)
 (global-set-key [(control k)] 'kill-whole-line)
 (global-set-key [(control u)] 'yank-rectangle)
 (global-set-key [(meta g)] 'goto-line)
@@ -361,11 +360,6 @@
 (define-key ivy-minibuffer-map (kbd "C-d") 'ivy-occur)
 (define-key ivy-minibuffer-map (kbd "C-w") 'ivy-yank-word)
 
-(defun my-toggle-truncate-lines ()
-  "Toggle truncate lines in quietly."
-  (interactive)
-  (let ((inhibit-message t))
-    (toggle-truncate-lines)))
 (define-key ivy-minibuffer-map (kbd "C-l") 'my-toggle-truncate-lines)
 (define-key swiper-map (kbd "C-l") 'my-toggle-truncate-lines)
 (global-set-key (kbd "C-l") 'my-toggle-truncate-lines)

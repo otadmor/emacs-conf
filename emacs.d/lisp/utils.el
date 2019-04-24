@@ -27,4 +27,10 @@
       (setq end (- (region-end) 1)))
     (comment-or-uncomment-region beg end 1)))
 
+(defun my-toggle-truncate-lines ()
+  "Toggle truncate lines in quietly."
+  (interactive)
+  (let ((inhibit-message t))
+    (toggle-truncate-lines)))
+
 (provide 'utils)
