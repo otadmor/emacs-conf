@@ -1385,9 +1385,13 @@ This is a fix from the official repo which does not exist on the current emacs."
             str t t)))
 (advice-add 'ivy--quote-format-string :around #'ivy--quote-format-string-hook)
 
-(defun ivy-set-index-hook(orig-fun &rest args)
-  (setq swiper--async-direction-backward (>= (car args) ivy--index))
+(defun ivy-previous-line-hook(orig-fun &rest args)
+  (setq swiper--async-direction-backward t)
   (apply orig-fun args))
-(advice-add 'ivy-set-index :around #'ivy-set-index-hook)
+(advice-add 'ivy-previous-line :around #'ivy-previous-line-hook)
+(defun ivy-next-line-hook(orig-fun &rest args)
+  (setq swiper--async-direction-backward nil)
+  (apply orig-fun args))
+(advice-add 'ivy-next-line :around #'ivy-next-line-hook)
 
 (provide 'swiper-async)
