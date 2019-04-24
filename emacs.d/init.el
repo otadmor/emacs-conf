@@ -159,10 +159,6 @@
 (require 'server)
 
 (global-set-key [(control x) (c)] 'exit-emacs-or-close-frame)
-;(global-set-key [(control a)] 'mark-whole-buffer)
-;(global-set-key [(control b)] 'ido-switch-buffer)
-;(global-set-key [(control f)] 'find-file)
-;(global-set-key [(control o)] 'ido-switch-buffer-other-window)
 (global-set-key [(control z)] 'undo)
 (global-set-key [f9] 'compile)
 
