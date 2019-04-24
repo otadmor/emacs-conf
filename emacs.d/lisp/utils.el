@@ -11,4 +11,20 @@
           (select-window (active-minibuffer-window))
           )))
 
+(defun lines-in-region () (interactive)
+       (message "lines %S" (count-lines (region-beginning) (region-end))))
+
+(defun my-comment-or-uncomment-region ()
+  (interactive)
+  (let ((beg (save-excursion (when mark-active (goto-char (region-beginning)))
+                             (line-beginning-position)))
+	(end (save-excursion (when mark-active (goto-char (region-end)))
+                             (line-end-position))))
+    (when (and mark-active
+               (< beg end)
+               (= (save-excursion (goto-char end)
+                                  (line-beginning-position)) (region-end)))
+      (setq end (- (region-end) 1)))
+    (comment-or-uncomment-region beg end 1)))
+
 (provide 'utils)

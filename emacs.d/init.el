@@ -244,23 +244,7 @@
 ;(global-set-key [(meta \3)] 'my-comment-region)
 ;(global-set-key [(meta \4)] 'my-uncomment-region)
 
-
-(defun lines-in-region () (interactive)
-       (message "lines %S" (count-lines (region-beginning) (region-end))))
 (global-set-key (kbd "C-;") 'lines-in-region)
-
-(defun my-comment-or-uncomment-region ()
-  (interactive)
-  (let ((beg (save-excursion (when mark-active (goto-char (region-beginning)))
-                             (line-beginning-position)))
-	(end (save-excursion (when mark-active (goto-char (region-end)))
-                             (line-end-position))))
-    (when (and mark-active
-               (< beg end)
-               (= (save-excursion (goto-char end)
-                                  (line-beginning-position)) (region-end)))
-      (setq end (- (region-end) 1)))
-    (comment-or-uncomment-region beg end 1)))
 (global-set-key (kbd "C-/") 'my-comment-or-uncomment-region)
 
 (defun gud-gdb-marker-filter-hook(orig-fun &rest args)
