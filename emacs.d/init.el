@@ -371,8 +371,8 @@
 (global-set-key (kbd "C-l") 'my-toggle-truncate-lines)
 
 (require 'counsel)
-(define-key counsel-ag-map (kbd "<down>") (lambda() (interactive) (ivy-next-line-and-call)))
-(define-key counsel-ag-map (kbd "<up>") (lambda() (interactive) (ivy-previous-line-and-call)))
+(define-key counsel-ag-map (kbd "<down>") 'ivy-next-line-and-call)
+(define-key counsel-ag-map (kbd "<up>") 'ivy-previous-line-and-call)
 (define-key counsel-ag-map (kbd "C-<up>") 'ivy-previous-line)
 (define-key counsel-ag-map (kbd "C-<down>") 'ivy-next-line)
 
