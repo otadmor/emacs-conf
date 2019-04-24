@@ -1,5 +1,5 @@
 (require 'ivy)
-(require 'shell-utils)
+(require 'shell-ext)
 ; (require 'python-utils)
 
 
