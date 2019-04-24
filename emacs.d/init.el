@@ -162,10 +162,6 @@
 (global-set-key [(control z)] 'undo)
 (global-set-key [f9] 'compile)
 
-(require 'grep)
-(defun nice-rgrep() (interactive) (grep-compute-defaults) (rgrep (grep-read-regexp) "*" default-directory nil))
-;; (global-set-key [(meta f)] 'nice-rgrep)
-
 (defun ag--format-result (proj result)
   (let (
         (rep-path (plist-get result :path))
