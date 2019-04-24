@@ -645,7 +645,7 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 (global-set-key (kbd "C-r") (lambda () (interactive) (setq swiper--async-direction-backward t) (swiper-async)))
 (global-set-key (kbd "C-c C-a") 'mcs-swiper)
 
-(setq swiper-include-line-number-in-search nil)
+(setq swiper-include-line-number-in-search t)
 
 ;;(global-set-key (kbd "C-/") (lambda () (interactive) (ivy-exit-with-action (lambda (_) (my-comment-or-uncomment-region)))))
 (define-key swiper-map (kbd "C-/")
