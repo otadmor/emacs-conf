@@ -30,3 +30,5 @@
 
 (defun exit-emacs-or-close-frame() (interactive)
        (if server-inside-emacs-client (delete-frame) (save-buffers-kill-emacs)))
+
+(provide 'server-hook)

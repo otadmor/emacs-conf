@@ -122,10 +122,7 @@
 (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
 (setq scroll-step 1) ;; keyboard scroll one line at a time
 
-(require 'scratch-util)
 (setenv "PAGER" "cat")
-
-(require 'server-hook)
 
 (add-to-list 'package-archives
              '("melpa-stable" . "http://stable.melpa.org/packages/") t)
@@ -133,6 +130,8 @@
 (setq load-path (cons (expand-file-name "~/.emacs.d/lisp/jss-master") load-path))
 (setq load-path (cons CONFIGURATION-PATH load-path))
 
+(require 'server-hook)
+(require 'scratch-util)
 (require 'doom-themes)
 
 ;; Global settings (defaults)
