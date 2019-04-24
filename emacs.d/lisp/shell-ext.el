@@ -1,4 +1,3 @@
-(setq comint-get-old-input (lambda () ""))
 
 (defun new-shell ()
   "create new shell"
@@ -32,7 +31,5 @@
     (insert-string (shell-quote-argument current-directory-path))
     (comint-send-input)))
 
-
-(ansi-color-for-comint-mode-on)
 
 (provide 'shell-ext)

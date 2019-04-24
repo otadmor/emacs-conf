@@ -225,15 +225,8 @@
 (require 'comint) ; to set comint-output-filter-functions
 (define-key comint-mode-map [C-up] 'comint-previous-matching-input-from-input)
 (define-key comint-mode-map [C-down] 'comint-next-matching-input-from-input)
-(setq comint-password-prompt-regexp
-      (concat comint-password-prompt-regexp
-              "\\|^Password for \\\\'.*\\\\':\\s *\\'"))
-(setq comint-password-prompt-regexp
-      (concat comint-password-prompt-regexp
-              "\\|^Password for '.*':\s+"))
-(setq comint-password-prompt-regexp
-      (concat comint-password-prompt-regexp
-              "\\|^.*\\\\' password:\\s *\\'"))
+
+(require 'comint-ext)
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
 (add-hook 'comint-output-filter-functions 'ansi-color-process-output)
 (add-hook 'gdb-mode-hook 'ansi-color-for-comint-mode-on)
