@@ -32,4 +32,20 @@
     (comint-send-input)))
 
 
+(defun old-shell-with-dir(current-directory-path)
+  (let (
+        (shb (car (get-buffers-with-major-mode 'shell-mode)))
+        )
+    (if (eq shb nil)
+        (new-shell-with-dir current-directory-path)
+      (switch-to-buffer shb)
+      (end-of-buffer)
+      (insert-string "cd " )
+      (insert-string (shell-quote-argument current-directory-path))
+      (comint-send-input))
+    shb))
+
+(defun old-shell() (interactive)
+  (old-shell-with-dir (expand-file-name default-directory)))
+
 (provide 'shell-ext)
