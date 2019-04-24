@@ -4,7 +4,8 @@
 (require 'counsel) ; for counsel--async
 
 (defmacro benchmark-and-get-result (&rest forms)
-  "Return the time in seconds elapsed for execution of FORMS."
+  "Return the time in seconds elapsed for execution of FORMS.
+Returns both the time and the result."
   (declare (indent 0) (debug t))
   (let ((t1 (make-symbol "t1"))(res (make-symbol "res")))
     `(let (,t1)
@@ -14,11 +15,24 @@
              )
        (cons (float-time (time-since ,t1)) ,res)))))
 
-(setq swiper--async-last-line nil)
-(setq swiper--async-last-line-pos nil)
-(setq swiper--async-max-line-count-size 4096)
-(setq swiper--async-max-line-count-time 0.01)
+(defvar swiper--async-last-line nil
+  "Remembers the last line of swiper--async-last-line-pos.")
+(defvar swiper--async-last-line-pos nil
+  "Saved the last searched for line position.")
+(defvar swiper--async-max-line-count-size 4096
+  "The size swiper--async-line-at-pos limits its count-lines and
+swiper--async-isearch splits the buffer to when filling line numbers.
+Changed dynamically according to swiper--async-max-line-count-time and the
+actual performance of the count-lines.")
+(defcustom swiper--async-max-line-count-time 0.01
+  "The soft maximum time swiper--async-line-at-pos is allowed to run."
+  :type 'number)
+
 (defun swiper--async-line-at-pos (pos &optional force)
+  "Differential count-lines. It saves a previous position and the lines
+at that position, and count the remaining lines from the saved position
+to the requested position.
+FORCE will ignore the limit of swiper--async-max-line-count-time."
   (let (
         (line-no
          (if (or (= (point-min) pos)
@@ -61,6 +75,10 @@
       (setq swiper--async-last-line line-no)))) ; also, return the line
 
 (defun swiper-line-transformer (str)
+  "a transformer to swiper--async. it reads the candidate line from the buffer
+(including properties), fills up line number if needed and returns the line
+trimmed to the minibuffer size, while keeping the match at the middle of the
+minibuffer."
   (save-excursion
     (save-restriction
       (widen)
@@ -124,6 +142,9 @@
 (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
 (defun swiper--async-match-in-buffer (item)
+  "Returns the actual match beginning and end of the candidate.
+The saved candidate end position might not be the real end because the matched
+candidate is limited to isearch-swiper-limit(default=3) while searching."
   (let (
         (re-str swiper--async-ivy-text-re)
         )
@@ -149,6 +170,8 @@
             (cons beg pos)))))))
 
 (defun swiper--async-action(x)
+  "goto the candidate position in the file and mark it for a second for the
+user to see where it is."
   (let (
         (res (let (
                    (swiper--async-ivy-text-re
@@ -168,9 +191,14 @@
   :type 'integer)
 
 (defun swiper--async-create-marker (point)
+  "This function used to create a marker from the given point (which is
+integer). for performances reasons we do not save a marker anymore, and handle
+movement of matches in the filter function."
   point)
 
 (defun swiper-async--fill-candidate-properties (str swiper--format-spec line-no &optional begin end line-begin line-end)
+  "Create the candidate data structure from its properties. The candidate
+data structure is actually a propertized string."
   (setq str (ivy-cleanup-string str))
   (put-text-property
    0 1 'swiper-no-line-number line-no str)
@@ -184,23 +212,32 @@
                           (swiper--async-create-marker line-begin)) str)
   str)
 
-(defun swiper--get-line (item)
-  (get-text-property 0 'swiper-no-line-number item))
-(defun swiper--get-str-line (item)
-  (get-text-property 0 'swiper-line-number item))
+; (defun swiper--get-line (item)
+;   (get-text-property 0 'swiper-no-line-number item))
+; (defun swiper--get-str-line (item)
+;   (get-text-property 0 'swiper-line-number item))
 (defun swiper--get-region (item)
+  "Returns a cons with the end and the beginning of the candidate."
   (get-text-property 0 'region-data item))
 (defun swiper--get-begin (item)
+  "Returns the beginning position of the candidate."
   (cdr (swiper--get-region item)))
 (defun swiper--get-end (item)
+  "Returns the ending position of the candidate."
   (car (swiper--get-region item)))
 (defun swiper--get-line-region (item)
+  "Returns a cons with the end and the beginning of the candidate's line."
   (get-text-property 0 'line-region-data item))
 (defun swiper--get-line-begin (item)
+  "Returns the beginning of the candidate's line."
   (cdr (swiper--get-line-region item)))
 (defun swiper--get-line-end (item)
+  "Returns the ending of the candidate's line."
   (car (swiper--get-line-region item)))
 (defun swiper--async-move (item chars-diff)
+  "Moves the candidate's begin, end, line-begin and line-end by position
+of chars-diff. This is called from the filter function when chars before the
+candidate are added or deleted."
   (let (
         (begin (swiper--get-begin item))
         (end (swiper--get-end item))
@@ -220,7 +257,7 @@
 
 
 (defvar ivy--orig-cands nil
-  "Store the original candidates found.")
+  "Store the candidates found with the to-search phrase.")
 
 (defvar ivy--last-cand nil
   "Store the last inserted candidate for faster insertion sort.")
@@ -228,6 +265,8 @@
   "Store the last inserted candidate index so new candidates will have the correct index.")
 
 (defun swiper--async-iterate-matches (regex beg end func)
+  "Iterated over all the matching locations of `regexp' between `beg' and `pos'
+and calls `func' for each match."
   (when (< beg end)
     (goto-char beg)
     (while (re-search-forward
@@ -237,9 +276,13 @@
       (funcall func (match-beginning 0) (match-end 0)))))
 
 (defun swiper--async-make-startwith-match (re-str)
+  "Makes sure the re-str is a startwith pattern (has ^ at its beginning).
+This is used when we know the candidate's beginning location and we want to
+know where it ends using the searched pattern."
   (if (string-prefix-p "^" re-str) re-str (concat "^" re-str "")))
 
 (defun swiper--async-match (re item)
+  "Returns the beginning and the end of a match of `re' inside the string `item'. `re' might be a list of patterns or one pattern not in a list."
   (if (null re)
       nil
     (let (
@@ -273,12 +316,13 @@
                     (+ rel-begin (match-end 0))))))))))
 
 (defun swiper--async-matchp (re item)
+  "checks if the `item' matches the given `re'. `re' might be a list of patterns
+or one pattern not in a list."
   (not (null (save-match-data (swiper--async-match re item)))))
 
 (defun swiper--async-filter (buffer change-begin inserted-end deleted-length)
-  "Receive from buffer the output STR.
-Update the minibuffer with the amount of lines collected every
-`swiper-async-filter-update-time' microseconds since the last update."
+  "A filter installed on the searched buffer the recognize added or deleted
+matches."
   (let (
         (re-str swiper--async-ivy-text-re)
         )
@@ -358,20 +402,29 @@ Update the minibuffer with the amount of lines collected every
     (setq counsel--async-time (current-time))))
 
 (defun swiper-async-after-change(begin end deleted-length)
+  "The hook for after change."
   (save-excursion
     (swiper--async-filter (current-buffer) begin end deleted-length)))
 
 (defun swiper-async-after-change-prop(begin end)
+  "The hook for after change string property in the buffer."
   (save-excursion
     (swiper--async-filter (current-buffer) begin end 0)))
 
 (defun swiper--async-is-valid-input ()
+  "verifies the swiper input is valid - meaning its not empty
+and for regexp function which is regexp - it verifies the re is a valid pattern."
   (and (/= (length ivy-text) 0)
        (or (not (eq 'swiper--regexp-builder ivy--regex-function))
            (swiper--async-legal-pcre-regex-p ivy-text))))
 
-(setq swiper--async-grep-limit 2)
+(defcustom swiper--async-grep-limit 2
+  "The minimum letter count required for searching using grep.
+To disable grep put here a large number, like 999."
+  :type 'integer)
 (defun swiper--async-same-as-disk()
+  "Checks all requirements for using grep. This function is called many times
+at runtime to check if we can start using it or to check for detected problems."
   (and (>= (length ivy-text) swiper--async-grep-limit)
        (not (null counsel-grep-command))
        (buffer-file-name)
@@ -379,7 +432,7 @@ Update the minibuffer with the amount of lines collected every
        (not (buffer-modified-p))))
 
 (defun swiper--async-process-sentinel (process _msg)
-  "Sentinel function for an asynchronous counsel PROCESS."
+  "Sentinel function for an asynchronous grep PROCESS."
   (when (eq (process-status process) 'exit)
     (if (zerop (process-exit-status process))
         (progn
@@ -398,6 +451,9 @@ Update the minibuffer with the amount of lines collected every
           (setq counsel-grep-command nil))))))
 
 (defun swiper--async-parse-process-output (process)
+  "The output of grep gives location:matched-result. We parse this as
+candidate beginning position and candidate length and calculate the candidate
+end from both."
   (let (
         (beg-ends)
         (last-end)
@@ -448,6 +504,7 @@ Update the minibuffer with the amount of lines collected every
     (setq counsel--async-time (current-time))))
 
 (defun swiper--async-call-counsel-grep()
+  "Starts the grep process."
   (let (
         (regex (counsel--elisp-to-pcre swiper--async-to-search-re))
         )
@@ -458,13 +515,19 @@ Update the minibuffer with the amount of lines collected every
      swiper--async-process-name)))
 
 
-(setq swiper--async-to-search nil)
-(setq isearch-swiper-limit 3)
-(setq ivy-text--persp-variables nil)
-(setq ivy-index--persp-variables nil)
+(defvar swiper--async-to-search nil
+  "Saves the pattern to be search by the search-forward or grep mechanism.
+This is a prefix of length `isearch-swiper-limit' of the real searched pattern")
+(defcustom isearch-swiper-limit 3
+  "The length of the search pattern to start and use the regular ivy-filter
+from"
+  :type 'integer)
+(defvar ivy-text--persp-variables nil
+  "A temporary var used in persp-mode to restore the ivy search with.")
+(defvar ivy-index--persp-variables nil
+  "A temporary var used in persp-mode to restore the ivy search with.")
 (defun swiper-async-function (string)
-  "Grep in the current directory for STRING."
-  ;; (counsel--elisp-to-pcre (setq ivy--old-re (ivy--regex string)))
+  "Start searching in the current buffer for STRING."
   (with-ivy-window
     (setq ivy--old-re nil)
     (setq isearch-string ivy-text)
@@ -506,9 +569,12 @@ Update the minibuffer with the amount of lines collected every
       (swiper--async-kick-async)
       (swiper--async-update-all-candidates t)))))
 
-(setq swiper--async-to-search-old nil)
-(setq swiper--async-to-search-re nil)
+(defvar swiper--async-to-search-old nil
+  "A helper used to save the last to-search input pattern.")
+(defvar swiper--async-to-search-re nil
+  "The last to-search search pattern")
 (defun swiper--async-build-cache-to-search()
+  "Caches the to-search pattern and create an re of it."
   (unless (string= swiper--async-to-search swiper--async-to-search-old)
     (setq swiper--async-to-search-old swiper--async-to-search)
     (setq swiper--async-to-search-re
@@ -516,9 +582,12 @@ Update the minibuffer with the amount of lines collected every
     (setq swiper--async-to-search-positive-re
           (swiper-async--join-re-positive swiper--async-to-search-re))))
 
-(setq swiper--async-ivy-text-old nil)
-(setq swiper--async-ivy-text-re nil)
+(defvar swiper--async-ivy-text-old nil
+  "A helper used to save the last search input pattern.")
+(defvar swiper--async-ivy-text-re nil
+  "The last search search pattern")
 (defun swiper--async-build-cache-ivy-text()
+  "Caches the search pattern and create an re of it."
   (unless (string= swiper--async-ivy-text-old ivy-text)
     (setq swiper--async-ivy-text-old ivy-text)
     (setq swiper--async-ivy-text-re (funcall ivy--regex-function ivy-text))
@@ -526,10 +595,13 @@ Update the minibuffer with the amount of lines collected every
           (swiper-async--join-re-positive swiper--async-ivy-text-re))))
 
 (defun swiper--async-build-cache()
+  "Builds the cache for search and to-search patterns."
   (swiper--async-build-cache-to-search)
   (swiper--async-build-cache-ivy-text))
 
 (defun swiper--async-update-all-candidates(&optional follow-ivy-index)
+  "filters all given candidates from `ivy--orig-cands' with the expected re.
+FOLLOW-IVY-INDEX changes ivy--index to be the first candidate after swiper--opoint."
   (setq ivy--all-candidates
         (let (
               (re-list swiper--async-ivy-text-re)
@@ -568,6 +640,7 @@ Update the minibuffer with the amount of lines collected every
               filtered-results)))))
 
 (defun swiper--async-add-hooks()
+  "Adds hooks needed by swiper-async."
   (add-hook 'after-change-functions #'swiper-async-after-change t t)
   (add-hook 'modification-hooks #'swiper-async-after-change-prop t t)
   (add-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t t)
@@ -575,12 +648,14 @@ Update the minibuffer with the amount of lines collected every
   (add-hook 'window-size-change-functions #'swiper--async-update-input-ivy-size-hook t t))
 
 (defun swiper-async--remove-hooks()
+  "Removed the hooks swiper-async added previously."
   (remove-hook 'after-change-functions #'swiper-async-after-change t)
   (remove-hook 'modification-hooks #'swiper-async-after-change-prop t)
   (remove-hook 'window-scroll-functions #'swiper--async-update-input-ivy-scroll-hook t)
   (remove-hook 'window-size-change-functions #'swiper--async-update-input-ivy-size-hook t))
 
 (defun swiper-async--cleanup ()
+  "Resets all data needed by swiper-async and remove all hook."
   (with-ivy-window
     (swiper--async-reset-state)
     ;; (remove-hook 'window-configuration-change-hook #'swiper--async-update-input-ivy-hook t)
@@ -588,6 +663,7 @@ Update the minibuffer with the amount of lines collected every
 
 
 (defun swiper--async-swiper--cleanup-hook ()
+  "A hook into swiper-cleanup to remove all overlays created by swiper-async."
   (with-ivy-window
     (lazy-highlight-cleanup t)
     (isearch-dehighlight)))
@@ -600,8 +676,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (swiper--async-ivy initial-input))
 
 
-(setq swiper--async-timer nil)
+(defvar swiper--async-timer nil
+  "The timer swiper-async uses to re-call the async search function.")
 (defun schedule-isearch(buffer func)
+  "Schedule the search function of swiper-async."
   (when (not (null swiper--async-timer))
     (cancel-timer swiper--async-timer)
     (setq swiper--async-timer nil))
@@ -609,17 +687,34 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                              swiper--async-isearch-interval
                              nil 'swiper--async-isearch buffer func)))
 
-(setq swiper--async-isearch-interval 0)
-(setq swiper--async-high-start-point nil)
-(setq swiper--async-high-end-point nil)
-(setq swiper--async-low-start-point nil)
-(setq swiper--async-low-end-point nil)
-(setq swiper--async-direction-backward nil)
-(setq swiper--async-default-max-matches-per-search 9999)
-(setq swiper--max-search-length (* 10 4096)) ; one page?
-(setq swiper--max-search-time 0.1)
+(defcustom swiper--async-isearch-interval 0
+  "The interval between subsequent async search function calls."
+  :type 'number)
+(defvar swiper--async-high-start-point nil
+  "The starting point of the high search range.")
+(defvar swiper--async-high-end-point nil
+  "The ending point of the high search range.")
+(defvar swiper--async-low-start-point nil
+  "The starting point of the low search range.")
+(defvar swiper--async-low-end-point nil
+  "The ending point of the low search range.")
+(defvar swiper--async-direction-backward nil
+  "Tells swiper if searching forward or backward. Used to tell
+the search function which direction to search (search-forward
+or search-backward).")
+(defcustom swiper--async-default-max-matches-per-search 9999
+  "Maximum search results within one search function call. Reduce this if the minibuffer
+is laggy before the search is finished."
+  :type 'integer)
+(defvar swiper--max-search-length (* 10 4096)
+  "Saves the maximum amount of bytes the search function will search for the candidate in
+one iteration.") ; one page?
+(defcustom swiper--max-search-time 0.1
+  "Soft limit for the execution time of the search function")
 
 (defun swiper--async-update-output ()
+  "Tells swiper-async that ivy--orig-cands has changed and update
+the minibuffer with the new candidates."
   (ivy--set-candidates ivy--orig-cands)
   (let (
         (this-command 'swiper-async)
@@ -631,6 +726,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (swiper--async-update-input-ivy)))
 
 (defun swiper-async--join-re-positive (re-str)
+  "Keeps the positive regexp from re-str (the ones required for the match to be declared as candidate."
   (if (string-or-null-p re-str)
       re-str
     (let (
@@ -650,6 +746,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 (setq swiper--async-old-wnd-cands nil)
 (defun ivy--wnd-cands-to-str-hook(orig-fun &rest args)
+  "Hook for the ivy function. This checks if line numbers are missing on some of the minibuffer candidates."
   (when (eq (ivy-state-caller ivy-last) 'swiper-async)
     (setq swiper--async-old-wnd-cands (car args))
     (let (
@@ -666,6 +763,16 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 
 (defun swiper--async-isearch(buffer func)
+  "The search function of swiper-async and its main brain.
+This function splits the buffer into two ranges: high and low.
+The low range is from (point-min) to swiper-opoint and
+the high range is from swiper-opoint to the (point-max) when
+swiper-async was started.
+Depending of the search direction, the result will be first
+searched on the high range (if searching forward) and then
+on the low range.
+This function also responsible for finding line numbers to
+candidates in the minibuffer asynchrounouosly."
   (when (active-minibuffer-window)
     (with-ivy-window
       (save-excursion
@@ -856,6 +963,12 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
             (schedule-isearch buffer func)))))))
 
 (defun swiper--async-insertion-sort (candidate-cons comp-func insertion-point)
+  "Insert the candidate in `candidate-cons' to the list starting at
+`insertion-point' in the right place according to `comp-func'. This function
+returned all matched candidates in `insertion-point' before the inserted candidate.
+`insertion-point' can point to a middle of a list, and the callee should take care
+when `candidate-cons' should be before the first item in `insertion-point'. in that
+case, the function will return nil."
   (let (
         (idx nil)
         (candidate (car candidate-cons))
@@ -878,10 +991,12 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     idx))
 
 (defun candidate--compare (c1 c2)
+  "Function to compare a candidate according to its starting point."
   (< (swiper--get-begin c1)
      (swiper--get-begin c2)))
 
 (defun swiper--async-create-candidate (b e)
+  "Create a candidate."
   (save-restriction
     (widen)
     (let (
@@ -895,6 +1010,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
        b e lb le))))
 
 (defun swiper--async-found-new-candidate (b e)
+  "This function takes control when a new candidate was found between
+begin `b' and end `e'. It first tries to insert into the `ivy--last-cand',
+and if it is smaller than the first item it will try to insert it
+directly into `ivy--orig-cands'."
   (let (
         (candidate (swiper--async-create-candidate b e))
         )
@@ -929,6 +1048,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
               (cl-incf ivy--index))))))))
 
 (defun swiper--async-format-spec ()
+  "Creates `/swiper--format-spec',"
   (let* ((n-lines (count-lines (point-min) (point-max))))
     (let (
           (width (1+ (floor (log n-lines 10))))
@@ -939,6 +1059,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 
 (defun swiper--async-init ()
+  "Initialize a new async search with a give swiper--opoint."
   (setq counsel--async-time (current-time))
   (setq counsel--async-start counsel--async-time)
   (with-ivy-window
@@ -952,11 +1073,13 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
       (swiper--async-kick-async))))
 
 (defun swiper--async-kick-async ()
+  "Initialize a new async search."
   (schedule-isearch
    (current-buffer)
    'swiper--async-found-new-candidate))
 
 (defun swiper--async-mark-candidates-in-window ()
+  "Tells swiper--async-mark-candidates-in-range where to mark candidates."
   (with-ivy-window
     (swiper--async-mark-candidates-in-range
      (max
@@ -977,10 +1100,12 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (regexp-quote . swiper--async-mark-candidates-in-range-isearch)
     (swiper--regexp-builder . swiper--async-mark-candidates-in-range-isearch)
     )
-  "Alist of preferred markers with the marker function."
+  "Alist of preferred markers with the marker function.
+Markers highlights the results in the buffer itself."
   :type '(alist :key-type function :value-type string))
 
 (defun swiper--async-mark-candidates-in-range (beg end)
+  "Call the corresponding marker-function,"
   (setq ivy--marker-function
         (or (cdr (assq ivy--regex-function ivy-marker-functions-alist))
             #'swiper--async-mark-candidates-in-range-ivy))
@@ -1043,7 +1168,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 ;; (run-hooks 'isearch-update-post-hook)
 ;; (setq cursor-sensor-inhibit (delq 'isearch cursor-sensor-inhibit))
 
-(setq isearch-lazy-highlight-buffer nil)
+(defvar isearch-lazy-highlight-buffer nil
+  "In not sure what it does,")
 (defun isearch-lazy-highlight-match (mb me)
   (let ((ov (make-overlay mb me)))
     (push ov isearch-lazy-highlight-overlays)
@@ -1112,8 +1238,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                 (isearch-highlight beg pos)))))))
     (swiper--async-mark-candidates-in-window)))
 
-(setq swiper--async-process-name "*swiper--async*")
+(defvar swiper--async-process-name "*swiper--async*"
+  "Saves the buffer name of the grep process.")
 (defun swiper--async-reset-state ()
+  "Reset the state swiper-async is using."
   (setq swiper--async-old-wnd-cands nil)
   (setq counsel-grep-last-line nil)
   (setq ivy-text--persp-variables nil)
@@ -1138,7 +1266,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (setq swiper--async-timer nil))
   (swiper--cleanup))
 
-(setq swiper--async-grep-base-command (concat "grep -a -o -b -u -E -e %s %s"))
+(defvar swiper--async-grep-base-command (concat "grep -a -o -b -u -E -e %s %s")
+  "Saves the command line arguments grep needs.")
 
 (defun swiper--async-ivy (&optional initial-input)
   "Select one of CANDIDATES and move there.
@@ -1193,6 +1322,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (reveal-mode 1)))))
 
 (defun ivy-rotate-preferred-builders-update()
+  "Select a new re-builder and update the prompt so the user will understand on which command he is."
   (setq ivy--old-text nil) ; force re-running dynamic function.
   (swiper-async-function ivy-text)
   (setq ivy--highlight-function
@@ -1204,6 +1334,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 (advice-add 'ivy-rotate-preferred-builders :after #'ivy-rotate-preferred-builders-update)
 
 (defun swiper--async-which-func-update ()
+  "Update the function name on which-function when swiper-async
+is switching between candidates."
   (with-ivy-window
     (which-func-update-1 (selected-window))))
 (advice-add 'swiper--async-update-input-ivy :after #'swiper--async-which-func-update)
@@ -1227,7 +1359,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 (defun ivy--regex-fuzzy (str)
   "Build a regex sequence from STR.
-Insert .* between each char."
+Insert .* between each char.
+
+This is a fix from the official repo which does not exist on the current emacs."
   (if (string-match "\\`\\(\\^?\\)\\(.*?\\)\\(\\$?\\)\\'" str)
       (prog1
           (concat (match-string 1 str)
