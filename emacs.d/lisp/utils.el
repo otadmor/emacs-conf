@@ -39,4 +39,21 @@
   (let ((buffer (generate-new-buffer "untitled")))
     (switch-to-buffer buffer)))
 
+(put 'erase-buffer 'disabled nil)
+
+
+(defun buffer-mode (buffer-or-string)
+  "Returns the major mode associated with a buffer."
+  (with-current-buffer buffer-or-string
+     major-mode))
+
+(defun get-buffers-with-major-mode (find-major-mode)
+  "Get a list of buffers in which minor-mode is active"
+  (interactive)
+  (let ((major-mode-buffers))
+    (dolist (buf (buffer-list) major-mode-buffers)
+      (with-current-buffer buf
+        (when (eq major-mode find-major-mode)
+          (push buf major-mode-buffers))))))
+
 (provide 'utils)

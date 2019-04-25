@@ -1,6 +1,6 @@
 (require 'ivy)
 (require 'shell-ext)
-; (require 'python-utils)
+(require 'python-ext)
 
 
 ; (with-current-buffer buffer
