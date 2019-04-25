@@ -417,12 +417,6 @@
 (global-set-key pop-key 'winstack-pop)
 (global-set-key next-key 'winstack-next)
 
-
-; clipboard useful shortcuts
-(global-set-key [(control shift v)] 'x-clipboard-yank)
-(global-set-key [(control shift x)] 'clipboard-kill-region)
-(global-set-key [(control shift c)] 'clipboard-kill-ring-save)
-
 (global-set-key [(control n)] 'new-buffer-frame)
 
 ;(require 'webkit)
