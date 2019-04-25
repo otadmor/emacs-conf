@@ -385,4 +385,28 @@ Use `winstack-push' and
     res))
 (advice-add 'window-state-put :around #'window-state-put-hook)
 
+; (advice-add 'ivy-read :around #'wrap-winstack-hook)
+(advice-add 'switch-to-buffer :around #'wrap-winstack-hook)
+; (advice-add 'other-window :around #'wrap-winstack-hook)
+; (advice-add 'select-window :around #'wrap-winstack-hook)
+; (advice-add 'quit-window :around #'wrap-winstack-hook)
+; (advice-add 'windmove-left :around #'wrap-winstack-hook)
+; (advice-add 'windmove-right :around #'wrap-winstack-hook)
+; (advice-add 'windmove-up :around #'wrap-winstack-hook)
+; (advice-add 'windmove-down :around #'wrap-winstack-hook)
+(advice-add 'goto-line :around #'wrap-winstack-hook)
+; (advice-add 'goto-char :around #'wrap-winstack-hook)
+
+(advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook)
+(advice-add 'jedi:goto-definition--nth :around #'wrap-winstack-hook)
+(advice-add 'swiper-async :around #'wrap-winstack-hook)
+(advice-add 'swiper :around #'wrap-winstack-hook)
+(advice-add 'mcs-swiper :around #'wrap-winstack-hook)
+(advice-add 'counsel-ag :around #'wrap-winstack-hook)
+(advice-add 'find-file :around #'wrap-winstack-hook)
+; (advice-add 'kill-buffer :around #'wrap-winstack-hook)
+
+(advice-add 'persp-asave-on-exit :around #'disable-winstack-hook)
+;(advice-add 'persp-mode :around #'disable-winstack-hook)
+
 (provide 'winstack)
