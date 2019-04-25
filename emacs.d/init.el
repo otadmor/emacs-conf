@@ -294,11 +294,6 @@
  '(show-paren-mode t)
  '(tool-bar-mode nil))
 
-
-
-; (semantic-symref-symbol (symbol-at-point))
-; (call-interactively 'ami-cscope-at-point)
-
 (require 'xwidget-ext)
 
 (with-eval-after-load 'magit-mode
