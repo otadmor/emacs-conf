@@ -33,4 +33,10 @@
   (let ((inhibit-message t))
     (toggle-truncate-lines)))
 
+(defun new-buffer-frame ()
+  "Create a new frame with a new empty buffer."
+  (interactive)
+  (let ((buffer (generate-new-buffer "untitled")))
+    (switch-to-buffer buffer)))
+
 (provide 'utils)

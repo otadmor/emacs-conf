@@ -423,14 +423,7 @@
 (global-set-key [(control shift x)] 'clipboard-kill-region)
 (global-set-key [(control shift c)] 'clipboard-kill-ring-save)
 
-(defun lunaryorn-new-buffer-frame ()
-  "Create a new frame with a new empty buffer."
-  (interactive)
-  (let ((buffer (generate-new-buffer "untitled")))
-    (switch-to-buffer buffer)))
-
-(global-set-key [(control n)] 'lunaryorn-new-buffer-frame)
-
+(global-set-key [(control n)] 'new-buffer-frame)
 
 (require 'lk-file-search)
 
