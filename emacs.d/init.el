@@ -370,32 +370,6 @@
 (define-key counsel-ag-map (kbd "C-<up>") 'ivy-previous-line)
 (define-key counsel-ag-map (kbd "C-<down>") 'ivy-next-line)
 
-; (defvar ivy-grep-map
-;   (let ((map (make-sparse-keymap)))
-;     (define-key map (kbd "C-d") 'ivy-occur)
-;     map)
-;   "Keymap used in the minibuffer.")
-; (defun ivy-grep ()
-;   (interactive)
-;   (unless (featurep 'ivy)
-;     (require 'ivy))
-;   (let* ((keyword (read-string "Keyword:")))
-;     (ivy-read
-;      (format "Grep at %s:" default-directory)
-;      (split-string (shell-command-to-string (format "grep -rsnI %s ." keyword)) "\n" t)
-;      :keymap ivy-grep-map
-;      :action (lambda (val)
-;                (let* ((lst (split-string val ":"))
-;                       (linenum (string-to-number (cadr lst))))
-;                  ;; open file
-;                  (find-file (car lst))
-;                  ;; goto line if line number exists
-;                  (when (and linenum (> linenum 0))
-;                    (goto-char (point-min))
-;                    (forward-line (1- linenum))))))))
-
-; (global-set-key [(meta f)] 'ivy-grep)
-
 ; (defun complete-or-indent ()
 ;     (interactive)
 ;     (if (company-manual-begin)
