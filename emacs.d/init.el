@@ -435,20 +435,6 @@
 (define-key shell-mode-map [(meta p)] 'old-python)
 (define-key shell-mode-map [(meta shift p)] 'new-python)
 
-(defun track-shell-directory/procfs ()
-  (shell-dirtrack-mode 0)
-  (add-hook 'comint-preoutput-filter-functions
-            (lambda (str)
-              (prog1 str
-                (when (string-match comint-prompt-regexp str)
-                  (cd (file-symlink-p
-                       (format "/proc/%s/cwd" (process-id
-                                               (get-buffer-process
-                                                (current-buffer)))))))))
-            nil t))
-
-(add-hook 'shell-mode-hook 'track-shell-directory/procfs)
-
 (require 'multiple-cursors)
 (require 'multiple-cursors-yank)
 (require 'multiple-cursors-sync-window)
