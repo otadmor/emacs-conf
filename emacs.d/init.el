@@ -474,12 +474,3 @@
 (global-set-key goto-def-key 'dumb-jump-go)
 
 (which-function-mode 1)
-
-(defun my-command-error-function (data context caller)
-  "Ignore the buffer-read-only, beginning-of-buffer,
-end-of-buffer signals; pass the rest to the default handler."
-  (cond
-   ((eq (car data) 'beginning-of-buffer) (goto-char (point-min)))
-   ((eq (car data) 'end-of-buffer) (goto-char (point-max)))
-   (t (command-error-default-function data context caller))))
-(setq command-error-function #'my-command-error-function)
