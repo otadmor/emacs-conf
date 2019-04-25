@@ -1,6 +1,9 @@
 (require 'dumb-jump)
+(require 'ivy)
+(require 'swiper-async)
 
-(defun dumb-jump-ivy-minibuffer-keyboard-quit () (interactive)
+(defun dumb-jump-ivy-minibuffer-keyboard-quit ()
+  (interactive)
   (with-ivy-window
     (goto-char dumb-jump--opoint))
   (minibuffer-keyboard-quit))
@@ -10,26 +13,27 @@
   (with-ivy-window
     (setq swiper--current-match-start dumb-jump--opoint)
     (setq swiper--current-line (string-to-number (format-mode-line "%l")))
-    (goto-char dumb-jump--opoint)
-    ))
+    (goto-char dumb-jump--opoint)))
 
 (setq dumb-jump-last-query nil)
+
 (defalias 'dumb-jump-populate-regexes (lambda (look-for regexes variant)
   "Take list of REGEXES and populate the LOOK-FOR target and return that list."
   (setq dumb-jump-last-query look-for)
   (--map (dumb-jump-populate-regex it look-for variant) regexes)))
 
+(defun dumb-jump-convert-to-ag ()
+  (interactive)
+  (ivy-quit-and-run
+    (counsel-ag-preselect dumb-jump-last-query)))
+
 (defvar dumb-jump-ivy-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "<down>") (lambda() (interactive) (ivy-next-line-and-call)))
-    (define-key map (kbd "<up>") (lambda() (interactive) (ivy-previous-line-and-call)))
+    (define-key map (kbd "<down>") 'ivy-next-line-and-call)
+    (define-key map (kbd "<up>") 'ivy-previous-line-and-call)
     (define-key map (kbd "C-<up>") 'ivy-previous-line)
     (define-key map (kbd "C-<down>") 'ivy-next-line)
-    (define-key map (kbd "M-f")
-      (lambda () (interactive)
-        (ivy-quit-and-run
-          (counsel-ag-preselect dumb-jump-last-query)
-          )))
+    (define-key map (kbd "M-f") 'dumb-jump-convert-to-ag)
     (define-key map (kbd "C-l") 'ivy-call-and-recenter)
     (define-key map (kbd "M-C-p") 'dumb-jump--goto-original-point)
     (define-key map (kbd "M-C-n") (lambda () (interactive)))
@@ -69,9 +73,7 @@ Ignore PROJ"
                                         ; (when swiper--reveal-mode
                                         ; (reveal-mode 1))
             ))))
-
 (defalias 'dumb-jump-ivy-jump-to-selected 'dumb-jump-ivy-jump-to-selected-with-call)
-
 (setq dumb-jump-selector 'ivy)
 
-(provide 'ivy-dump-jump)
+(provide 'ivy-dumb-jump)

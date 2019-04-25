@@ -258,7 +258,8 @@
 
 (require 'ivy-utils)
 
-(require 'swiper)
+(require 'swiper-async)
+
 (define-key ivy-minibuffer-map (kbd "C-d") #'ivy-immediate-done)
 (define-key ivy-minibuffer-map (kbd "RET") #'ivy-alt-done)
 (define-key ivy-minibuffer-map [(meta t)] 'ivy-shell)
@@ -267,7 +268,6 @@
 (define-key ivy-minibuffer-map sc-status-key 'ivy-magit-status)
 (global-set-key (kbd "M-c") 'ivy-resume)
 
-(require 'swiper-async)
 (global-set-key (kbd "C-s") 'swiper-async-search-forward)
 (global-set-key (kbd "C-r") 'swiper-async-search-backward)
 (global-set-key (kbd "C-c C-a") 'mcs-swiper)
@@ -291,10 +291,9 @@
 
 (define-key swiper-map (kbd "M-C-p") 'swiper--goto-original-point)
 
-(require 'counsel)
 (define-key counsel-find-file-map (kbd "C-o") 'ivy-find-file-as-root)
 
-;; ido-file-extensions-order
+;; (setq ido-file-extensions-order t)
 (global-set-key (kbd "C-x C-f") 'counsel-find-file)
 (global-set-key (kbd "M-x") 'counsel-M-x)
 (global-set-key (kbd "C-x C-a") 'counsel-locate)
@@ -308,7 +307,6 @@
 (define-key swiper-map (kbd "C-l") 'my-toggle-truncate-lines)
 (global-set-key (kbd "C-l") 'my-toggle-truncate-lines)
 
-(require 'counsel)
 (define-key counsel-ag-map (kbd "<down>") 'ivy-next-line-and-call)
 (define-key counsel-ag-map (kbd "<up>") 'ivy-previous-line-and-call)
 (define-key counsel-ag-map (kbd "C-<up>") 'ivy-previous-line)
@@ -393,8 +391,13 @@
 
 (require 'sr-speedbar-ext)
 
-(require 'persp-mode)
+(require 'ivy-dumb-jump)
+(global-set-key goto-def-key 'dumb-jump-go)
 
+(which-function-mode 1)
+; (require 'ess)
+
+(require 'persp-mode)
 (global-set-key (kbd "M-1") (defun perspsw1() (interactive) (persp-switch "1")))
 (global-set-key (kbd "M-2") (defun perspsw2() (interactive) (persp-switch "2")))
 (global-set-key (kbd "M-3") (defun perspsw3() (interactive) (persp-switch "3")))
@@ -407,8 +410,3 @@
 (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
 
 (require 'persp-mode-ext)
-
-(require 'ivy-dump-jump)
-(global-set-key goto-def-key 'dumb-jump-go)
-
-(which-function-mode 1)
