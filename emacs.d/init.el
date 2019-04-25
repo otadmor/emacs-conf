@@ -425,8 +425,6 @@
 
 (global-set-key [(control n)] 'new-buffer-frame)
 
-(require 'lk-file-search)
-
 ;(require 'webkit)
 
 (require 'python-mode)
