@@ -67,7 +67,10 @@ Use `winstack-push' and
             (position (marker-position m))
             )
         (if (null position)
-            (point-min)
+            (progn
+              (message "warning - got null position")
+              (point-min)
+              )
           position))
     m))
 
@@ -330,5 +333,56 @@ Use `winstack-push' and
 
 ; (add-hook 'post-command-hook #'winstack-push)
 ; (add-hook 'pre-command-hook 'winstack-push)
+
+(add-to-list 'window-persistent-parameters '(winstack-future-stack . writable))
+(add-to-list 'window-persistent-parameters '(winstack-stack . writable))
+
+(defun window-set-winstack (window)
+  (condition-case err
+      (let (
+            (winstack-stack
+             (winstack-to-persistent-parameter (winstack-winstack-get window)))
+            (winstack-future-stack
+             (winstack-to-persistent-parameter (winstack-winstack-future-get window)))
+            )
+        (set-window-parameter window 'winstack-stack winstack-stack)
+        (set-window-parameter window 'winstack-future-stack winstack-future-stack))
+    (error (message "[persp-mode] Error: Can not autoload winstack -- %s"
+                    err))))
+
+(defun window-get-winstack (window)
+  (condition-case err
+      (let (
+            (winstack-stack
+             (window-parameter window 'winstack-stack))
+            (winstack-future-stack
+             (window-parameter window 'winstack-future-stack))
+            )
+        (winstack-winstack-set
+         (winstack-to-marker-stack winstack-stack) window)
+        (winstack-winstack-future-set
+         (winstack-to-marker-stack winstack-future-stack) window))
+    (error (message "[persp-mode] Error: Can not autosave winstack -- %s"
+                    err))))
+
+(add-hook 'find-file-hook 'winstack-convert-to-marker)
+(add-hook 'kill-buffer-hook 'winstack-convert-to-number)
+
+(defun window-state-get-hook (orig-fun &rest args)
+  (let (
+        (window (or (car args) (frame-root-window (selected-frame))))
+        )
+    (walk-windows 'window-set-winstack nil window))
+  (apply orig-fun args))
+(advice-add 'window-state-get :around #'window-state-get-hook)
+
+(defun window-state-put-hook (orig-fun &rest args)
+  (let (
+        (window (or (car args) (frame-root-window (selected-frame))))
+        (res (apply orig-fun args))
+        )
+    (walk-windows 'window-get-winstack nil window)
+    res))
+(advice-add 'window-state-put :around #'window-state-put-hook)
 
 (provide 'winstack)
