@@ -29,8 +29,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
-  '(default ((t (:foundry "adobe"  :slant normal :weight normal :height 120 :width normal))))
- )
+ '(default ((t (:foundry "adobe" :slant normal :weight normal :height 120 :width normal)))))
 
 ;; ; '(default ((t (:foreground "white" :background "black" ))) t)
 ;; ;(set-face-attribute 'default nil :font "monospace 10" )
@@ -175,9 +174,6 @@
 (global-set-key [(shift f4)] 'previous-error)
 (global-set-key [f1] 'manual-entry)
 (global-set-key [(shift f1)] 'info)
-;(global-set-key [(meta right)] 'previous-buffer)
-;(global-set-key [(meta left)]  'next-buffer)
-;(global-set-key  "\M-`" 'speedbar-get-focus)
 (global-set-key [(control f10)] 'start-kbd-macro)
 (global-set-key [(meta f10)] 'end-kbd-macro)
 (global-set-key [f11] 'kmacro-name-last-macro)
@@ -195,17 +191,9 @@
 (global-set-key [(pause)] 'kill-this-buffer)
 (global-set-key (kbd "C-M-k") 'kill-this-buffer)
 (global-set-key [(scroll-lock)] 'kill-this-buffer)
-;(global-set-key [f8] 'gud-gdb)
-
-
 
 (global-set-key [(meta left)] 'backward-sexp)
 (global-set-key [(meta right)] 'forward-sexp)
-;(global-set-key [(meta shift left)] 'backward-sexp-mark)
-;(global-set-key [(meta shift right)] 'forward-sexp-mark)
-
-;(global-set-key [(control meta left)] 'next-buffer)
-;(global-set-key [(control meta right)] 'previous-buffer)
 
 (global-set-key (kbd "C-x C-z") (lambda() (interactive) (message "Dont minimize")))
 
@@ -239,10 +227,6 @@
 ; (global-set-key [(meta f2)] 'shell-command-on-region-inplace)
 
 (require 'column-marker)
-;(require 'commenting) ; adds my-comment-region, which allows commenting only one line
-;(global-set-key [(meta \3)] 'my-comment-region)
-;(global-set-key [(meta \4)] 'my-uncomment-region)
-
 (global-set-key (kbd "C-;") 'lines-in-region)
 (global-set-key (kbd "C-/") 'my-comment-or-uncomment-region)
 
@@ -256,41 +240,6 @@
  '(package-selected-packages
    (quote
     (pcre2el doom-themes powerline ag dumb-jump counsel sr-speedbar persp-mode python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
- '(safe-local-variable-values
-   (quote
-    ((eval progn
-           (semantic-mode)
-           (setq-local gud-gdb-history
-                       (list
-                        (concat
-                         (file-name-as-directory
-                          (locate-dominating-file default-directory dir-locals-file))
-                         "src/build/android/adb_gdb_chrome_public " "\"--gdb=/opt/gdb/bin/arm-linux-androideabi-gdb\" " "\"--gdbserver=/home/ubuntu/android/ndk/android-ndk-r10e/prebuilt/android-arm/gdbserver/gdbserver\" " "--interpreter=mi --fullname \"--su-prefix=su -c\" " "--output-directory=out/Default --force  --noautoload " "--no-pull-libs --sandboxed \"--start=http://127.0.0.1:8000/\"")
-                        (concat
-                         (file-name-as-directory
-                          (locate-dominating-file default-directory dir-locals-file))
-                         "src/build/android/adb_gdb_chrome_public " "\"--gdb=/opt/gdb/bin/arm-linux-androideabi-gdb\" " "\"--gdbserver=/home/ubuntu/android/ndk/android-ndk-r10e/prebuilt/android-arm/gdbserver/gdbserver\" " "--interpreter=mi --fullname \"--su-prefix=su -c\" " "--output-directory=out/Default --force " "--pull-libs --sandboxed \"--start=http://127.0.0.1:8000/\"")))
-           (setq-local compile-command
-                       (concat "cd "
-                               (file-name-as-directory
-                                (locate-dominating-file default-directory dir-locals-file))
-                               "src ; " "ninja -C out/Default chrome_public_apk")))
-     (eval progn
-           (setq-local gud-gdb-history
-                       (list
-                        (concat
-                         (file-name-as-directory
-                          (locate-dominating-file default-directory dir-locals-file))
-                         "src/build/android/adb_gdb_chrome_public " "\"--gdb=/opt/gdb/bin/arm-linux-androideabi-gdb\" " "\"--gdbserver=/home/ubuntu/android/ndk/android-ndk-r10e/prebuilt/android-arm/gdbserver/gdbserver\" " "--interpreter=mi --fullname \"--su-prefix=su -c\" " "--output-directory=out/Default --force  --noautoload " "--no-pull-libs --sandboxed \"--start=http://127.0.0.1:8000/\"")
-                        (concat
-                         (file-name-as-directory
-                          (locate-dominating-file default-directory dir-locals-file))
-                         "src/build/android/adb_gdb_chrome_public " "\"--gdb=/opt/gdb/bin/arm-linux-androideabi-gdb\" " "\"--gdbserver=/home/ubuntu/android/ndk/android-ndk-r10e/prebuilt/android-arm/gdbserver/gdbserver\" " "--interpreter=mi --fullname \"--su-prefix=su -c\" " "--output-directory=out/Default --force " "--pull-libs --sandboxed \"--start=http://127.0.0.1:8000/\"")))
-           (setq-local compile-command
-                       (concat "cd "
-                               (file-name-as-directory
-                                (locate-dominating-file default-directory dir-locals-file))
-                               "src ; " "ninja -C out/Default chrome_public_apk"))))))
  '(show-paren-mode t)
  '(tool-bar-mode nil))
 
@@ -345,7 +294,7 @@
 (require 'counsel)
 (define-key counsel-find-file-map (kbd "C-o") 'ivy-find-file-as-root)
 
-
+;; ido-file-extensions-order
 (global-set-key (kbd "C-x C-f") 'counsel-find-file)
 (global-set-key (kbd "M-x") 'counsel-M-x)
 (global-set-key (kbd "C-x C-a") 'counsel-locate)
