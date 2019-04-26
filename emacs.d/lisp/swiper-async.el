@@ -446,9 +446,14 @@ at runtime to check if we can start using it or to check for detected problems."
             (plist (plist-get counsel--async-exit-code-plist
                               (ivy-state-caller ivy-last)))
             )
-        (when (= (plist-get plist status) 0)
-          (message "swiper-async: disabled grep because of process error")
-          (setq counsel-grep-command nil))))))
+        (let (
+              (plist-status (plist-get plist status))
+              )
+          (when (or (null plist-status)
+                    (= (plist-get plist status) 0))
+            (let ((inhibit-message t))
+              (message "swiper-async: disabled grep because of process error"))
+            (setq counsel-grep-command nil)))))))
 
 (defun swiper--async-parse-process-output (process)
   "The output of grep gives location:matched-result. We parse this as
