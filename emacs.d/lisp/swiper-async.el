@@ -1409,4 +1409,6 @@ This is a fix from the official repo which does not exist on the current emacs."
   (setq swiper--async-direction-backward t)
   (swiper-async))
 
+(ivy-set-occur 'swiper-async 'counsel-grep-occur)
+
 (provide 'swiper-async)
