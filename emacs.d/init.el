@@ -385,3 +385,5 @@
 (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
 
 (require 'persp-mode-ext)
+
+(require 'winstack-list)
