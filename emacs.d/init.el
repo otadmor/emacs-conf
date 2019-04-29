@@ -313,7 +313,6 @@
 
 ;(global-set-key [(f2)] 'gud-break)
 
-(require 'completion-epc) ; required for frida completion
 (require 'ahg) ; for mercurial source control, like magit
 ;(global-set-key sc-status-key 'ahg-status)
 (global-set-key sc-status-key 'magit-status)
@@ -329,7 +328,10 @@
 ;(ascope-init "/home/ubuntu/sources/chromium/")
 
 (require 'jss) ; remote js debugger
+
 (require 'winstack)
+(require 'winstack-list)
+
 (require 'simple)
 (global-set-key pop-key 'winstack-pop)
 (global-set-key next-key 'winstack-next)
@@ -370,7 +372,9 @@
 (global-set-key goto-def-key 'dumb-jump-go)
 
 (which-function-mode 1)
-; (require 'ess)
+;; (require 'ess)
+
+(require 'completion-epc) ; required for frida completion
 
 (require 'persp-mode)
 (global-set-key (kbd "M-1") (defun perspsw1() (interactive) (persp-switch "1")))
@@ -385,5 +389,3 @@
 (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
 
 (require 'persp-mode-ext)
-
-(require 'winstack-list)
