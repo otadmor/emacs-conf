@@ -123,6 +123,7 @@ return epc:connection object."
   (let (
         (mngr (make-epc:manager :connection connection))
         )
+    (message "EPC client connected")
     (epc:init-epc-layer mngr)
     (setq mngr-complete-epc mngr)
     (epc:manager-add-exit-hook mngr (lambda () (disconnect-completion-server mngr)))))
