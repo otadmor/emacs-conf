@@ -259,6 +259,34 @@ return epc:connection object."
 
 (require 'cl-lib)
 (require 'company)
+(require 'auto-complete)
+
+
+;;; AC source
+(defvar ac-epc-complete-reply nil
+  "Last reply to `jedi:complete-request'.")
+
+(defun ac-epc-matches ()
+  (message "matches")
+  (mapcar
+   (lambda (x)
+     (message "got res")
+     (destructuring-bind (&key word doc description symbol)
+         x
+       (popup-make-item word
+                        :symbol symbol
+                        :document (unless (equal doc "") doc)
+                        :summary description)))
+   ac-epc-complete-reply))
+
+(defun ac-epc-complete-request ()
+  "Request ``Script(...).complete`` and return a deferred object.
+`jedi:complete-reply' is set to the reply sent from the server."
+  (message "completing")
+  (deferred:nextc (epc-complete-deferred "os.")
+    (lambda (reply)
+      (setq ac-epc-complete-reply reply))))
+
 
 (defun epc-completion-add(prefix-cb)
   (let (
@@ -276,7 +304,14 @@ return epc:connection object."
              (sorted t))
            ))
         )
-    (eval-after-load 'company '(add-to-list 'company-backends completion-func))))
+    ; company-files
+    (eval-after-load 'company '(add-to-list 'company-backends completion-func)))
+  (ac-define-source epc-direct
+    '((candidates . ac-epc-matches)
+      (prefix . prefix-cb)
+      (init . ac-epc-complete-request)
+      (requires . -1)))
+  (add-to-list 'ac-sources 'ac-source-epc-direct))
 
 ; (epc-completion-add (lambda () (substring-no-properties (company-grab-symbol))))
 

@@ -4,7 +4,7 @@
 
 (require 'python-mode)
 
-(setq py-shell-completion-setup-code (concat "import sys; sys.path.append('" (file-name-directory load-file-name) "'); import py_epc_completion; _=sys.path.pop();"))
+(setq py-shell-completion-setup-code "")
 (setq py-shell-module-completion-code "")
 (setq py-ipython-module-completion-code "")
 (setq py-ipython-module-completion-string "")
@@ -33,13 +33,10 @@
 
 (epc-completion-add 'company-py-shell-prefix)
 
-;; (defun py-shell-complete-substitute(&optional shell beg end word) (interactive)
-;;        (completion-epc-candidates (company-py-shell-prefix)))
-;; (defalias 'py-shell-complete 'py-shell-complete-substitute)
-
-(require 'jedi-core)
-;; (setq py-complete-function 'jedi:complete)
-(setq py-complete-function (lambda () (jedi:complete :expand nil)))
+(defun py-shell-complete-substitute(&optional shell beg end word)
+  (interactive)
+  (company-complete))
+(defalias 'py-shell-complete 'py-shell-complete-substitute)
 
 (setq py-ipython-command-args "--simple-prompt --nosep")
 (provide 'company-py-shell)

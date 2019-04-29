@@ -143,6 +143,7 @@
 (defvar pop-key (kbd "C-M-p"))
 (defvar goto-def-key (kbd "C-M-g"))
 (defvar find-ref-key (kbd "C-M-x"))
+(defvar complete-key (kbd "C-SPC"))
 (defvar sc-status-key (kbd "M-h"))
 
 (global-set-key [(meta f)] 'counsel-ag-preselect)
@@ -297,7 +298,7 @@
 
 (require 'company)
 (add-hook 'after-init-hook 'global-company-mode)
-(global-set-key (kbd "C-SPC") 'company-complete)
+(global-set-key complete-key 'company-complete)
 
 (require 'company-irony)
 (eval-after-load 'company
@@ -358,22 +359,37 @@
 (global-set-key (kbd "M-<f3>") 'mc/mark-all-like-this)
 (global-set-key (kbd "C-S-l") 'mc/edit-ends-of-lines)
 
-
 (require 'jedi-core)
 (add-hook 'python-mode-hook 'jedi:setup)
 (setq jedi:complete-on-dot t)                 ; optional
 (define-key jedi-mode-map goto-def-key 'jedi:goto-definition)
-(define-key jedi-mode-map (kbd "C-SPC") (lambda () (interactive) (jedi:complete :expand nil)))
+(define-key jedi-mode-map complete-key (lambda () (interactive) (jedi:complete :expand nil)))
+(setq py-complete-function (lambda () (interactive)
+                             (if (eq major-mode 'py-python-shell-mode)
+                                 (company-complete)
+                               (jedi:complete :expand nil))))
 
-; (require 'company-jedi)
-; (add-to-list 'company-backends '(company-jedi company-files))
+(require 'company-jedi)
+(add-hook 'python-mode-hook
+          (lambda ()
+            (add-to-list 'company-backends '(company-jedi company-files))))
+
+(ac-config-default)
+
 
 ; (require 'anaconda-mode)
 ; (add-hook 'python-mode-hook 'anaconda-mode)
-; (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
+; ; (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
 ; (define-key anaconda-mode-map goto-def-key 'anaconda-mode-find-definitions)
 ; (define-key anaconda-mode-map find-ref-key 'anaconda-mode-find-references)
+; ; (define-key anaconda-mode-map complete-key 'anaconda-mode-complete)
 
+; ; (setq py-complete-function 'anaconda-mode-complete)
+; (setq py-complete-function 'company-complete)
+
+; (require 'company-anaconda)
+; (add-to-list 'company-backends 'company-anaconda)
+; ; (add-to-list 'company-backends '(company-anaconda :with company-capf))
 
 
 (require 'bash-completion)
