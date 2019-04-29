@@ -1,6 +1,7 @@
+rpc_complete = None
 def __COMPLETER_all_completions(to_complete):
     try:
-        return rpc_complete_server.complete(to_complete)
+        return rpc_complete.complete(to_complete)
     except:
         return []
 
@@ -8,6 +9,7 @@ import os
 import sys
 import threading
 from epc.server import EPCServer
+from epc.client import EPCClient
 from collections import namedtuple
 
 import sys
@@ -51,10 +53,21 @@ class EPCCompletionServer(EPCServer):
         stream.write('___EPCCompletionServer_PORT=')
         EPCServer.print_port(self, stream)
 
-class PythonModeCompletionServer(EPCCompletionServer):
-    def __init__(self, *args, **kargs):
-        EPCCompletionServer.__init__(self, *args, **kargs)
+class EPCCompletionClient(EPCClient):
+    def __init__(self, address='localhost', port=None, *args, **kargs):
+        if port is not None:
+            args = ((address, port), ) + args
+        EPCClient.__init__(self, *args, **kargs)
 
+        def complete(*cargs, **ckargs):
+            return self.complete(*cargs, **ckargs)
+        self.register_function(complete)
+
+class PythonModeEPCCompletion(object):
+    def __init__(self):
+        pass
+
+    def register_company_functions(self):
         def meta(*cargs, **ckargs):
             return self.meta(*cargs, **ckargs)
         self.register_function(meta)
@@ -123,12 +136,36 @@ class PythonModeCompletionServer(EPCCompletionServer):
             return ""
         return d.__doc__
 
+
+class PythonModeEPCCompletionServer(EPCCompletionServer, PythonModeEPCCompletion):
+    def __init__(self, *args, **kargs):
+        EPCCompletionServer.__init__(self, *args, **kargs)
+        PythonModeEPCCompletion.__init__(self)
+        self.register_company_functions()
+
+class PythonModeEPCCompletionClient(EPCCompletionClient, PythonModeEPCCompletion):
+    def __init__(self, *args, **kargs):
+        EPCCompletionClient.__init__(self, *args, **kargs)
+        PythonModeEPCCompletion.__init__(self)
+        self.register_company_functions()
+
 def py_shell_completion_main():
-    rpc_complete_server = PythonModeCompletionServer()
-    rpc_complete_server.print_port()  # needed for Emacs client
-    rpc_complete_thread = threading.Thread(
-        target=rpc_complete_server.serve_forever,
-        name='PythonModeCompletionServer')
+    global rpc_complete
+    epc_port = os.environ.get("EPC_COMPLETION_SERVER_PORT", None)
+    if epc_port is not None:
+        epc_port = int(epc_port)
+        # print("Connecting completion server, port=%d" % (epc_port,))
+        rpc_complete = PythonModeEPCCompletionClient(port=epc_port)
+        rpc_complete_thread = threading.Thread(
+            target=rpc_complete.connect,
+            name='PythonModeEPCCompletion',
+            kwargs={'socket_or_address' : ('localhost', epc_port)})
+    else:
+        rpc_complete = PythonModeEPCCompletionServer()
+        rpc_complete.print_port()  # needed for Emacs client
+        rpc_complete_thread = threading.Thread(
+            target=rpc_complete.serve_forever,
+            name='PythonModeEPCCompletion')
     rpc_complete_thread.setDaemon(True)
     rpc_complete_thread.start()
 

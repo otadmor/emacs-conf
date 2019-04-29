@@ -15,18 +15,17 @@
 (setq mngr-complete-epc nil)
 (make-local-variable 'mngr-complete-epc)
 
-(defun disconnect-completion-server()
-  (when mngr-complete-epc
-    (setq-local mngr-complete-epc nil)
-    (kill-local-variable 'mngr-complete-epc)
-    )
-  )
+(defun disconnect-completion-server (mngr)
+  (when (not (null mngr))
+    (when (eq mngr mngr-complete-epc)
+      (setq-local mngr-complete-epc nil)
+      (kill-local-variable 'mngr-complete-epc))))
 
 (defun fire-exit-hook(orig-fun &rest args)
   (condition-case err
       (apply orig-fun args)
     (error (epc:log "Error on exit-hooks : %S / " err mngr)))
-  (disconnect-completion-server)
+  (disconnect-completion-server (car args))
   )
 (advice-add 'epc:manager-fire-exit-hook :around #'fire-exit-hook)
 
@@ -62,14 +61,99 @@
 
 
 (defun connect-completion-server (server-port)
-  (message "Found completion server at %S" server-port)
+  (message "Found EPC server at %S" server-port)
   (let (
         (mngr (epc:connect-remote-server
                "localhost"
                server-port))
         )
     (setq-local mngr-complete-epc mngr)
-    (epc:manager-add-exit-hook mngr 'disconnect-completion-server)))
+    (epc:manager-add-exit-hook mngr (lambda () (disconnect-completion-server mngr)))))
+
+
+(defvar epc-server-process nil
+  "Saves the current session server")
+(make-local-variable 'epc-server-process)
+(defun epc:listen (&optional host port)
+  "[internal] Connect the server, initialize the process and
+return epc:connection object."
+  (epc:log ">> Listening:%s" port)
+  (lexical-let* ((connection-id (epc:uid))
+                 (connection-name (format "epc server %s" connection-id)))
+    (make-network-process
+           :name connection-name
+           :sentinel #'epc-server-sentinel
+           :filter #'epc-server-process-filter
+           :server t
+           :reuseaddr t
+           :family 'ipv4
+           :host (or host 'local)
+           :service (or port t))))
+
+(defun epc:start-server-and-set-env ()
+  (setq epc-server-process (epc:listen))
+  (let (
+        (port (cadr (process-contact epc-server-process)))
+        )
+    (message "EPC Server port %S" port)
+    (make-local-variable 'process-environment)
+    (setenv "EPC_COMPLETION_SERVER_PORT" (format "%d" port))))
+
+(cl-defun epc-server-process-filter (proc string)
+  (epc:log "Received data %S" string))
+
+(defun epc-server-sentinel (proc msg)
+  "The process sentinel for EPC server connections."
+  ;; If this is a new client process, set the query-on-exit flag to nil
+  ;; for this process (it isn't inherited from the server process).
+  (when (and (eq (process-status proc) 'open)
+	     (process-query-on-exit-flag proc))
+    (set-process-query-on-exit-flag proc nil)
+    (epc-server--new-connection proc))
+  ;; Delete the associated connection file, if applicable.
+  (and (process-contact proc :server)
+       (eq (process-status proc) 'closed)
+       (ignore-errors
+	 (delete-file (process-get proc :server-file))))
+  (epc:log (format "Status changed to %s: %s" (process-status proc) msg))
+  ; (server-delete-client proc)
+  )
+
+(defun epc:incoming-connection-made (connection)
+  (let (
+        (mngr (make-epc:manager :connection connection))
+        )
+    (epc:init-epc-layer mngr)
+    (setq mngr-complete-epc mngr)
+    (epc:manager-add-exit-hook mngr (lambda () (disconnect-completion-server mngr)))))
+
+
+
+(defun epc-server--new-connection (proc)
+  "[internal] Connect the server, initialize the process and
+return epc:connection object."
+  (epc:log ">> New connection")
+  (lexical-let* ((connection-id (epc:uid))
+                 (connection-name (format "epc con %s" connection-id))
+                 (connection-buf (epc:make-procbuf (format "*%s*" connection-name)))
+                 (connection-process proc)
+                 (channel (cc:signal-channel connection-name))
+                 (connection (make-epc:connection
+                              :name connection-name
+                              :process connection-process
+                              :buffer connection-buf
+                              :channel channel)))
+    (set-process-buffer connection-process connection-buf)
+    (epc:log ">> Connection establish")
+    (set-process-coding-system  connection-process 'binary 'binary)
+    (set-process-filter connection-process
+                        (lambda (p m)
+                          (epc:process-filter connection p m)))
+    (set-process-sentinel connection-process
+                          (lambda (p e)
+                            (epc:process-sentinel connection p e)))
+    (set-process-query-on-exit-flag connection-process nil)
+    (epc:incoming-connection-made connection)))
 
 
 
@@ -101,67 +185,32 @@
            (substring-no-properties string (match-end 0) nil)))))))
 
 (add-hook 'comint-output-filter-functions 'completion--comint-output-filter nil nil)
+(add-hook 'comint-mode-hook 'epc:start-server-and-set-env)
+
+(defun epc-complete-deferred-mngr (mngr to-complete)
+  (when mngr
+    (condition-case nil
+        (epc:call-deferred mngr 'complete to-complete)
+      (error (progn (message "error in completion server") (disconnect-completion-server mngr) nil)))))
 
 (defun epc-complete-deferred (to-complete)
-  ;(message "Try to complete %S" to-complete)
-  (when mngr-complete-epc
-    (condition-case nil
-        (epc:call-deferred mngr-complete-epc 'complete to-complete)
-        (error (progn (message "error in completion server") (disconnect-completion-server) nil)))))
+  ;;(message "Try to complete %S" to-complete)
+  (epc-complete-deferred-mngr mngr-complete-epc to-complete))
+
+; (defun epc-complete (to-complete)
+;   ;(message "Try to complete %S" to-complete)
+;   (when mngr-complete-epc
+;     (condition-case nil
+;         (let (
+;               (completions (epc:call-sync mngr-complete-epc 'complete to-complete))
+;               )
+;           ;(message "Return : %S" completions)
+;           completions
+;           )
+;       (error (progn (message "error in completion server") (disconnect-completion-server mngr) nil)))
+;     ))
 
 
-(defun epc-complete (to-complete)
-  ;(message "Try to complete %S" to-complete)
-  (when mngr-complete-epc
-    (condition-case nil
-        (let (
-              (completions (epc:call-sync mngr-complete-epc 'complete to-complete))
-              )
-          ;(message "Return : %S" completions)
-          completions
-          )
-      (error (progn (message "error in completion server") (disconnect-completion-server) nil)))
-    ))
-
-
-(defun epc-symbol (candidate)
-  ;(message "Try to complete %S" to-complete)
-  (when mngr-complete-epc
-    (condition-case nil
-        (let (
-              (symbol (epc:call-sync mngr-complete-epc 'symbol candidate))
-              )
-          ;(message "Return : %S" completions)
-          symbol
-          )
-      (error (progn (message "error in completion server") (disconnect-completion-server) nil)))
-    ))
-
-(defun epc-meta (candidate)
-  ;(message "Try to complete %S" to-complete)
-  (when mngr-complete-epc
-    (condition-case nil
-        (let (
-              (meta (epc:call-sync mngr-complete-epc 'meta candidate))
-              )
-          ;(message "Return : %S" completions)
-          meta
-          )
-      (error (progn (message "error in completion server") (disconnect-completion-server) nil)))
-    ))
-
-(defun epc-doc (candidate)
-  ;(message "Try to complete %S" to-complete)
-  (when mngr-complete-epc
-    (condition-case nil
-        (let (
-              (doc (epc:call-sync mngr-complete-epc 'doc candidate))
-              )
-          ;(message "Return : %S" completions)
-          doc
-          )
-      (error (progn (message "error in completion server") (disconnect-completion-server) nil)))
-    ))
 
 (defun completion-epc-collect-candidates (completion)
   "Return a candidate from a COMPLETION reply."
@@ -174,8 +223,6 @@
         (put-text-property 0 1 :description (plist-get completion :description) candidate)
         candidate))))
 
-(defun completion-epc-candidates(prefix)
-  (epc-complete prefix))
 
 (defun completion-epc-complete-deferred(prefix)
   (cons :async
@@ -186,28 +233,28 @@
               (let ((candidates (mapcar 'completion-epc-collect-candidates reply)))
                 (funcall callback candidates)))))))
 
-(defun epc-completion-at-point ()
-  (when (comint--match-partial-filename)
-    (let (
-          (start (nth 0 (match-data)))
-          (end (nth 1 (match-data)))
-          )
-      (when (and start end (< start end))
-        (let (
-              (to-complete (buffer-substring-no-properties start end))
-              )
-          (let (
-                ;;; TODO - for some reason epc-complete runs twice,
-                ;; which is very expensive.
-                (completions (epc-complete to-complete))
-                )
-            (when completions
-              (list start end completions ())
-              )))))))
+; (defun epc-completion-at-point ()
+;   (when (comint--match-partial-filename)
+;     (let (
+;           (start (nth 0 (match-data)))
+;           (end (nth 1 (match-data)))
+;           )
+;       (when (and start end (< start end))
+;         (let (
+;               (to-complete (buffer-substring-no-properties start end))
+;               )
+;           (let (
+;                 ;;; TODO - for some reason epc-complete runs twice,
+;                 ;; which is very expensive.
+;                 (completions (epc-complete to-complete))
+;                 )
+;             (when completions
+;               (list start end completions ())
+;               )))))))
 
 ; hook both, just in case it runs without or with shell
-(add-hook 'shell-dynamic-complete-functions 'epc-completion-at-point nil nil)
-(add-hook 'comint-dynamic-complete-functions 'epc-completion-at-point nil nil)
+; (add-hook 'shell-dynamic-complete-functions 'epc-completion-at-point nil nil)
+; (add-hook 'comint-dynamic-complete-functions 'epc-completion-at-point nil nil)
 
 (require 'cl-lib)
 (require 'company)

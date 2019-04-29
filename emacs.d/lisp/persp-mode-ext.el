@@ -160,4 +160,9 @@ of the perspective %s can't be saved."
 
 (add-to-list 'speedbar-frame-parameters (cons 'persp-ignore-wconf t))
 
+(add-hook 'persp-common-buffer-filter-functions
+          #'(lambda (b) (string-prefix-p "epc con" (buffer-name b))))
+(add-hook 'persp-common-buffer-filter-functions
+          #'(lambda (b) (string-prefix-p "epc server" (buffer-name b))))
+
 (provide 'persp-mode-ext)

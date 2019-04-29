@@ -33,9 +33,9 @@
 
 (epc-completion-add 'company-py-shell-prefix)
 
-(defun py-shell-complete-substitute(&optional shell beg end word) (interactive)
-       (completion-epc-candidates (company-py-shell-prefix)))
-(defalias 'py-shell-complete 'py-shell-complete-substitute)
+; (defun py-shell-complete-substitute(&optional shell beg end word) (interactive)
+;        (completion-epc-candidates (company-py-shell-prefix)))
+; (defalias 'py-shell-complete 'py-shell-complete-substitute)
 
 (setq py-ipython-command-args "--simple-prompt --nosep")
 (provide 'company-py-shell)
