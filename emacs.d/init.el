@@ -142,6 +142,7 @@
 (defvar next-key (kbd "C-M-n"))
 (defvar pop-key (kbd "C-M-p"))
 (defvar goto-def-key (kbd "C-M-g"))
+(defvar find-ref-key (kbd "C-M-x"))
 (defvar sc-status-key (kbd "M-h"))
 
 (global-set-key [(meta f)] 'counsel-ag-preselect)
@@ -362,6 +363,18 @@
 (add-hook 'python-mode-hook 'jedi:setup)
 (setq jedi:complete-on-dot t)                 ; optional
 (define-key jedi-mode-map goto-def-key 'jedi:goto-definition)
+(define-key jedi-mode-map (kbd "C-SPC") (lambda () (interactive) (jedi:complete :expand nil)))
+
+; (require 'company-jedi)
+; (add-to-list 'company-backends '(company-jedi company-files))
+
+; (require 'anaconda-mode)
+; (add-hook 'python-mode-hook 'anaconda-mode)
+; (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
+; (define-key anaconda-mode-map goto-def-key 'anaconda-mode-find-definitions)
+; (define-key anaconda-mode-map find-ref-key 'anaconda-mode-find-references)
+
+
 
 (require 'bash-completion)
 (bash-completion-setup)
