@@ -261,34 +261,7 @@ return epc:connection object."
 (require 'company)
 (require 'auto-complete)
 
-
-;;; AC source
-(defvar ac-epc-complete-reply nil
-  "Last reply to `jedi:complete-request'.")
-
-(defun ac-epc-matches ()
-  (message "matches")
-  (mapcar
-   (lambda (x)
-     (message "got res")
-     (destructuring-bind (&key word doc description symbol)
-         x
-       (popup-make-item word
-                        :symbol symbol
-                        :document (unless (equal doc "") doc)
-                        :summary description)))
-   ac-epc-complete-reply))
-
-(defun ac-epc-complete-request ()
-  "Request ``Script(...).complete`` and return a deferred object.
-`jedi:complete-reply' is set to the reply sent from the server."
-  (message "completing")
-  (deferred:nextc (epc-complete-deferred "os.")
-    (lambda (reply)
-      (setq ac-epc-complete-reply reply))))
-
-
-(defun epc-completion-add(prefix-cb)
+(defun epc-completion-add-company(prefix-cb)
   (let (
         (completion-func
          (lambda (command &optional arg &rest ignored)
@@ -304,14 +277,69 @@ return epc:connection object."
              (sorted t))
            ))
         )
-    ; company-files
-    (eval-after-load 'company '(add-to-list 'company-backends completion-func)))
-  (ac-define-source epc-direct
-    '((candidates . ac-epc-matches)
-      (prefix . prefix-cb)
-      (init . ac-epc-complete-request)
-      (requires . -1)))
-  (add-to-list 'ac-sources 'ac-source-epc-direct))
+    (eval-after-load 'company '(add-to-list 'company-backends completion-func))))
+
+(defun epc-completion-add-auto-complete (completion-mode hook prefix-cb)
+  (unless (null completion-mode)
+    (add-to-list 'ac-modes completion-mode)
+    (let* (
+           (ac-epc-complete-reply nil)
+
+           (ac-epc-matches
+            (lambda ()
+              (mapcar
+               (lambda (x)
+                 (destructuring-bind (&key word doc description symbol)
+                     x
+                   (popup-make-item word
+                                    :symbol symbol
+                                    :document (unless (equal doc "") doc)
+                                    :summary description)))
+               ac-epc-complete-reply)))
+
+           (ac-epc-complete-request
+            (lambda ()
+              (let (
+                    (prefix (funcall prefix-cb))
+                    )
+                (deferred:nextc (epc-complete-deferred prefix)
+                  (lambda (reply)
+                    (setq ac-epc-complete-reply reply))))))
+
+           (ac-completion-prefix
+            (lambda () (let (
+                             (prefix (funcall prefix-cb))
+                             )
+                         (when (stringp prefix)
+                           (- (point) (length prefix))))))
+           (ac-epc-source
+            (list
+             (list 'requires -1)
+             (list 'init ac-epc-complete-request)
+             (list 'candidates ac-epc-matches)
+             (list 'prefix ac-completion-prefix)))
+
+           (ac-completion-func
+            (cl-defun acf (&key (expend ac-expand-on-auto-complete))
+              (interactive)
+              (let (
+                    (prefix (funcall prefix-cb))
+                    )
+                (when (and (stringp prefix) (> (length prefix) 0))
+                  (deferred:nextc (funcall ac-epc-complete-request prefix)
+                    (lambda ()
+                      (let ((ac-expand-on-auto-complete expand))
+                        (ac-start :triggered 'command))))))))
+           )
+      (add-hook hook (lambda () (add-to-list 'ac-sources ac-epc-source)))
+      ac-completion-func)))
+
+(defun epc-completion-add(completion-mode hook prefix-cb)
+  (epc-completion-add-company prefix-cb)
+  (epc-completion-add-auto-complete completion-mode hook prefix-cb))
+
+
+  ; (add-to-list 'ac-omni-completion-sources (cons "\\." '(ac-source-epc-direct)))
 
 ; (epc-completion-add (lambda () (substring-no-properties (company-grab-symbol))))
 

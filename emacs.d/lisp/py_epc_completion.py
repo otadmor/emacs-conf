@@ -100,8 +100,8 @@ class PythonModeEPCCompletion(object):
             return [{
                 'word' : res,
                 'doc' : self.try_or_err(lambda:self.doc(res), "Error"),
-                'description' : self.try_or_err(lambda:self.meta(res), "Error"),
-                'symbol' : self.try_or_err(lambda:self.symbol(res), "Error"),
+                'description' : self.try_or_err(lambda:self.symbol(res), "Error"),
+                'symbol' : self.try_or_err(lambda:self.meta(res), "Error"),
             } for res in self.readline_complete(text)]
         except:
             import traceback; traceback.print_exc()

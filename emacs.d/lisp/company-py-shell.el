@@ -1,4 +1,5 @@
 (require 'company)
+(require 'auto-complete)
 
 (require 'completion-epc)
 
@@ -9,8 +10,11 @@
 (setq py-ipython-module-completion-code "")
 (setq py-ipython-module-completion-string "")
 
-(defun company-py-shell-prefix()
-  (and (eq major-mode 'py-python-shell-mode)
+(defun py-shell-prefix()
+  (and (or (eq major-mode 'py-python-shell-mode)
+           (eq major-mode 'py-ipython-shell-mode)
+           (eq major-mode 'shell-mode)
+           )
        (let* ((exception-buffer (current-buffer))
               (pos (copy-marker (point)))
               (pps (parse-partial-sexp (or (ignore-errors (overlay-end comint-last-prompt-overlay))(line-beginning-position)) (point)))
@@ -31,11 +35,18 @@
               (word (buffer-substring-no-properties beg end)))
          word)))
 
-(epc-completion-add 'company-py-shell-prefix)
+(epc-completion-add 'shell-mode 'comint-mode-hook 'py-shell-prefix)
+(epc-completion-add 'py-python-shell-mode 'py-python-shell-mode-hook 'py-shell-prefix)
+(epc-completion-add 'py-ipython-shell-mode 'py-python-shell-mode-hook 'py-shell-prefix)
+
+; (define-key py-python-shell-mode-map complete-key
+;   (epc-completion-add 'py-python-shell-mode
+;                       'py-python-shell-mode-hook
+;                       'py-shell-prefix))
 
 (defun py-shell-complete-substitute(&optional shell beg end word)
   (interactive)
-  (company-complete))
+  (auto-complete))
 (defalias 'py-shell-complete 'py-shell-complete-substitute)
 
 (setq py-ipython-command-args "--simple-prompt --nosep")

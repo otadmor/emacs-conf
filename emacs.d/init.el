@@ -81,6 +81,7 @@
 
 (global-hi-lock-mode 1)
 
+(setq ivy-do-completion-in-region t) ; we have company
 (ivy-mode t)
 ;(icomplete-mode t)
 (setq ivy-use-virtual-buffers t
@@ -229,7 +230,6 @@
 (setq ivy-use-virtual-buffers t)
 (setq ivy-wrap t)
 (setq ivy-auto-select-single-candidate t)
-(setq ivy-do-completion-in-region nil) ; we have company
 
 ;(setq ivy-magic-slash-non-match-action nil)
 
@@ -288,30 +288,8 @@
 (define-key counsel-ag-map (kbd "<up>") 'ivy-previous-line-and-call)
 (define-key counsel-ag-map (kbd "C-<up>") 'ivy-previous-line)
 (define-key counsel-ag-map (kbd "C-<down>") 'ivy-next-line)
-
-; (defun complete-or-indent ()
-;     (interactive)
-;     (if (company-manual-begin)
-;         (company-complete-common)
-;       (indent-according-to-mode)))
-; ;(global-set-key [(tab)] 'complete-or-indent)
-
-(require 'company)
-(add-hook 'after-init-hook 'global-company-mode)
-(global-set-key complete-key 'company-complete)
-
-(require 'company-irony)
-(eval-after-load 'company
-  '(add-to-list 'company-backends 'company-irony))
-
-(require 'company-py-shell)
-
-;;(require 'cc-mode)
-;;(define-key c-mode-map  [(tab)] 'company-complete)
-;;(define-key c++-mode-map  [(tab)] 'company-complete)
-
-;; (require 'shell)
-;; (define-key shell-mode-map [(tab)] 'company-complete)
+(global-set-key complete-key 'auto-complete)
+; (global-set-key complete-key 'completion-at-point)
 
 ;(global-set-key [(f2)] 'gud-break)
 
@@ -359,24 +337,60 @@
 (global-set-key (kbd "M-<f3>") 'mc/mark-all-like-this)
 (global-set-key (kbd "C-S-l") 'mc/edit-ends-of-lines)
 
+
+(require 'auto-complete)
+(ac-config-default)
+(global-auto-complete-mode t)
+(setq tabl-always-indent 'complete)
+(add-to-list 'completion-styles 'initials t)
+(setq ac-max-width 0.5)
+(add-hook 'completion-at-point-functions 'auto-complete)
+
+
+(defun ac-page-next ()
+  "Select next candidate."
+  (interactive)
+  (when (ac-menu-live-p)
+    (when (popup-hidden-p ac-menu)
+      (ac-show-menu))
+    (popup-page-next ac-menu)
+    (if (eq this-command 'ac-page-next)
+        (setq ac-dwim-enable t))))
+
+(defun ac-page-previous ()
+  "Select previous candidate."
+  (interactive)
+  (when (ac-menu-live-p)
+    (when (popup-hidden-p ac-menu)
+      (ac-show-menu))
+    (popup-page-previous ac-menu)
+    (if (eq this-command 'ac-page-previous)
+        (setq ac-dwim-enable t))))
+
+(define-key ac-complete-mode-map (kbd "<next>") 'ac-page-next)
+(define-key ac-complete-mode-map (kbd "<prior>") 'ac-page-previous)
+
 (require 'jedi-core)
 (add-hook 'python-mode-hook 'jedi:setup)
 (setq jedi:complete-on-dot t)                 ; optional
 (define-key jedi-mode-map goto-def-key 'jedi:goto-definition)
-(define-key jedi-mode-map complete-key (lambda () (interactive) (jedi:complete :expand nil)))
-(setq py-complete-function (lambda () (interactive)
-                             (if (eq major-mode 'py-python-shell-mode)
-                                 (company-complete)
-                               (jedi:complete :expand nil))))
 
-(require 'company-jedi)
-(add-hook 'python-mode-hook
-          (lambda ()
-            (add-to-list 'company-backends '(company-jedi company-files))))
+(defun jedi:complete-no-expand ()
+  (interactive)
+  (jedi:complete :expand nil)
+  nil)
 
-(ac-config-default)
+(define-key jedi-mode-map complete-key 'jedi:complete-no-expand)
+(setq py-complete-function 'jedi:complete-no-expand)
+
+; (define-key jedi-mode-map complete-key 'completion-at-point)
+; (setq py-complete-function 'completion-at-point)
 
 
+
+
+
+; (fringe-mode '(0 . nil))
 ; (require 'anaconda-mode)
 ; (add-hook 'python-mode-hook 'anaconda-mode)
 ; ; (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
@@ -386,10 +400,6 @@
 
 ; ; (setq py-complete-function 'anaconda-mode-complete)
 ; (setq py-complete-function 'company-complete)
-
-; (require 'company-anaconda)
-; (add-to-list 'company-backends 'company-anaconda)
-; ; (add-to-list 'company-backends '(company-anaconda :with company-capf))
 
 
 (require 'bash-completion)
@@ -404,6 +414,8 @@
 ;; (require 'ess)
 
 (require 'completion-epc) ; required for frida completion
+
+(require 'company-py-shell)
 
 (require 'persp-mode)
 (global-set-key (kbd "M-1") (defun perspsw1() (interactive) (persp-switch "1")))
