@@ -344,7 +344,7 @@
 (setq tabl-always-indent 'complete)
 (add-to-list 'completion-styles 'initials t)
 (setq ac-max-width 0.5)
-(add-hook 'completion-at-point-functions 'auto-complete)
+; (add-hook 'completion-at-point-functions 'auto-complete)
 
 
 (defun ac-page-next ()
