@@ -1,3 +1,4 @@
+;;;  -*- lexical-binding: t -*-
 
 ;; Added by Package.el.  This must come before configurations of
 ;; installed packages.  Don't delete this line.  If you don't want it,
@@ -81,7 +82,7 @@
 
 (global-hi-lock-mode 1)
 
-(setq ivy-do-completion-in-region t) ; we have company
+(setq ivy-do-completion-in-region nil)
 (ivy-mode t)
 ;(icomplete-mode t)
 (setq ivy-use-virtual-buffers t
@@ -289,7 +290,34 @@
 (define-key counsel-ag-map (kbd "C-<up>") 'ivy-previous-line)
 (define-key counsel-ag-map (kbd "C-<down>") 'ivy-next-line)
 (global-set-key complete-key 'auto-complete)
-; (global-set-key complete-key 'completion-at-point)
+;; (global-set-key complete-key 'completion-at-point)
+
+(defun auto-complete-completion-in-region (start end collection &optional predicate)
+  ;; if in minibuffer - do ivy completion
+    (let (
+        (fixed-candidate-source
+         (list
+          (list 'candidates
+                (lambda ()
+                  (let (
+                        (cands
+                         (completion-all-completions
+                          (buffer-substring-no-properties start end)
+                          collection predicate
+                          (- end start))
+                         )
+                        )
+                    (message "cands")
+                    (unless (null cands)
+                      (setcdr (last cands) nil)
+                      (dolist (s cands)
+                        (ivy--remove-props s 'face)))
+                    cands)))
+          (list 'prefix (lambda () (message "S") start))))
+        )
+      (message "pre-complete")
+    (auto-complete (list fixed-candidate-source))))
+(setq completion-in-region-function 'auto-complete-completion-in-region)
 
 ;(global-set-key [(f2)] 'gud-break)
 
@@ -340,9 +368,9 @@
 
 (require 'auto-complete)
 (ac-config-default)
-(global-auto-complete-mode t)
-(setq tabl-always-indent 'complete)
-(add-to-list 'completion-styles 'initials t)
+; (global-auto-complete-mode t)
+; (setq tabl-always-indent 'complete)
+; (add-to-list 'completion-styles 'initials t)
 (setq ac-max-width 0.5)
 ; (add-hook 'completion-at-point-functions 'auto-complete)
 
