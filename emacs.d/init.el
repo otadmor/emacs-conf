@@ -316,8 +316,13 @@
           (list 'prefix (lambda () (message "S") start))))
         )
       (message "pre-complete")
-    (auto-complete (list fixed-candidate-source))))
-(setq completion-in-region-function 'auto-complete-completion-in-region)
+      (auto-complete (list fixed-candidate-source))))
+
+(defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
+  (if (eq (selected-window) (active-minibuffer-window))
+    (ivy-completion-in-region start end collection predicate)
+  (auto-complete-completion-in-region start end collection predicate)))
+(setq completion-in-region-function 'completion-in-region-auto-complete-or-ivy)
 
 ;(global-set-key [(f2)] 'gud-break)
 
