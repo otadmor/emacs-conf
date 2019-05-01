@@ -290,8 +290,7 @@
 (define-key counsel-ag-map (kbd "<up>") 'ivy-previous-line-and-call)
 (define-key counsel-ag-map (kbd "C-<up>") 'ivy-previous-line)
 (define-key counsel-ag-map (kbd "C-<down>") 'ivy-next-line)
-(global-set-key complete-key 'auto-complete)
-;; (global-set-key complete-key 'completion-at-point)
+(global-set-key complete-key 'completion-at-point)
 
 (defun auto-complete-completion-in-region (start end collection &optional predicate)
   ;; if in minibuffer - do ivy completion
@@ -376,7 +375,6 @@
 ; (setq tabl-always-indent 'complete)
 ; (add-to-list 'completion-styles 'initials t)
 (setq ac-max-width 0.5)
-; (add-hook 'completion-at-point-functions 'auto-complete)
 
 
 (defun ac-page-next ()

@@ -39,10 +39,6 @@
 (epc-completion-add 'py-python-shell-mode 'py-python-shell-mode-hook 'py-shell-prefix)
 (epc-completion-add 'py-ipython-shell-mode 'py-python-shell-mode-hook 'py-shell-prefix)
 
-(defun py-shell-complete-substitute(&optional shell beg end word)
-  (interactive)
-  (auto-complete))
-
 (defalias 'py-shell-complete (lambda(&optional shell beg end word) nil))
 (defalias 'py-complete-completion-at-point (lambda() nil))
 (defalias 'py-complete-function (lambda() nil))
