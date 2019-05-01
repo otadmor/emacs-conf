@@ -228,11 +228,16 @@ return epc:connection object."
 (defun completion-epc-complete-deferred(prefix)
   (cons :async
         (lambda (callback)
-          (deferred:nextc
-            (epc-complete-deferred prefix)
-            (lambda (reply)
-              (let ((candidates (mapcar 'completion-epc-collect-candidates reply)))
-                (funcall callback candidates)))))))
+          (let (
+                (epc-deferred (epc-complete-deferred prefix))
+                )
+            (if (null epc-deferred)
+                (funcall callback '())
+              (deferred:nextc
+                epc-deferred
+                (lambda (reply)
+                  (let ((candidates (mapcar 'completion-epc-collect-candidates reply)))
+                    (funcall callback candidates)))))))))
 
 ; (defun epc-completion-at-point ()
 ;   (when (comint--match-partial-filename)
@@ -261,50 +266,64 @@ return epc:connection object."
 (require 'company)
 (require 'auto-complete)
 
-(defun epc-completion-add-company(prefix-cb)
-  (let (
-        (completion-func
-         (lambda (command &optional arg &rest ignored)
-           (interactive (list 'interactive))
-           (cl-case command
-             (interactive (company-begin-backend 'completion-func))
-             (prefix (funcall prefix-cb))
-             (candidates (completion-epc-complete-deferred arg))
-             (meta (get-text-property 0 :description arg))
-             (doc-buffer (company-doc-buffer (get-text-property 0 :doc arg)))
-             (annotation (format "[%s]" (get-text-property 0 :symbol arg)))
-             (location nil)
-             (sorted t))
-           ))
-        )
-    (eval-after-load 'company '(add-to-list 'company-backends completion-func))))
+(defun epc-completion-add-company(completion-mode hook prefix-cb)
+  (unless (null hook)
+    (let (
+          (completion-func
+           (lambda (command &optional arg &rest ignored)
+             (interactive (list 'interactive))
+             (cl-case command
+               (interactive (company-begin-backend 'completion-func))
+               (prefix (funcall prefix-cb))
+               (candidates (completion-epc-complete-deferred arg))
+               (meta (get-text-property 0 :description arg))
+               (doc-buffer (company-doc-buffer (get-text-property 0 :doc arg)))
+               (annotation (format "[%s]" (get-text-property 0 :symbol arg)))
+               (location nil)
+               (sorted t))
+             ))
+          )
+
+      (eval-after-load 'company
+        (lambda ()
+          (add-hook hook
+                    (lambda ()
+                      (add-to-list 'company-backends completion-func))))))))
 
 (defun epc-completion-add-auto-complete (completion-mode hook prefix-cb)
   (unless (null completion-mode)
-    (add-to-list 'ac-modes completion-mode)
+    (add-to-list 'ac-modes completion-mode))
+  (unless (null hook)
     (let* (
            (ac-epc-complete-reply nil)
 
            (ac-epc-matches
             (lambda ()
-              (mapcar
-               (lambda (x)
-                 (destructuring-bind (&key word doc description symbol)
-                     x
-                   (popup-make-item word
-                                    :symbol symbol
-                                    :document (unless (equal doc "") doc)
-                                    :summary description)))
-               ac-epc-complete-reply)))
+              (unless (null ac-epc-complete-reply)
+                ; should we creat ea timer and wait for responses
+                (mapcar
+                 (lambda (x)
+                   (destructuring-bind (&key word doc description symbol)
+                       x
+                     (popup-make-item word
+                                      :symbol symbol
+                                      :document (unless (equal doc "") doc)
+                                      :summary description)))
+                 ac-epc-complete-reply))))
 
            (ac-epc-complete-request
             (lambda ()
               (let (
                     (prefix (funcall prefix-cb))
                     )
-                (deferred:nextc (epc-complete-deferred prefix)
-                  (lambda (reply)
-                    (setq ac-epc-complete-reply reply))))))
+
+                (let (
+                      (epc-deferred (epc-complete-deferred prefix))
+                      )
+                  (unless (null epc-deferred)
+                    (deferred:nextc epc-deferred
+                      (lambda (reply)
+                        (setq-local ac-epc-complete-reply reply))))))))
 
            (ac-completion-prefix
             (lambda () (let (
@@ -330,12 +349,22 @@ return epc:connection object."
                     (lambda ()
                       (let ((ac-expand-on-auto-complete expand))
                         (ac-start :triggered 'command))))))))
+
+           (ac-completion-at-point
+            (lambda ()
+              ac-epc-complete-reply))
            )
-      (add-hook hook (lambda () (add-to-list 'ac-sources ac-epc-source)))
+      (add-hook hook
+                (lambda ()
+                  (make-local-variable 'ac-epc-complete-reply)
+                  (setq-local ac-epc-complete-reply nil)
+                  (add-to-list 'ac-sources ac-epc-source)
+                  (add-hook 'completion-at-point-functions
+                            ac-completion-at-point)))
       ac-completion-func)))
 
 (defun epc-completion-add(completion-mode hook prefix-cb)
-  (epc-completion-add-company prefix-cb)
+  (epc-completion-add-company completion-mode hook prefix-cb)
   (epc-completion-add-auto-complete completion-mode hook prefix-cb))
 
 

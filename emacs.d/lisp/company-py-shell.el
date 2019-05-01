@@ -47,7 +47,10 @@
 (defun py-shell-complete-substitute(&optional shell beg end word)
   (interactive)
   (auto-complete))
-(defalias 'py-shell-complete 'py-shell-complete-substitute)
+
+(defalias 'py-shell-complete (lambda(&optional shell beg end word) nil))
+(defalias 'py-complete-completion-at-point (lambda() nil))
+(defalias 'py-complete-function (lambda() nil))
 
 (setq py-ipython-command-args "--simple-prompt --nosep")
 (provide 'company-py-shell)

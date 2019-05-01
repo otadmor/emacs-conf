@@ -307,15 +307,13 @@
                           (- end start))
                          )
                         )
-                    (message "cands")
                     (unless (null cands)
                       (setcdr (last cands) nil)
                       (dolist (s cands)
                         (ivy--remove-props s 'face)))
                     cands)))
-          (list 'prefix (lambda () (message "S") start))))
+          (list 'prefix (lambda () start))))
         )
-      (message "pre-complete")
       (auto-complete (list fixed-candidate-source))))
 
 (defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
@@ -441,7 +439,7 @@
   nil)
 
 (define-key jedi-mode-map complete-key 'jedi:complete-no-expand)
-(setq py-complete-function 'jedi:complete-no-expand)
+; (setq py-complete-function 'jedi:complete-no-expand)
 
 ; (define-key jedi-mode-map complete-key 'completion-at-point)
 ; (setq py-complete-function 'completion-at-point)
