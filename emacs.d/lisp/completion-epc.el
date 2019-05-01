@@ -2,6 +2,7 @@
 (require 'epc)
 (require 'shell)
 (require 'comint)
+(require 'epcs)
 
 ; (defvar complete-server-regexp
 ;   (concat "^" (regexp-quote "___EPCCompletionServer_PORT=") "\\([[:xdigit:]]+\\)\n$")
@@ -22,11 +23,10 @@
       (kill-local-variable 'mngr-complete-epc))))
 
 (defun fire-exit-hook(orig-fun &rest args)
+  (disconnect-completion-server (car args))
   (condition-case err
       (apply orig-fun args)
-    (error (epc:log "Error on exit-hooks : %S / " err mngr)))
-  (disconnect-completion-server (car args))
-  )
+    (error (epc:log "Error on exit-hooks : %S / " err mngr))))
 (advice-add 'epc:manager-fire-exit-hook :around #'fire-exit-hook)
 
 
@@ -70,28 +70,8 @@
     (setq-local mngr-complete-epc mngr)
     (epc:manager-add-exit-hook mngr (lambda () (disconnect-completion-server mngr)))))
 
-
-(defvar epc-server-process nil
-  "Saves the current session server")
-(make-local-variable 'epc-server-process)
-(defun epc:listen (&optional host port)
-  "[internal] Connect the server, initialize the process and
-return epc:connection object."
-  (epc:log ">> Listening:%s" port)
-  (lexical-let* ((connection-id (epc:uid))
-                 (connection-name (format "epc server %s" connection-id)))
-    (make-network-process
-           :name connection-name
-           :sentinel #'epc-server-sentinel
-           :filter #'epc-server-process-filter
-           :server t
-           :reuseaddr t
-           :family 'ipv4
-           :host (or host 'local)
-           :service (or port t))))
-
 (defun epc:start-server-and-set-env ()
-  (setq epc-server-process (epc:listen))
+  (setq epc-server-process (epcs:server-start 'epc:incoming-connection-made-mngr))
   (let (
         (port (cadr (process-contact epc-server-process)))
         )
@@ -99,64 +79,12 @@ return epc:connection object."
     (make-local-variable 'process-environment)
     (setenv "EPC_COMPLETION_SERVER_PORT" (format "%d" port))))
 
-(cl-defun epc-server-process-filter (proc string)
-  (epc:log "Received data %S" string))
 
-(defun epc-server-sentinel (proc msg)
-  "The process sentinel for EPC server connections."
-  ;; If this is a new client process, set the query-on-exit flag to nil
-  ;; for this process (it isn't inherited from the server process).
-  (when (and (eq (process-status proc) 'open)
-	     (process-query-on-exit-flag proc))
-    (set-process-query-on-exit-flag proc nil)
-    (epc-server--new-connection proc))
-  ;; Delete the associated connection file, if applicable.
-  (and (process-contact proc :server)
-       (eq (process-status proc) 'closed)
-       (ignore-errors
-	 (delete-file (process-get proc :server-file))))
-  (epc:log (format "Status changed to %s: %s" (process-status proc) msg))
-  ; (server-delete-client proc)
-  )
-
-(defun epc:incoming-connection-made (connection)
-  (let (
-        (mngr (make-epc:manager :connection connection))
-        )
-    (message "EPC client connected")
-    (epc:init-epc-layer mngr)
-    (setq mngr-complete-epc mngr)
-    (epc:manager-add-exit-hook mngr (lambda () (disconnect-completion-server mngr)))))
-
-
-
-(defun epc-server--new-connection (proc)
-  "[internal] Connect the server, initialize the process and
-return epc:connection object."
-  (epc:log ">> New connection")
-  (lexical-let* ((connection-id (epc:uid))
-                 (connection-name (format "epc con %s" connection-id))
-                 (connection-buf (epc:make-procbuf (format "*%s*" connection-name)))
-                 (connection-process proc)
-                 (channel (cc:signal-channel connection-name))
-                 (connection (make-epc:connection
-                              :name connection-name
-                              :process connection-process
-                              :buffer connection-buf
-                              :channel channel)))
-    (set-process-buffer connection-process connection-buf)
-    (epc:log ">> Connection establish")
-    (set-process-coding-system  connection-process 'binary 'binary)
-    (set-process-filter connection-process
-                        (lambda (p m)
-                          (epc:process-filter connection p m)))
-    (set-process-sentinel connection-process
-                          (lambda (p e)
-                            (epc:process-sentinel connection p e)))
-    (set-process-query-on-exit-flag connection-process nil)
-    (epc:incoming-connection-made connection)))
-
-
+(defun epc:incoming-connection-made-mngr (mngr)
+  (message "EPC client connected")
+  (epc:init-epc-layer mngr)
+  (setq mngr-complete-epc mngr)
+  (epc:manager-add-exit-hook mngr (lambda () (disconnect-completion-server mngr))))
 
 (defun completion--comint-output-filter (string)
   (save-match-data
@@ -192,26 +120,14 @@ return epc:connection object."
   (when mngr
     (condition-case nil
         (epc:call-deferred mngr 'complete to-complete)
-      (error (progn (message "error in completion server") (disconnect-completion-server mngr) nil)))))
+      (error (progn
+               (disconnect-completion-server mngr)
+               (message "error in completion server")
+               (deferred:next (lambda () '())))))))
 
 (defun epc-complete-deferred (to-complete)
   ;;(message "Try to complete %S" to-complete)
   (epc-complete-deferred-mngr mngr-complete-epc to-complete))
-
-; (defun epc-complete (to-complete)
-;   ;(message "Try to complete %S" to-complete)
-;   (when mngr-complete-epc
-;     (condition-case nil
-;         (let (
-;               (completions (epc:call-sync mngr-complete-epc 'complete to-complete))
-;               )
-;           ;(message "Return : %S" completions)
-;           completions
-;           )
-;       (error (progn (message "error in completion server") (disconnect-completion-server mngr) nil)))
-;     ))
-
-
 
 (defun completion-epc-collect-candidates (completion)
   "Return a candidate from a COMPLETION reply."
@@ -228,16 +144,13 @@ return epc:connection object."
 (defun completion-epc-complete-deferred(prefix)
   (cons :async
         (lambda (callback)
-          (let (
-                (epc-deferred (epc-complete-deferred prefix))
-                )
-            (if (null epc-deferred)
-                (funcall callback '())
-              (deferred:nextc
-                epc-deferred
-                (lambda (reply)
-                  (let ((candidates (mapcar 'completion-epc-collect-candidates reply)))
-                    (funcall callback candidates)))))))))
+          (deferred:$
+            (epc-complete-deferred prefix)
+            (deferred:nextc it
+              (lambda (reply)
+                (let ((candidates
+                       (mapcar 'completion-epc-collect-candidates reply)))
+                    (funcall callback candidates))))))))
 
 ; (defun epc-completion-at-point ()
 ;   (when (comint--match-partial-filename)
@@ -283,7 +196,6 @@ return epc:connection object."
                (sorted t))
              ))
           )
-
       (eval-after-load 'company
         (lambda ()
           (add-hook hook
@@ -294,74 +206,125 @@ return epc:connection object."
   (unless (null completion-mode)
     (add-to-list 'ac-modes completion-mode))
   (unless (null hook)
-    (let* (
-           (ac-epc-complete-reply nil)
-
-           (ac-epc-matches
-            (lambda ()
-              (unless (null ac-epc-complete-reply)
-                ; should we creat ea timer and wait for responses
-                (mapcar
-                 (lambda (x)
-                   (destructuring-bind (&key word doc description symbol)
-                       x
-                     (popup-make-item word
-                                      :symbol symbol
-                                      :document (unless (equal doc "") doc)
-                                      :summary description)))
-                 ac-epc-complete-reply))))
-
-           (ac-epc-complete-request
-            (lambda ()
-              (let (
-                    (prefix (funcall prefix-cb))
-                    )
-
-                (let (
-                      (epc-deferred (epc-complete-deferred prefix))
-                      )
-                  (unless (null epc-deferred)
-                    (deferred:nextc epc-deferred
-                      (lambda (reply)
-                        (setq-local ac-epc-complete-reply reply))))))))
-
-           (ac-completion-prefix
-            (lambda () (let (
-                             (prefix (funcall prefix-cb))
+    (add-hook
+     hook
+     (lambda ()
+       (let (
+             (ac-epc-complete-reply nil)
+             (ac-epc-complete-deferred nil)
+             (ac-epc-received-response nil)
+             (working-buffer (current-buffer))
+             )
+         (let* (
+                (ac-epc-matches
+                 (lambda ()
+                   (with-current-buffer working-buffer
+                     (unless ac-epc-received-response
+                       (deferred:sync! ac-epc-complete-deferred))
+                     (setq ac-epc-complete-deferred nil)
+                     (unless (null ac-epc-complete-reply)
+                       ;; should we creat ea timer and wait for responses
+                       (let (
+                             (res
+                              (cl-remove-if
+                               'null
+                               (mapcar
+                                (lambda (x)
+                                  (unless (null x)
+                                    (if (stringp x)
+                                        (popup-make-item x)
+                                      (condition-case nil
+                                          (destructuring-bind
+                                              (&key word doc description symbol)
+                                              x
+                                            (popup-make-item word
+                                                             :symbol symbol
+                                                             :document
+                                                             (unless
+                                                                 (equal doc "")
+                                                               doc)
+                                                             :summary description))
+                                        (error nil)))))
+                                ac-epc-complete-reply))
+                              )
                              )
-                         (when (stringp prefix)
-                           (- (point) (length prefix))))))
-           (ac-epc-source
-            (list
-             (list 'requires -1)
-             (list 'init ac-epc-complete-request)
-             (list 'candidates ac-epc-matches)
-             (list 'prefix ac-completion-prefix)))
+                         res
 
-           (ac-completion-func
-            (cl-defun acf (&key (expend ac-expand-on-auto-complete))
-              (interactive)
-              (let (
-                    (prefix (funcall prefix-cb))
-                    )
-                (when (and (stringp prefix) (> (length prefix) 0))
-                  (deferred:nextc (funcall ac-epc-complete-request prefix)
-                    (lambda ()
-                      (let ((ac-expand-on-auto-complete expand))
-                        (ac-start :triggered 'command))))))))
+                         ))
+                     )
+                   ))
 
-           (ac-completion-at-point
-            (lambda ()
-              ac-epc-complete-reply))
-           )
-      (add-hook hook
-                (lambda ()
-                  (make-local-variable 'ac-epc-complete-reply)
-                  (setq-local ac-epc-complete-reply nil)
-                  (add-to-list 'ac-sources ac-epc-source)
-                  (add-hook 'completion-at-point-functions
-                            ac-completion-at-point)))
-      ac-completion-func)))
+                (ac-epc-complete-request
+                 (with-current-buffer working-buffer
+                   (lambda ()
+                     (let (
+                           (prefix (funcall prefix-cb))
+                           )
+                       (unless (null ac-epc-complete-deferred)
+                         (deferred:cancel ac-epc-complete-deferred))
+                       (setq ac-epc-complete-reply nil)
+                       (setq ac-epc-received-response nil)
+                       (setq ac-epc-complete-deferred
+                             (deferred:$
+                               (epc-complete-deferred prefix)
+                               (deferred:nextc it
+                                 (lambda (reply)
+                                   (with-current-buffer working-buffer
+                                     (setq ac-epc-complete-reply reply)
+                                     (setq ac-epc-received-response t)
+                                     )
+                                   ))
+                               (deferred:error it
+                                 (lambda (err)
+                                   (cond
+                                    ((stringp err)
+                                     ;; application error
+                                     ;; err: error message
+                                     (message "error completion epc %S" err)
+                                     )
+                                    ((eq 'epc-error (car err))
+                                     ;; epc error
+                                     ;; err: (cadr err) -> error information
+                                     (message "error completion epc2 %S" (cadr err))
+                                     ))))
+                               ))))))
+
+                (ac-completion-prefix
+                 (lambda ()
+                   (with-current-buffer working-buffer
+                     (let (
+                           (prefix (funcall prefix-cb))
+                           )
+                       (when (stringp prefix)
+                         (- (point) (length prefix)))))))
+
+                (ac-epc-source
+                 (list
+                  (list 'requires -1)
+                  (list 'init ac-epc-complete-request)
+                  (list 'candidates ac-epc-matches)
+                  (list 'prefix ac-completion-prefix)))
+
+                (ac-completion-func
+                 (cl-defun acf (&key (expend ac-expand-on-auto-complete))
+                   (interactive)
+                   (let (
+                         (prefix (funcall prefix-cb))
+                         )
+                     (when (and (stringp prefix) (> (length prefix) 0))
+                       (deferred:nextc (funcall ac-epc-complete-request)
+                         (lambda ()
+                           (let ((ac-expand-on-auto-complete expand))
+                             (ac-start :triggered 'command))))))))
+
+                (ac-completion-at-point
+                 (lambda ()
+                   (with-current-buffer working-buffer
+                     ac-epc-complete-reply)))
+                )
+           (add-to-list 'ac-sources ac-epc-source)
+           (add-hook 'completion-at-point-functions
+                     ac-completion-at-point)))))))
 
 (defun epc-completion-add(completion-mode hook prefix-cb)
   (epc-completion-add-company completion-mode hook prefix-cb)

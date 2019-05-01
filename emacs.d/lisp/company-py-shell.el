@@ -39,11 +39,6 @@
 (epc-completion-add 'py-python-shell-mode 'py-python-shell-mode-hook 'py-shell-prefix)
 (epc-completion-add 'py-ipython-shell-mode 'py-python-shell-mode-hook 'py-shell-prefix)
 
-; (define-key py-python-shell-mode-map complete-key
-;   (epc-completion-add 'py-python-shell-mode
-;                       'py-python-shell-mode-hook
-;                       'py-shell-prefix))
-
 (defun py-shell-complete-substitute(&optional shell beg end word)
   (interactive)
   (auto-complete))

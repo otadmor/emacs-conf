@@ -13,6 +13,7 @@
 ;; for 64 bit systems
 ;; https://emacs.stackexchange.com/questions/3824/what-piece-of-code-in-emacs-makes-line-number-mode-print-as-line-number-i/3827#3827
 (setq line-number-display-limit-width 2000000)
+(setq max-specpdl-size 10240)
 
 (setq abbrev-file-name             ;; tell emacs where to read abbrev
         "~/.emacs.d/abbrev_defs")  ;; definitions from...
