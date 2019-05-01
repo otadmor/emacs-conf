@@ -436,6 +436,8 @@
   (interactive)
   (jedi:complete :expand nil)
   nil)
+(defalias 'py-complete-completion-at-point (lambda() nil))
+(setq py-complete-function 'jedi:complete-no-expand)
 
 (define-key jedi-mode-map complete-key 'jedi:complete-no-expand)
 ; (setq py-complete-function 'jedi:complete-no-expand)

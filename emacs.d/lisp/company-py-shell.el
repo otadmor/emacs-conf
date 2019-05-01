@@ -41,8 +41,6 @@
 
 (defalias 'py-shell-complete (lambda(&optional shell beg end word)
                                (completion-at-point)))
-(defalias 'py-complete-completion-at-point (lambda() nil))
-(defalias 'py-complete-function (lambda() nil))
 
 (setq py-ipython-command-args "--simple-prompt --nosep")
 (provide 'company-py-shell)
