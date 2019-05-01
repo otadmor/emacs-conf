@@ -216,6 +216,7 @@
              (working-buffer (current-buffer))
              )
          (let* (
+
                 (ac-epc-matches
                  (lambda ()
                    (with-current-buffer working-buffer
@@ -224,41 +225,31 @@
                      (setq ac-epc-complete-deferred nil)
                      (unless (null ac-epc-complete-reply)
                        ;; should we creat ea timer and wait for responses
-                       (let (
-                             (res
-                              (cl-remove-if
-                               'null
-                               (mapcar
-                                (lambda (x)
-                                  (unless (null x)
-                                    (if (stringp x)
-                                        (popup-make-item x)
-                                      (condition-case nil
-                                          (destructuring-bind
-                                              (&key word doc description symbol)
-                                              x
-                                            (popup-make-item word
-                                                             :symbol symbol
-                                                             :document
-                                                             (unless
-                                                                 (equal doc "")
-                                                               doc)
-                                                             :summary description))
-                                        (error nil)))))
-                                ac-epc-complete-reply))
-                              )
-                             )
-                         res
-
-                         ))
-                     )
-                   ))
+                       (cl-remove-if
+                        'null
+                        (mapcar
+                         (lambda (x)
+                           (unless (null x)
+                             (if (stringp x)
+                                 (popup-make-item x)
+                               (condition-case nil
+                                   (destructuring-bind
+                                       (&key word doc description symbol)
+                                       x
+                                     (popup-make-item word
+                                                      :symbol symbol
+                                                      :document
+                                                      (unless (equal doc "")
+                                                        doc)
+                                                      :summary description))
+                                 (error nil)))))
+                         ac-epc-complete-reply))))))
 
                 (ac-epc-complete-request
-                 (with-current-buffer working-buffer
-                   (lambda ()
+                 (lambda (&optional prefix)
+                   (with-current-buffer working-buffer
                      (let (
-                           (prefix (funcall prefix-cb))
+                           (prefix (or prefix (funcall prefix-cb)))
                            )
                        (unless (null ac-epc-complete-deferred)
                          (deferred:cancel ac-epc-complete-deferred))
@@ -285,9 +276,7 @@
                                     ((eq 'epc-error (car err))
                                      ;; epc error
                                      ;; err: (cadr err) -> error information
-                                     (message "error completion epc2 %S" (cadr err))
-                                     ))))
-                               ))))))
+                                     (message "error completion epc2 %S" (cadr err))))))))))))
 
                 (ac-completion-prefix
                  (lambda ()
@@ -317,14 +306,42 @@
                            (let ((ac-expand-on-auto-complete expand))
                              (ac-start :triggered 'command))))))))
 
+                (old-completion-at-point-functions
+                 (cl-remove-if-not 'functionp
+                                   (copy-sequence completion-at-point-functions)))
+
                 (ac-completion-at-point
                  (lambda ()
                    (with-current-buffer working-buffer
-                     ac-epc-complete-reply)))
+                     (let (
+                           (prefix (funcall prefix-cb))
+                           )
+                       (when (and (stringp prefix) (> (length prefix) 0))
+                         (let (
+                               (beg (- (point) (length prefix)))
+                               (end (point))
+                               )
+                           (list beg
+                                 end
+                                 (completion-table-dynamic
+                                  (lambda (_)
+                                    (funcall ac-epc-complete-request prefix)
+                                    (let (
+                                          (original-completions
+                                           (apply
+                                            'append
+                                            (mapcar
+                                             (lambda (f)
+                                               (caddr (funcall f)))
+                                             old-completion-at-point-functions)))
+                                          )
+                                      (append
+                                       (funcall ac-epc-matches)
+                                       original-completions)))))))))))
                 )
            (add-to-list 'ac-sources ac-epc-source)
            (add-hook 'completion-at-point-functions
-                     ac-completion-at-point)))))))
+                     ac-completion-at-point nil t)))))))
 
 (defun epc-completion-add(completion-mode hook prefix-cb)
   (epc-completion-add-company completion-mode hook prefix-cb)
