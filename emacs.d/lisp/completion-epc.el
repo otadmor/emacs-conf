@@ -340,8 +340,36 @@
                              (ac-start :triggered 'command))))))))
 
                 (old-completion-at-point-functions
-                 (cl-remove-if-not 'functionp
-                                   (copy-sequence completion-at-point-functions)))
+                 (copy-sequence completion-at-point-functions))
+
+                (exec-old-completion-at-point
+                 (lambda ()
+                   (let (
+                         (res)
+                         )
+                     (let (
+                           (completion-at-point-functions
+                            old-completion-at-point-functions)
+                           (result-aggregator
+                            (lambda (start end collection &optional predicate)
+                              (let (
+                                    (cands
+                                     (completion-all-completions
+                                      (buffer-substring-no-properties start end)
+                                      collection predicate
+                                      (- end start))
+                                     )
+                                    )
+                                (unless (null cands)
+                                  (setcdr (last cands) nil))
+                                (setq res (append res cands)))))
+                           )
+                       (letf (
+                              ((symbol-function 'completion-in-region)
+                               result-aggregator)
+                              )
+                         (completion-at-point)))
+                     res)))
 
                 (ac-completion-at-point
                  (lambda ()
@@ -361,12 +389,7 @@
                                     (funcall ac-epc-complete-request prefix)
                                     (let (
                                           (original-completions
-                                           (apply
-                                            'append
-                                            (mapcar
-                                             (lambda (f)
-                                               (caddr (funcall f)))
-                                             old-completion-at-point-functions)))
+                                           (funcall exec-old-completion-at-point))
                                           )
                                       (append
                                        (funcall ac-epc-matches)
