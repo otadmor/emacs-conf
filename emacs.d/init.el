@@ -429,7 +429,15 @@
   (auto-complete-completion-in-region start end collection predicate)))
 (setq completion-in-region-function 'completion-in-region-auto-complete-or-ivy)
 
+;; (setq ac-expand-on-auto-complete nil)
 
+(defun ac-complete-when-menu ()
+  (interactive)
+  (if ac-show-menu
+      (ac-complete)
+    (ac-abort)
+    (ac-fallback-command)))
+(define-key ac-complete-mode-map (kbd "RET") 'ac-complete-when-menu) ; ac-complete-mode-map, ac-menu-map
 (define-key ac-complete-mode-map (kbd "<next>") 'ac-page-next)
 (define-key ac-complete-mode-map (kbd "<prior>") 'ac-page-previous)
 (define-key ac-complete-mode-map (kbd "<home>") 'ac-first)
