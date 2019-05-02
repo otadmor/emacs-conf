@@ -70,11 +70,40 @@
     (setq-local mngr-complete-epc mngr)
     (epc:manager-add-exit-hook mngr (lambda () (disconnect-completion-server mngr)))))
 
+
+(defun epcs:server-start-with-host-reuseaddr-nowait (connect-function &optional port host)
+  "Start TCP Server and return the main process object."
+  (lexical-let*
+      ((connect-function connect-function)
+       (name (format "EPC Server %s" (epc:uid)))
+       (buf (epc:make-procbuf (format "*%s*" name)))
+       (main-process
+        (make-network-process
+         :name name
+         :buffer buf
+         :family 'ipv4 :server t
+         ;; :nowait t
+         :host (or host 'local) :service (or port t) ; "127.0.0.1"
+         :reuseaddr t
+         :sentinel
+         (lambda (process message)
+           (epcs:sentinel process message connect-function)))))
+    (unless port
+      ;; notify port number to the parent process via STDOUT.
+      (message "%s\n" (process-contact main-process :service)))
+    (push (cons main-process
+                (make-epcs:server
+                 :name name :process main-process
+                 :port (process-contact main-process :service)
+                 :connect-function connect-function))
+          epcs:server-processes)
+    main-process))
+
 (defun epc:start-server-and-set-env ()
   (let* (
          (working-buffer (current-buffer))
          (epc-server-process
-          (epcs:server-start
+          (epcs:server-start-with-host-reuseaddr-nowait
            (lambda (mngr)
              (epc:incoming-connection-made-mngr mngr working-buffer))))
          (port (cadr (process-contact epc-server-process)))
