@@ -1315,14 +1315,14 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                  :update-fn #'swiper--async-update-input-ivy
                  :unwind #'swiper-async--cleanup
                  :action #'swiper--async-action
-                 :history 'swiper-history
+                 :history 'counsel-git-grep-history
                  :sort nil
                  :caller 'swiper-async))
           (point))
       (unless (or res swiper-stay-on-quit)
         (goto-char swiper--opoint))
       (unless (or res (string= ivy-text ""))
-        (cl-pushnew ivy-text swiper-history))
+        (cl-pushnew ivy-text counsel-git-grep-history))
       (when swiper--reveal-mode
         (reveal-mode 1)))))
 

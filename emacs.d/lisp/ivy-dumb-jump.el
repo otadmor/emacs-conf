@@ -63,13 +63,13 @@ Ignore PROJ"
                                :action (lambda (x)
                                          (dumb-jump-to-selected results choices x))
                                ;;   :require-match t
-                               :history 'swiper-history
+                               :history 'counsel-git-grep-history
                                ))
                 )
             (unless res
               (goto-char dumb-jump--opoint))
             (unless (or res (string= ivy-text ""))
-              (cl-pushnew ivy-text swiper-history))
+              (cl-pushnew ivy-text counsel-git-grep-history))
                                         ; (when swiper--reveal-mode
                                         ; (reveal-mode 1))
             ))))
