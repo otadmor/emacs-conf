@@ -25,7 +25,7 @@
                (= (save-excursion (goto-char end)
                                   (line-beginning-position)) (region-end)))
       (setq end (- (region-end) 1)))
-    (comment-or-uncomment-region beg end 1)))
+    (comment-or-uncomment-region beg end)))
 
 (defun my-toggle-truncate-lines ()
   "Toggle truncate lines in quietly."
