@@ -71,20 +71,24 @@
     (epc:manager-add-exit-hook mngr (lambda () (disconnect-completion-server mngr)))))
 
 (defun epc:start-server-and-set-env ()
-  (setq epc-server-process (epcs:server-start 'epc:incoming-connection-made-mngr))
-  (let (
-        (port (cadr (process-contact epc-server-process)))
-        )
-    (message "EPC Server port %S" port)
+  (let* (
+         (working-buffer (current-buffer))
+         (epc-server-process
+          (epcs:server-start
+           (lambda (mngr)
+             (epc:incoming-connection-made-mngr mngr working-buffer))))
+         (port (cadr (process-contact epc-server-process)))
+         )
+    (message "EPC Server port %S for buffer %S" port (current-buffer))
     (make-local-variable 'process-environment)
     (setenv "EPC_COMPLETION_SERVER_PORT" (format "%d" port))))
 
 
-(defun epc:incoming-connection-made-mngr (mngr)
-  (message "EPC client connected")
-  (epc:init-epc-layer mngr)
-  (setq mngr-complete-epc mngr)
-  (epc:manager-add-exit-hook mngr (lambda () (disconnect-completion-server mngr))))
+(defun epc:incoming-connection-made-mngr (mngr working-buffer)
+  (with-current-buffer working-buffer
+    (message "EPC client connected in buffer %S" (current-buffer))
+    (setq-local mngr-complete-epc mngr)
+    (epc:manager-add-exit-hook mngr (lambda () (disconnect-completion-server mngr)))))
 
 (defun completion--comint-output-filter (string)
   (save-match-data
@@ -126,7 +130,6 @@
                (deferred:next (lambda () '())))))))
 
 (defun epc-complete-deferred (to-complete)
-  ;;(message "Try to complete %S" to-complete)
   (epc-complete-deferred-mngr mngr-complete-epc to-complete))
 
 (defun completion-epc-collect-candidates (completion)
@@ -257,14 +260,15 @@
                        (setq ac-epc-received-response nil)
                        (setq ac-epc-complete-deferred
                              (deferred:$
-                               (epc-complete-deferred prefix)
+                               (deferred:next
+                                 (lambda ()
+                                   (with-current-buffer working-buffer
+                                     (epc-complete-deferred prefix))))
                                (deferred:nextc it
                                  (lambda (reply)
                                    (with-current-buffer working-buffer
                                      (setq ac-epc-complete-reply reply)
-                                     (setq ac-epc-received-response t)
-                                     )
-                                   ))
+                                     (setq ac-epc-received-response t))))
                                (deferred:error it
                                  (lambda (err)
                                    (cond

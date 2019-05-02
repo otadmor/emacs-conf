@@ -292,36 +292,6 @@
 (define-key counsel-ag-map (kbd "C-<down>") 'ivy-next-line)
 (global-set-key complete-key 'completion-at-point)
 
-(defun auto-complete-completion-in-region (start end collection &optional predicate)
-  ;; if in minibuffer - do ivy completion
-    (let (
-        (fixed-candidate-source
-         (list
-          (list 'candidates
-                (lambda ()
-                  (let (
-                        (cands
-                         (completion-all-completions
-                          (buffer-substring-no-properties start end)
-                          collection predicate
-                          (- end start))
-                         )
-                        )
-                    (unless (null cands)
-                      (setcdr (last cands) nil)
-                      (dolist (s cands)
-                        (ivy--remove-props s 'face)))
-                    cands)))
-          (list 'prefix (lambda () start))))
-        )
-      (auto-complete (list fixed-candidate-source))))
-
-(defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
-  (if (eq (selected-window) (active-minibuffer-window))
-    (ivy-completion-in-region start end collection predicate)
-  (auto-complete-completion-in-region start end collection predicate)))
-(setq completion-in-region-function 'completion-in-region-auto-complete-or-ivy)
-
 ;(global-set-key [(f2)] 'gud-break)
 
 (require 'ahg) ; for mercurial source control, like magit
@@ -369,13 +339,19 @@
 (global-set-key (kbd "C-S-l") 'mc/edit-ends-of-lines)
 
 
+
 (require 'auto-complete)
 (ac-config-default)
-; (global-auto-complete-mode t)
-; (setq tabl-always-indent 'complete)
-; (add-to-list 'completion-styles 'initials t)
+;; (global-auto-complete-mode t)
+;; (define-globalized-minor-mode real-global-auto-complete-mode
+;;   auto-complete-mode (lambda ()
+;;                        (if (not (minibufferp (current-buffer)))
+;;                          (auto-complete-mode 1))
+;;                        ))
+;; (real-global-auto-complete-mode t)
+(setq tab-always-indent 'complete)
 (setq ac-max-width 0.5)
-
+(setq ac-use-fuzzy nil)
 
 (defun ac-page-next ()
   "Select next candidate."
@@ -421,6 +397,38 @@
     (popup-draw ac-menu)
     (if (eq this-command 'ac-last)
         (setq ac-dwim-enable t))))
+
+
+(defun auto-complete-completion-in-region (start end collection &optional predicate)
+  ;; if in minibuffer - do ivy completion
+    (let (
+        (fixed-candidate-source
+         (list
+          (list 'candidates
+                (lambda ()
+                  (let (
+                        (cands
+                         (completion-all-completions
+                          (buffer-substring-no-properties start end)
+                          collection predicate
+                          (- end start))
+                         )
+                        )
+                    (unless (null cands)
+                      (setcdr (last cands) nil)
+                      (dolist (s cands)
+                        (ivy--remove-props s 'face)))
+                    cands)))
+          (list 'prefix (lambda () start))))
+        )
+      (auto-complete (list fixed-candidate-source))))
+
+(defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
+  (if (eq (selected-window) (active-minibuffer-window))
+    (ivy-completion-in-region start end collection predicate)
+  (auto-complete-completion-in-region start end collection predicate)))
+(setq completion-in-region-function 'completion-in-region-auto-complete-or-ivy)
+
 
 (define-key ac-complete-mode-map (kbd "<next>") 'ac-page-next)
 (define-key ac-complete-mode-map (kbd "<prior>") 'ac-page-previous)
