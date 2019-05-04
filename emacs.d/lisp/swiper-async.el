@@ -1323,7 +1323,7 @@ Markers highlights the results in the buffer itself."
     (setq swiper--async-timer nil))
   (swiper--cleanup))
 
-(defvar swiper--async-grep-base-command (concat "grep -a -o -b -u -E -e %s %s")
+(defvar swiper--async-grep-base-command (concat "grep -a -o -b -u -i -E -e %s %s")
   "Saves the command line arguments grep needs.")
 
 (defun swiper--async-ivy (&optional initial-input)
