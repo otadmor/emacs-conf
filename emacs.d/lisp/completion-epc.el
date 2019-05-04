@@ -391,9 +391,13 @@
                                           (original-completions
                                            (funcall exec-old-completion-at-point))
                                           )
-                                      (append
-                                       (funcall ac-epc-matches)
-                                       original-completions)))))))))))
+                                      (let (
+                                            (epc-completions
+                                             (funcall ac-epc-matches))
+                                            )
+                                        (append
+                                         epc-completions
+                                         original-completions))))))))))))
                 )
            (add-to-list 'ac-sources ac-epc-source)
            (add-hook 'completion-at-point-functions
