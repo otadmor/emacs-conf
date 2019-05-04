@@ -460,6 +460,7 @@ at runtime to check if we can start using it or to check for detected problems."
 values here and the async function reads them.")
 (defvar swiper--async-process-last-inserted nil
   "The last inserted candidate from the grep process for faster insertion.")
+
 (defun swiper--async-parse-process-output (process)
   "The output of grep gives location:matched-result. We parse this as
 candidate beginning position and candidate length and calculate the candidate
@@ -691,17 +692,24 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 (defvar swiper--async-timer nil
   "The timer swiper-async uses to re-call the async search function.")
-(defun schedule-isearch(buffer func)
+(defun schedule-isearch(buffer func &optional should-sleep-more)
   "Schedule the search function of swiper-async."
   (when (not (null swiper--async-timer))
     (cancel-timer swiper--async-timer)
     (setq swiper--async-timer nil))
   (setq swiper--async-timer (run-at-time
-                             swiper--async-isearch-interval
+                             (+ swiper--async-isearch-interval
+                                (if should-sleep-more
+                                    swiper--async-isearch-sleep-more-time
+                                    0))
                              nil 'swiper--async-isearch buffer func)))
 
 (defcustom swiper--async-isearch-interval 0
   "The interval between subsequent async search function calls."
+  :type 'number)
+(defcustom swiper--async-isearch-sleep-more-time 0.1
+  "Increase the sleeping time by this amount when the used has some
+input or processes has some output."
   :type 'number)
 (defvar swiper--async-high-start-point nil
   "The starting point of the high search range.")
@@ -775,6 +783,10 @@ the minibuffer with the new candidates."
 (advice-add 'ivy--wnd-cands-to-str :around #'ivy--wnd-cands-to-str-hook)
 
 
+(defun swiper--async-should-quit-async ()
+  (or (input-pending-p)
+      (accept-process-output)))
+
 (defun swiper--async-isearch(buffer func)
   "The search function of swiper-async and its main brain.
 This function splits the buffer into two ranges: high and low.
@@ -791,6 +803,7 @@ candidates in the minibuffer asynchrounouosly."
       (save-excursion
         (deactivate-mark)
         (let (
+              (should-sleep-more nil)
               (finished-wndcands (not swiper-include-line-number-in-search))
               (filled-minibuffer-candidates
                (or (>= (length ivy--orig-cands) (+ max-mini-window-height
@@ -820,7 +833,8 @@ candidates in the minibuffer asynchrounouosly."
                         (overlay-begin (swiper--get-begin wndcand))
                         (overlay-end (swiper--get-end wndcand))
                         )
-                    (while (and (not (input-pending-p))
+                    (while (and (not (setq should-sleep-more
+                                           (swiper--async-should-quit-async)))
                                 (/= line-begin swiper--async-last-line-pos))
                       (swiper--async-line-at-pos
                        (if (> line-begin swiper--async-last-line-pos)
@@ -871,7 +885,8 @@ candidates in the minibuffer asynchrounouosly."
             (when found-grep-candidates
               (let (
                     (candidates-create-time (car (benchmark-and-get-result
-                (while (and (not (input-pending-p))
+                (while (and (not (setq should-sleep-more
+                                       (swiper--async-should-quit-async)))
                             (< matches-found
                                swiper--async-max-matches-per-search)
                             (not (null swiper--async-process-candidates)))
@@ -906,7 +921,8 @@ candidates in the minibuffer asynchrounouosly."
                         (when (< swiper--async-high-start-point
                                  swiper--async-high-end-point)
                           (goto-char swiper--async-high-start-point)
-                          (while (and (not (input-pending-p))
+                          (while (and (not (setq should-sleep-more
+                                                 (swiper--async-should-quit-async)))
                                       (< matches-found
                                          swiper--async-max-matches-per-search)
                                       (re-search-forward
@@ -925,7 +941,8 @@ candidates in the minibuffer asynchrounouosly."
                         (when (< swiper--async-low-start-point
                                  swiper--async-low-end-point)
                           (goto-char swiper--async-low-start-point)
-                          (while (and (not (input-pending-p))
+                          (while (and (not (setq should-sleep-more
+                                                 (swiper--async-should-quit-async)))
                                       (< matches-found
                                          swiper--async-max-matches-per-search)
                                       (re-search-forward
@@ -945,7 +962,8 @@ candidates in the minibuffer asynchrounouosly."
                       (when (< swiper--async-low-start-point
                                swiper--async-low-end-point)
                         (goto-char swiper--async-low-end-point)
-                        (while (and (not (input-pending-p))
+                        (while (and (not (setq should-sleep-more
+                                               (swiper--async-should-quit-async)))
                                     (< matches-found
                                        swiper--async-max-matches-per-search)
                                     (re-search-backward
@@ -964,7 +982,8 @@ candidates in the minibuffer asynchrounouosly."
                       (when (< swiper--async-high-start-point
                                swiper--async-high-end-point)
                         (goto-char swiper--async-high-end-point)
-                        (while (and (not (input-pending-p))
+                        (while (and (not (setq should-sleep-more
+                                               (swiper--async-should-quit-async)))
                                     (< matches-found
                                        swiper--async-max-matches-per-search)
                                     (re-search-backward
@@ -996,7 +1015,7 @@ candidates in the minibuffer asynchrounouosly."
                                 swiper--async-high-end-point)
                              (< swiper--async-low-start-point
                                 swiper--async-low-end-point))))
-            (schedule-isearch buffer func)))))))
+            (schedule-isearch buffer func should-sleep-more)))))))
 
 (defun swiper--async-insertion-sort (candidate-cons comp-func insertion-point)
   "Insert the candidate in `candidate-cons' to the list starting at
