@@ -460,6 +460,8 @@ at runtime to check if we can start using it or to check for detected problems."
 values here and the async function reads them.")
 (defvar swiper--async-process-last-inserted nil
   "The last inserted candidate from the grep process for faster insertion.")
+(defvar swiper--async-process-buffer-processed-point nil
+  "Saved the point where the buffer process has stopped.")
 
 (defun swiper--async-parse-process-output (process)
   "The output of grep gives location:matched-result. We parse this as
@@ -469,36 +471,40 @@ end from both."
         (last-end)
         )
     (with-current-buffer (process-buffer process)
-      (goto-char (point-min))
-      (while (< (point) (point-max))
-        (let (
-              (beg (thing-at-point 'number))
-              (bbeg (progn (search-forward ":") (point)))
-              )
+      (save-excursion
+        (when (null swiper--async-process-buffer-processed-point)
+          (setq swiper--async-process-buffer-processed-point (point-min)))
+        (goto-char swiper--async-process-buffer-processed-point)
+        (while (< (point) (point-max))
           (let (
-                (len (- (line-end-position) bbeg))
+                (beg (thing-at-point 'number))
+                (bbeg (progn (search-forward ":") (point)))
                 )
             (let (
-                  (end (+ beg len))
+                  (len (- (line-end-position) bbeg))
                   )
-              (with-ivy-window
-                (setq beg (filepos-to-bufferpos beg))
-                (setq end (filepos-to-bufferpos end)))
-              (when (or (and (>= beg swiper--async-low-start-point)
-                             (<= beg swiper--async-low-end-point))
-                        (and (>= beg swiper--async-high-start-point)
-                             (<= beg swiper--async-high-end-point)))
-                (setq last-end end)
-                (if (not (null swiper--async-process-last-inserted))
-                    (let (
-                          (new-beg-end (list (cons beg end)))
-                          )
-                      (setcdr swiper--async-process-last-inserted new-beg-end)
-                      (setq swiper--async-process-last-inserted new-beg-end))
-                  (push (cons beg end) swiper--async-process-candidates)
-                  (setq swiper--async-process-last-inserted
-                        swiper--async-process-candidates))))))
-        (forward-line)))
+              (let (
+                    (end (+ beg len))
+                    )
+                (with-ivy-window
+                  (setq beg (filepos-to-bufferpos beg))
+                  (setq end (filepos-to-bufferpos end)))
+                (when (or (and (>= beg swiper--async-low-start-point)
+                               (<= beg swiper--async-low-end-point))
+                          (and (>= beg swiper--async-high-start-point)
+                               (<= beg swiper--async-high-end-point)))
+                  (setq last-end end)
+                  (if (not (null swiper--async-process-last-inserted))
+                      (let (
+                            (new-beg-end (list (cons beg end)))
+                            )
+                        (setcdr swiper--async-process-last-inserted new-beg-end)
+                        (setq swiper--async-process-last-inserted new-beg-end))
+                    (push (cons beg end) swiper--async-process-candidates)
+                    (setq swiper--async-process-last-inserted
+                          swiper--async-process-candidates))))))
+          (forward-line))
+        (setq swiper--async-process-buffer-processed-point (point))))
     (unless (null last-end)
       (if (> last-end swiper--async-high-start-point)
           (setq swiper--async-high-start-point last-end)
@@ -1297,6 +1303,7 @@ Markers highlights the results in the buffer itself."
   "Saves the buffer name of the grep process.")
 (defun swiper--async-reset-state ()
   "Reset the state swiper-async is using."
+  (setq swiper--async-process-buffer-processed-point nil)
   (setq swiper--async-process-last-inserted nil)
   (setq swiper--async-process-candidates nil)
   (setq swiper--async-old-wnd-cands nil)
