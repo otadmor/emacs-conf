@@ -455,12 +455,14 @@ at runtime to check if we can start using it or to check for detected problems."
               (message "swiper-async: disabled grep because of process error"))
             (setq counsel-grep-command nil)))))))
 
+(defvar swiper--async-process-candidates nil
+  "Saves candidates offsets when using grep. The process filter stores
+values here and the async function reads them.")
 (defun swiper--async-parse-process-output (process)
   "The output of grep gives location:matched-result. We parse this as
 candidate beginning position and candidate length and calculate the candidate
 end from both."
   (let (
-        (beg-ends)
         (last-end)
         )
     (with-current-buffer (process-buffer process)
@@ -484,18 +486,14 @@ end from both."
                         (and (>= beg swiper--async-high-start-point)
                              (<= beg swiper--async-high-end-point)))
                 (setq last-end end)
-                (push (cons beg end) beg-ends)))))
+                (push (cons beg end) swiper--async-process-candidates)))))
         (forward-line)))
     (unless (null last-end)
       (if (> last-end swiper--async-high-start-point)
           (setq swiper--async-high-start-point last-end)
         (when (> last-end swiper--async-low-start-point)
-          (setq swiper--async-low-start-point last-end))))
-    (with-ivy-window
-      (dolist (beg-end beg-ends)
-        (swiper--async-found-new-candidate (car beg-end) (cdr beg-end)))
-      (when (> (length beg-ends) 0)
-        (swiper--async-update-output)))))
+          (setq swiper--async-low-start-point last-end)))
+      (swiper--async-kick-async))))
 
 (defun swiper--async-process-filter (process str)
   "Receive from PROCESS the output STR.
@@ -707,7 +705,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   "Tells swiper if searching forward or backward. Used to tell
 the search function which direction to search (search-forward
 or search-backward).")
-(defcustom swiper--async-default-max-matches-per-search 9999
+(defcustom swiper--async-default-max-matches-per-search 100
   "Maximum search results within one search function call. Reduce this if the minibuffer
 is laggy before the search is finished."
   :type 'integer)
@@ -791,6 +789,8 @@ candidates in the minibuffer asynchrounouosly."
                            swiper--async-high-end-point)
                         (= swiper--async-low-start-point
                            swiper--async-low-end-point))))
+              (found-grep-candidates
+               (not (null swiper--async-process-candidates)))
               )
           (when (and swiper-include-line-number-in-search
                      filled-minibuffer-candidates)
@@ -849,19 +849,40 @@ candidates in the minibuffer asynchrounouosly."
               (when should-update-wndcands
                 (ivy--insert-minibuffer
                  (ivy--wnd-cands-to-str (reverse new-wnd-cands))))))
-          (when (and (/= (length swiper--async-to-search) 0)
-                     (not (swiper--async-same-as-disk)))
-            (counsel-delete-process swiper--async-process-name)
-            (let (
-                  (re-str swiper--async-to-search-re)
-                  )
+          (let (
+                (matches-found 0)
+                )
+            (when found-grep-candidates
               (let (
-                    (matches-found 0)
-                    (positive-re swiper--async-to-search-positive-re)
-                    (searched-bytes 0)
+                    (candidates-create-time (car (benchmark-and-get-result
+                (while (and (not (input-pending-p))
+                            (< matches-found
+                               swiper--async-default-max-matches-per-search)
+                            (not (null swiper--async-process-candidates)))
+                  (cl-incf matches-found)
+                  (let (
+                        (beg-end (pop swiper--async-process-candidates))
+                        )
+                    (funcall func (car beg-end) (cdr beg-end))))
+                )))
+                    )
+                    (when (/= matches-found 0)
+                      (setq swiper--async-default-max-matches-per-search
+                            (ceiling (/ (* matches-found
+                                           swiper--max-search-time)
+                                        candidates-create-time))))))
+            (when (and (/= (length swiper--async-to-search) 0)
+                       (not (swiper--async-same-as-disk)))
+              (counsel-delete-process swiper--async-process-name)
+              (let (
+                    (re-str swiper--async-to-search-re)
                     )
                 (let (
-                      (matches-found-time (car (benchmark-and-get-result
+                      (positive-re swiper--async-to-search-positive-re)
+                      (searched-bytes 0)
+                      )
+                  (let (
+                        (matches-found-time (car (benchmark-and-get-result
 
                 (let (
                       (swiper--async-max-matches-per-search
@@ -951,15 +972,16 @@ candidates in the minibuffer asynchrounouosly."
                                    (- swiper--async-high-end-point (point))))
                         (setq swiper--async-high-end-point (point))))))
                 )))
-                      )
-                  (when (/= searched-bytes 0)
-                    (setq swiper--max-search-length ;(* 10 4096)
-                          (ceiling (/ (* searched-bytes
-                                               swiper--max-search-time)
-                                            matches-found-time)))))
-                (when (/= matches-found 0)
-                  (swiper--async-update-output)))))
+                        )
+                    (when (/= searched-bytes 0)
+                      (setq swiper--max-search-length ;(* 10 4096)
+                            (ceiling (/ (* searched-bytes
+                                           swiper--max-search-time)
+                                        matches-found-time))))))))
+            (when (/= matches-found 0)
+              (swiper--async-update-output)))
           (when (or (not finished-wndcands)
+                    (not (null swiper--async-process-candidates))
                     (and (not (swiper--async-same-as-disk))
                          (or (< swiper--async-high-start-point
                                 swiper--async-high-end-point)
@@ -1247,6 +1269,7 @@ Markers highlights the results in the buffer itself."
   "Saves the buffer name of the grep process.")
 (defun swiper--async-reset-state ()
   "Reset the state swiper-async is using."
+  (setq swiper--async-process-candidates nil)
   (setq swiper--async-old-wnd-cands nil)
   (setq counsel-grep-last-line nil)
   (setq ivy-text--persp-variables nil)
