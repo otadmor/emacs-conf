@@ -458,6 +458,8 @@ at runtime to check if we can start using it or to check for detected problems."
 (defvar swiper--async-process-candidates nil
   "Saves candidates offsets when using grep. The process filter stores
 values here and the async function reads them.")
+(defvar swiper--async-process-last-inserted nil
+  "The last inserted candidate from the grep process for faster insertion.")
 (defun swiper--async-parse-process-output (process)
   "The output of grep gives location:matched-result. We parse this as
 candidate beginning position and candidate length and calculate the candidate
@@ -486,7 +488,15 @@ end from both."
                         (and (>= beg swiper--async-high-start-point)
                              (<= beg swiper--async-high-end-point)))
                 (setq last-end end)
-                (push (cons beg end) swiper--async-process-candidates)))))
+                (if (not (null swiper--async-process-last-inserted))
+                    (let (
+                          (new-beg-end (list (cons beg end)))
+                          )
+                      (setcdr swiper--async-process-last-inserted new-beg-end)
+                      (setq swiper--async-process-last-inserted new-beg-end))
+                  (push (cons beg end) swiper--async-process-candidates)
+                  (setq swiper--async-process-last-inserted
+                        swiper--async-process-candidates))))))
         (forward-line)))
     (unless (null last-end)
       (if (> last-end swiper--async-high-start-point)
@@ -871,6 +881,8 @@ candidates in the minibuffer asynchrounouosly."
                         )
                     (funcall func (car beg-end) (cdr beg-end))))
                 ))))
+                (when (null swiper--async-process-candidates)
+                  (setq swiper--async-process-last-inserted nil))
                 (when (/= matches-found 0)
                   (setq swiper--async-default-max-matches-per-search
                         (ceiling (/ (* matches-found
@@ -1266,6 +1278,7 @@ Markers highlights the results in the buffer itself."
   "Saves the buffer name of the grep process.")
 (defun swiper--async-reset-state ()
   "Reset the state swiper-async is using."
+  (setq swiper--async-process-last-inserted nil)
   (setq swiper--async-process-candidates nil)
   (setq swiper--async-old-wnd-cands nil)
   (setq counsel-grep-last-line nil)
