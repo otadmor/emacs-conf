@@ -468,43 +468,52 @@ values here and the async function reads them.")
 candidate beginning position and candidate length and calculate the candidate
 end from both."
   (let (
-        (last-end)
+        (last-end nil)
+        (has-unparsed nil)
         )
     (with-current-buffer (process-buffer process)
       (save-excursion
         (when (null swiper--async-process-buffer-processed-point)
           (setq swiper--async-process-buffer-processed-point (point-min)))
         (goto-char swiper--async-process-buffer-processed-point)
-        (while (< (point) (point-max))
+        (while (and (< (point) (point-max))
+                    (not (input-pending-p)))
+          (setq swiper--async-process-buffer-processed-point (point))
           (let (
                 (beg (thing-at-point 'number))
-                (bbeg (progn (search-forward ":") (point)))
+                (bbeg (progn (search-forward ":" nil 'no-exception) (point)))
+                (newline-position
+                 (progn (search-forward "\n" nil 'no-exception) (point)))
                 )
-            (let (
-                  (len (- (line-end-position) bbeg))
-                  )
+            (if (or (null newline-position)
+                    (null bbeg)
+                    (null beg))
+                (progn
+                  (setq has-unparsed t)
+                  (goto-char (point-max))) ; should already be there, but why not.
               (let (
-                    (end (+ beg len))
+                    (len (- newline-position bbeg))
                     )
-                (with-ivy-window
-                  (setq beg (filepos-to-bufferpos beg))
-                  (setq end (filepos-to-bufferpos end)))
-                (when (or (and (>= beg swiper--async-low-start-point)
-                               (<= beg swiper--async-low-end-point))
-                          (and (>= beg swiper--async-high-start-point)
-                               (<= beg swiper--async-high-end-point)))
-                  (setq last-end end)
-                  (if (not (null swiper--async-process-last-inserted))
-                      (let (
-                            (new-beg-end (list (cons beg end)))
-                            )
-                        (setcdr swiper--async-process-last-inserted new-beg-end)
-                        (setq swiper--async-process-last-inserted new-beg-end))
-                    (push (cons beg end) swiper--async-process-candidates)
-                    (setq swiper--async-process-last-inserted
-                          swiper--async-process-candidates))))))
-          (forward-line))
-        (setq swiper--async-process-buffer-processed-point (point))))
+                (let (
+                      (end (+ beg len))
+                      )
+                  (with-ivy-window
+                    (setq beg (filepos-to-bufferpos beg))
+                    (setq end (filepos-to-bufferpos end)))
+                  (when (or (and (>= beg swiper--async-low-start-point)
+                                 (<= beg swiper--async-low-end-point))
+                            (and (>= beg swiper--async-high-start-point)
+                                 (<= beg swiper--async-high-end-point)))
+                    (setq last-end end)
+                    (if (not (null swiper--async-process-last-inserted))
+                        (let (
+                              (new-beg-end (list (cons beg end)))
+                              )
+                          (setcdr swiper--async-process-last-inserted new-beg-end)
+                          (setq swiper--async-process-last-inserted new-beg-end))
+                      (push (cons beg end) swiper--async-process-candidates)
+                      (setq swiper--async-process-last-inserted
+                            swiper--async-process-candidates))))))))))
     (unless (null last-end)
       (if (> last-end swiper--async-high-start-point)
           (setq swiper--async-high-start-point last-end)
