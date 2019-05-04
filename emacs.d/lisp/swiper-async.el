@@ -851,26 +851,31 @@ candidates in the minibuffer asynchrounouosly."
                  (ivy--wnd-cands-to-str (reverse new-wnd-cands))))))
           (let (
                 (matches-found 0)
+                (swiper--async-max-matches-per-search
+                 (if (< (length ivy--orig-cands)
+                        (+ max-mini-window-height ivy--index))
+                     (- (+ max-mini-window-height ivy--index)
+                        (length ivy--orig-cands))
+                   swiper--async-default-max-matches-per-search))
                 )
             (when found-grep-candidates
               (let (
                     (candidates-create-time (car (benchmark-and-get-result
                 (while (and (not (input-pending-p))
                             (< matches-found
-                               swiper--async-default-max-matches-per-search)
+                               swiper--async-max-matches-per-search)
                             (not (null swiper--async-process-candidates)))
                   (cl-incf matches-found)
                   (let (
                         (beg-end (pop swiper--async-process-candidates))
                         )
                     (funcall func (car beg-end) (cdr beg-end))))
-                )))
-                    )
-                    (when (/= matches-found 0)
-                      (setq swiper--async-default-max-matches-per-search
-                            (ceiling (/ (* matches-found
-                                           swiper--max-search-time)
-                                        candidates-create-time))))))
+                ))))
+                (when (/= matches-found 0)
+                  (setq swiper--async-default-max-matches-per-search
+                        (ceiling (/ (* matches-found
+                                       swiper--max-search-time)
+                                    candidates-create-time))))))
             (when (and (/= (length swiper--async-to-search) 0)
                        (not (swiper--async-same-as-disk)))
               (counsel-delete-process swiper--async-process-name)
@@ -884,14 +889,6 @@ candidates in the minibuffer asynchrounouosly."
                   (let (
                         (matches-found-time (car (benchmark-and-get-result
 
-                (let (
-                      (swiper--async-max-matches-per-search
-                       (if (< (length ivy--orig-cands)
-                              (+ max-mini-window-height ivy--index))
-                           (- (+ max-mini-window-height ivy--index)
-                              (length ivy--orig-cands))
-                         swiper--async-default-max-matches-per-search))
-                      )
                   (if (not swiper--async-direction-backward)
                       (progn
                         (when (< swiper--async-high-start-point
@@ -970,7 +967,7 @@ candidates in the minibuffer asynchrounouosly."
                         (setq searched-bytes
                                 (+ searched-bytes
                                    (- swiper--async-high-end-point (point))))
-                        (setq swiper--async-high-end-point (point))))))
+                        (setq swiper--async-high-end-point (point)))))
                 )))
                         )
                     (when (/= searched-bytes 0)
