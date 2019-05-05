@@ -471,7 +471,6 @@ values here and the async function reads them.")
 candidate beginning position and candidate length and calculate the candidate
 end from both."
   (let (
-        (last-end nil)
         (has-unparsed nil)
         )
     (with-current-buffer (process-buffer process)
@@ -507,7 +506,6 @@ end from both."
                                  (<= beg swiper--async-low-end-point))
                             (and (>= beg swiper--async-high-start-point)
                                  (<= beg swiper--async-high-end-point)))
-                    (setq last-end end)
                     (if (not (null swiper--async-process-last-inserted))
                         (let (
                               (new-beg-end (list (cons beg end)))
@@ -517,11 +515,7 @@ end from both."
                       (push (cons beg end) swiper--async-process-candidates)
                       (setq swiper--async-process-last-inserted
                             swiper--async-process-candidates))))))))))
-    (unless (null last-end)
-      (if (> last-end swiper--async-high-start-point)
-          (setq swiper--async-high-start-point last-end)
-        (when (> last-end swiper--async-low-start-point)
-          (setq swiper--async-low-start-point last-end)))
+    (unless (null swiper--async-process-candidates)
       (swiper--async-kick-async))))
 
 (defun swiper--async-process-filter (process str)
@@ -902,7 +896,10 @@ candidates in the minibuffer asynchrounouosly."
                 )
             (when found-grep-candidates
               (let (
-                    (candidates-create-time (car (benchmark-and-get-result
+                    (last-end nil)
+                    )
+                (let (
+                      (candidates-create-time (car (benchmark-and-get-result
                 (while (and (not (setq should-sleep-more
                                        (swiper--async-should-quit-async)))
                             (< matches-found
@@ -912,15 +909,21 @@ candidates in the minibuffer asynchrounouosly."
                   (let (
                         (beg-end (pop swiper--async-process-candidates))
                         )
+                    (setq last-end (cdr beg-end))
                     (funcall func (car beg-end) (cdr beg-end))))
                 ))))
-                (when (null swiper--async-process-candidates)
-                  (setq swiper--async-process-last-inserted nil))
-                (when (/= matches-found 0)
-                  (setq swiper--async-default-max-matches-per-search
-                        (ceiling (/ (* matches-found
-                                       swiper--max-search-time)
-                                    candidates-create-time))))))
+                  (when (null swiper--async-process-candidates)
+                    (setq swiper--async-process-last-inserted nil))
+                  (unless (null last-end)
+                    (if (> last-end swiper--async-high-start-point)
+                        (setq swiper--async-high-start-point last-end)
+                      (when (> last-end swiper--async-low-start-point)
+                        (setq swiper--async-low-start-point last-end))))
+                  (when (/= matches-found 0)
+                    (setq swiper--async-default-max-matches-per-search
+                          (ceiling (/ (* matches-found
+                                         swiper--max-search-time)
+                                      candidates-create-time)))))))
             (when (and (/= (length swiper--async-to-search) 0)
                        (not (swiper--async-same-as-disk)))
               (counsel-delete-process swiper--async-process-name)
