@@ -438,6 +438,9 @@ at runtime to check if we can start using it or to check for detected problems."
         (progn
           (swiper--async-parse-process-output process)
           (setq counsel-grep-last-line nil)
+          (when (null swiper--async-process-candidates)
+            (setq swiper--async-low-start-point swiper--async-low-end-point)
+            (setq swiper--async-high-start-point swiper--async-high-end-point))
           (setq swiper--async-process-buffer-processed-point nil)
           (when counsel--async-start
             (setq counsel--async-duration
