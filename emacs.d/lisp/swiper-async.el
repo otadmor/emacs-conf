@@ -438,8 +438,6 @@ at runtime to check if we can start using it or to check for detected problems."
         (progn
           (swiper--async-parse-process-output process)
           (setq counsel-grep-last-line nil)
-          (setq swiper--async-low-start-point swiper--async-low-end-point)
-          (setq swiper--async-high-start-point swiper--async-high-end-point)
           (setq swiper--async-process-buffer-processed-point nil)
           (when counsel--async-start
             (setq counsel--async-duration
@@ -919,6 +917,11 @@ candidates in the minibuffer asynchrounouosly."
                         (setq swiper--async-high-start-point last-end)
                       (when (> last-end swiper--async-low-start-point)
                         (setq swiper--async-low-start-point last-end))))
+                  (when (null (get-process swiper--async-process-name))
+                    (setq swiper--async-low-start-point
+                          swiper--async-low-end-point)
+                    (setq swiper--async-high-start-point
+                          swiper--async-high-end-point))
                   (when (/= matches-found 0)
                     (setq swiper--async-default-max-matches-per-search
                           (ceiling (/ (* matches-found
