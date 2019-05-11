@@ -16,4 +16,4 @@ function stfu() {
     disown %%
 }
 
-alias ec="stfu $VISUAL"
+alias ec="stfu emacsclient -c --display=localhost:current"
