@@ -192,6 +192,7 @@
 (require 'comint) ; to set comint-output-filter-functions
 (define-key comint-mode-map [C-up] 'comint-previous-matching-input-from-input)
 (define-key comint-mode-map [C-down] 'comint-next-matching-input-from-input)
+(define-key comint-mode-map (kbd "M-r") 'counsel-shell-history)
 
 (require 'comint-ext)
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
