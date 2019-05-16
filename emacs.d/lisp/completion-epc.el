@@ -384,7 +384,8 @@
                                     )
                                 (unless (null cands)
                                   (setcdr (last cands) nil))
-                                (setq res (append res cands)))))
+                                (setq res (append res cands)))
+                              nil))
                            )
                        (letf (
                               ((symbol-function 'completion-in-region)
