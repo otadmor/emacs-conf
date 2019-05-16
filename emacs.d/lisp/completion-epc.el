@@ -402,6 +402,7 @@
                              (prefix (funcall prefix-cb))
                              )
                          (when (and (stringp prefix) (> (length prefix) 0))
+                           (funcall ac-epc-complete-request prefix)
                            (let (
                                  (beg (- (point) (length prefix)))
                                  (end (point))
@@ -410,7 +411,6 @@
                                    end
                                    (completion-table-dynamic
                                     (lambda (_)
-                                      (funcall ac-epc-complete-request prefix)
                                       (funcall ac-epc-matches)))))))))))
                 )
            (add-to-list 'ac-sources ac-epc-source)
