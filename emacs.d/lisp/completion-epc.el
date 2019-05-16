@@ -88,9 +88,9 @@
          :sentinel
          (lambda (process message)
            (epcs:sentinel process message connect-function)))))
-    (unless port
-      ;; notify port number to the parent process via STDOUT.
-      (message "%s\n" (process-contact main-process :service)))
+    ;; (unless port
+    ;;   ;; notify port number to the parent process via STDOUT.
+    ;;   (message "%s\n" (process-contact main-process :service)))
     (push (cons main-process
                 (make-epcs:server
                  :name name :process main-process
