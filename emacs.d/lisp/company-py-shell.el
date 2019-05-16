@@ -42,5 +42,6 @@
 (defalias 'py-shell-complete (lambda(&optional shell beg end word)
                                (completion-at-point)))
 
+(setenv "PYTHONSTARTUP" (expand-file-name (concat CONFIGURATION-PATH "/py_epc_completion.py")))
 (setq py-ipython-command-args "--simple-prompt --nosep")
 (provide 'company-py-shell)

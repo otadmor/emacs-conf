@@ -8,7 +8,7 @@ export VISUAL="emacsclient -c --display=localhost:current -a emacs" #  $VISUAL o
 
 if [[ "$TERM" == "dumb" ]] ; then
     alias ipython='ipython --simple-prompt'
-    export PYTHONSTARTUP=~/.emacs.d/lisp/py_epc_completion.py
+    # export PYTHONSTARTUP=~/.emacs.d/lisp/py_epc_completion.py
 fi
 
 function stfu() {
