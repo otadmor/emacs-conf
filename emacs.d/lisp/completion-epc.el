@@ -397,30 +397,21 @@
                 (ac-completion-at-point
                  (lambda ()
                    (with-current-buffer working-buffer
-                     (let (
-                           (prefix (funcall prefix-cb))
-                           )
-                       (when (and (stringp prefix) (> (length prefix) 0))
-                         (let (
-                               (beg (- (point) (length prefix)))
-                               (end (point))
-                               )
-                           (list beg
-                                 end
-                                 (completion-table-dynamic
-                                  (lambda (_)
-                                    (funcall ac-epc-complete-request prefix)
-                                    (let (
-                                          (original-completions
-                                           (funcall exec-old-completion-at-point))
-                                          )
-                                      (let (
-                                            (epc-completions
-                                             (funcall ac-epc-matches))
-                                            )
-                                        (append
-                                         epc-completions
-                                         original-completions))))))))))))
+                     (unless (null mngr-complete-epc)
+                       (let (
+                             (prefix (funcall prefix-cb))
+                             )
+                         (when (and (stringp prefix) (> (length prefix) 0))
+                           (let (
+                                 (beg (- (point) (length prefix)))
+                                 (end (point))
+                                 )
+                             (list beg
+                                   end
+                                   (completion-table-dynamic
+                                    (lambda (_)
+                                      (funcall ac-epc-complete-request prefix)
+                                      (funcall ac-epc-matches)))))))))))
                 )
            (add-to-list 'ac-sources ac-epc-source)
            (add-hook 'completion-at-point-functions
