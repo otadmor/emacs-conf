@@ -103,7 +103,8 @@
 (add-to-list 'package-archives
              '("melpa-stable" . "http://stable.melpa.org/packages/") t)
 (setq CONFIGURATION-PATH (expand-file-name "~/.emacs.d/lisp"))
-(setq load-path (cons (expand-file-name "~/.emacs.d/lisp/jss-master") load-path))
+(setq load-path (cons (expand-file-name (concat CONFIGURATION-PATH "/jss-master")) load-path))
+(setq load-path (cons (expand-file-name (concat CONFIGURATION-PATH "/ess-18.10.2/lisp/")) load-path))
 (setq load-path (cons CONFIGURATION-PATH load-path))
 
 (require 'server-hook)
