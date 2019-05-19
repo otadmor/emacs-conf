@@ -17,3 +17,4 @@ function stfu() {
 }
 
 alias ec="stfu emacsclient -c --display=localhost:current"
+alias start=nautilus
