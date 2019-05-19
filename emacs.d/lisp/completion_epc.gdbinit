@@ -1,67 +1,16 @@
 python
 ALLOW_COMPLETION_SERVER = False
 
-import ctypes
-import os
-
-p_rl_attempted_completion_function = ctypes.c_void_p.in_dll(ctypes.CDLL(None),
-    "rl_attempted_completion_function").value
-rl_attempted_completion_function_type = ctypes.CFUNCTYPE(
-    ctypes.POINTER(ctypes.c_char_p), # restype
-    ctypes.c_char_p, ctypes.c_int, ctypes.c_int # argtypes
-)
-rl_attempted_completion_function = rl_attempted_completion_function_type(
-    p_rl_attempted_completion_function
-)
-
-def inc_ptr(p, i=1):
-    pt = p.__class__
-    void_p = ctypes.cast(p, ctypes.c_voidp).value + i * ctypes.sizeof(pt._type_)
-    return ctypes.cast(void_p, pt)
-# ctypes._Pointer.__add__ = inc_ptr
-
-rl_line_buffer = ctypes.c_char_p.in_dll(ctypes.CDLL(None), "rl_line_buffer")
-rl_point = ctypes.c_int.in_dll(ctypes.CDLL(None), "rl_point")
-
 
 def rl_attempted_completion(s, start=None, end=None):
-    if isinstance(s, tuple):
-        s = ''.join(s)
-    if not isinstance(s, bytes):
-        s = bytes(s, 'ascii')
-    if start is None:
-        start = 0
-    assert 0 <= start <= len(s)
-    if end is None:
-        end = start + len(s)
-    assert start <= end <= len(s)
-    if b' ' in s:
-        _, word = s.rsplit(b' ', 1)
-    else:
-        word = s
-    old_rl_line_buffer = ctypes.cast(rl_line_buffer, ctypes.c_void_p).value
-    old_rl_point = rl_point.value
-    try:
-        rl_point.value = end
-        rl_line_buffer.value = ctypes.addressof(
-            ctypes.create_string_buffer(s))
-        res = rl_attempted_completion_function(
-            ctypes.create_string_buffer(word),
-            start, 0)
-    finally:
-        rl_line_buffer.value = old_rl_line_buffer
-        rl_point.value = old_rl_point
-    if not res:
-        return
-    completions = []
-    while res.contents:
-        completions.append(str(ctypes.string_at(res.contents), 'ascii'))
-        # completions.append(ctypes.string_at(res.contents))
-        res = inc_ptr(res)
-    return completions
+    s = ''.join(s).splitlines()[-1]
+    x = gdb.execute('complete ' + s, to_string=True)
+    res = tuple(x.splitlines())
+    return res
 
-
+import os
 if os.environ.get("TERM", "") == 'dumb':
+    gdb.execute("set pagination off")
     try:
         from collections import namedtuple
         from epc.server import EPCServer
