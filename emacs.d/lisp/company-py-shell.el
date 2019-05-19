@@ -35,7 +35,6 @@
               (word (buffer-substring-no-properties beg end)))
          word)))
 
-(epc-completion-add 'shell-mode 'comint-mode-hook 'py-shell-prefix)
 (epc-completion-add 'py-python-shell-mode 'py-python-shell-mode-hook 'py-shell-prefix)
 (epc-completion-add 'py-ipython-shell-mode 'py-python-shell-mode-hook 'py-shell-prefix)
 

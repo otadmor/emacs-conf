@@ -492,6 +492,20 @@
 
 (require 'completion-epc) ; required for frida completion
 
+(defun shell-completion-prefix ()
+    ;; Note that the input string does not include its terminal newline.
+  (let (
+        (proc (get-buffer-process (current-buffer)))
+        )
+    (when proc
+      (widen)
+      (let (
+            (pmark (process-mark proc))
+            )
+        (when (>= (point) (marker-position pmark))
+          (buffer-substring-no-properties pmark (point)))))))
+(epc-completion-add 'shell-mode 'comint-mode-hook 'shell-completion-prefix)
+
 (require 'company-py-shell)
 
 (require 'persp-mode)
