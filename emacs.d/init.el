@@ -85,6 +85,12 @@
 
 (setq ivy-do-completion-in-region nil)
 (ivy-mode t)
+
+(require 'ivy-rich)
+(ivy-rich-mode 1)
+
+(setq ivy-format-function #'ivy-format-function-line)
+
 ;(icomplete-mode t)
 (setq ivy-use-virtual-buffers t
       ivy-count-format "%d/%d ")
@@ -221,7 +227,7 @@
  '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (pcre2el doom-themes powerline ag dumb-jump counsel sr-speedbar persp-mode python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+    (ivy-rich pcre2el doom-themes powerline ag dumb-jump counsel sr-speedbar persp-mode python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
  '(show-paren-mode t)
  '(tool-bar-mode nil))
 
