@@ -87,6 +87,15 @@
 (ivy-mode t)
 
 (require 'ivy-rich)
+(add-to-list
+ 'ivy-rich-display-transformers-list
+ '(:columns
+   ((ivy-cleanup-string (:width 30))
+    (popup-item-summary (:width 30 :face font-lock-doc-face))
+    (popup-item-symbol (:face font-lock-comment-face)))))
+(add-to-list
+ 'ivy-rich-display-transformers-list
+ 'ivy-completion-in-region)
 (ivy-rich-mode 1)
 
 (setq ivy-format-function #'ivy-format-function-line)
