@@ -122,6 +122,7 @@ class PythonModeEPCCompletion(object):
             return get_func_signature(d)
         else:
             t = "%r" % (d,)
+            return t
             if len(t) > 15:
                 t = t[:13] + "..."
             return t
