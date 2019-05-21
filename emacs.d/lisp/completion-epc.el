@@ -265,9 +265,13 @@
                              (if (stringp x)
                                  (popup-make-item x)
                                (condition-case nil
-                                   (destructuring-bind
-                                       (&key word doc description symbol)
-                                       x
+                                   (let (
+                                         (word (plist-get x :word))
+                                         (doc (plist-get x :doc))
+                                         (description (plist-get x :description))
+                                         (symbol (plist-get x :symbol))
+                                         (pos (plist-get x :pos))
+                                         )
                                      (popup-make-item word
                                                       :symbol symbol
                                                       :document

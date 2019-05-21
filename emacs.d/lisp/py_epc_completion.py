@@ -12,6 +12,7 @@ from epc.server import EPCServer
 from epc.client import EPCClient
 from collections import namedtuple
 
+import string
 import sys
 import readline
 import rlcompleter
@@ -63,6 +64,8 @@ class EPCCompletionClient(EPCClient):
             return self.complete(*cargs, **ckargs)
         self.register_function(complete)
 
+SYMBOL_CHARS = "._" + string.letters + string.digits
+FIRST_SYMBOL_CHARS = string.letters + string.digits
 class PythonModeEPCCompletion(object):
     def __init__(self):
         pass
@@ -96,9 +99,22 @@ class PythonModeEPCCompletion(object):
 
     def complete(self, *to_complete):
         text = ''.join(list(to_complete))
+        pretext = ''
+        if len(text) != 0:
+            p = 0
+            for i, x in enumerate(text[::-1]):
+                if x not in SYMBOL_CHARS:
+                    p = i
+                    break
+            # FIRST_SYMBOL_CHARS
+            if len(text) == i:
+                return []
+            pre_text, text = text[:-p], text[-p:]
+        pos = len(pre_text)
         try:
             return [{
-                'word' : res,
+                'word' : pre_text + res,
+                'pos' : pos,
                 'doc' : self.try_or_err(lambda:self.doc(res), "Error"),
                 'description' : self.try_or_err(lambda:self.symbol(res), "Error"),
                 'symbol' : self.try_or_err(lambda:self.meta(res), "Error"),
