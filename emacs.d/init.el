@@ -418,7 +418,6 @@
 
 (defun auto-complete-completion-in-region (start end collection &optional predicate)
   (let* (
-         (sspos 0)
          (fixed-candidate-source
           (list
            (list 'candidates (lambda ()
@@ -429,39 +428,51 @@
                                        collection predicate
                                        (- end start))
                                       )
-                                     (spos nil)
-                                     (old-sspos sspos)
                                      )
-                                 (if (null cands)
-                                     (progn
-                                       (setq spos 0)
-                                       nil)
-                                   (setcdr (last cands) nil)
-                                   (dolist (c cands)
-                                     (let (
-                                           (pos (get-text-property 0 :pos c))
-                                           )
-                                       (unless (null pos)
-                                         (if (null spos)
-                                             (setq spos pos)
-                                           (setq spos (min spos pos))))))
-                                   (when (null spos)
-                                     (setq spos 0))
-                                   (setq sspos spos)
-                                   (setq cands (cl-mapcar
-                                                (lambda (s)
-                                                  (ivy--remove-props s 'face)
-                                                  (substring s spos nil))
-                                                cands))
-                                   (when (/= old-sspos sspos)
-                                     (setq ac-point (+ start sspos))
-                                     (setq ac-prefix
-                                           (buffer-substring-no-properties
-                                            ac-point (point))))
-                                   cands))))
-           (list 'prefix (lambda () (+ start sspos)))))
+                                 (unless (null cands)
+                                   (setcdr (last cands) nil))
+                                 (dolist (s cands)
+                                   (ivy--remove-props s 'face))
+                                 cands)))
+           (list 'prefix (lambda () start))))
          )
     (auto-complete (list fixed-candidate-source))))
+
+(defvar ac-original-point nil
+  "Stores the original ac-point for relocation use.")
+(defun ac-clear-ac-original-point (&rest args)
+  (setq ac-original-point nil))
+(advice-add 'ac-start :before #'ac-clear-ac-original-point)
+(defun ac-candidates-1-reposition-hook (orig-fun &rest args)
+  (let (
+        (start-pos nil)
+        (start 0)
+        (cands (apply orig-fun args))
+        )
+    (unless (null cands)
+      (dolist (c cands)
+        (let (
+              (pos (get-text-property 0 :pos c))
+              )
+          (unless (null pos)
+            (if (null start-pos)
+                (setq start-pos pos)
+              (setq start-pos (min start-pos pos))))))
+      (when (null start-pos)
+        (setq start-pos 0))
+      (setq cands (cl-mapcar
+                   (lambda (s)
+                     ;; (ivy--remove-props s 'face)
+                     (substring s start-pos nil))
+                   cands))
+      (when (null ac-original-point)
+        (setq ac-original-point ac-point))
+      (setq ac-point (+ ac-original-point start-pos))
+      (setq ac-prefix (buffer-substring-no-properties ac-point (point))))
+    (message "res=%S" cands)
+    cands
+    ))
+(advice-add 'ac-candidates-1 :around #'ac-candidates-1-reposition-hook)
 
 (defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
   (if (eq (selected-window) (active-minibuffer-window))
