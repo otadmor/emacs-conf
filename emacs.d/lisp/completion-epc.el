@@ -272,12 +272,16 @@
                                          (symbol (plist-get x :symbol))
                                          (pos (plist-get x :pos))
                                          )
-                                     (popup-make-item word
-                                                      :symbol symbol
-                                                      :document
-                                                      (unless (equal doc "")
-                                                        doc)
-                                                      :summary description))
+                                     (let (
+                                           (i (popup-make-item
+                                               word
+                                               :symbol symbol
+                                               :document
+                                               (unless (equal doc "") doc)
+                                               :summary description))
+                                           )
+                                       (put-text-property 0 1 :pos pos i)
+                                       i))
                                  (error nil)))))
                          ac-epc-complete-reply))))))
 

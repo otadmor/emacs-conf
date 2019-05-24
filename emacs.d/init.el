@@ -417,28 +417,49 @@
 
 
 (defun auto-complete-completion-in-region (start end collection &optional predicate)
-  ;; if in minibuffer - do ivy completion
-    (let (
-        (fixed-candidate-source
-         (list
-          (list 'candidates
-                (lambda ()
-                  (let (
-                        (cands
-                         (completion-all-completions
-                          (buffer-substring-no-properties start end)
-                          collection predicate
-                          (- end start))
-                         )
-                        )
-                    (unless (null cands)
-                      (setcdr (last cands) nil)
-                      (dolist (s cands)
-                        (ivy--remove-props s 'face)))
-                    cands)))
-          (list 'prefix (lambda () start))))
-        )
-      (auto-complete (list fixed-candidate-source))))
+  (let* (
+         (sspos 0)
+         (fixed-candidate-source
+          (list
+           (list 'candidates (lambda ()
+                               (let (
+                                     (cands
+                                      (completion-all-completions
+                                       (buffer-substring-no-properties start end)
+                                       collection predicate
+                                       (- end start))
+                                      )
+                                     (spos nil)
+                                     (old-sspos sspos)
+                                     )
+                                 (if (null cands)
+                                     (setq spos 0)
+                                   (setcdr (last cands) nil)
+                                   (dolist (c cands)
+                                     (let (
+                                           (pos (get-text-property 0 :pos c))
+                                           )
+                                       (unless (null pos)
+                                         (if (null spos)
+                                             (setq spos pos)
+                                           (setq spos (min spos pos))))))
+                                   (when (null spos)
+                                     (setq spos 0))
+                                   (setq sspos spos)
+                                   (setq cands (cl-mapcar
+                                                (lambda (s)
+                                                  (ivy--remove-props s 'face)
+                                                  (substring s spos nil))
+                                                cands))
+                                   (when (/= old-sspos sspos)
+                                     (setq ac-point (+ start sspos))
+                                     (setq ac-prefix
+                                           (buffer-substring-no-properties
+                                            ac-point (point))))
+                                   cands))))
+           (list 'prefix (lambda () (+ start sspos)))))
+         )
+    (auto-complete (list fixed-candidate-source))))
 
 (defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
   (if (eq (selected-window) (active-minibuffer-window))
