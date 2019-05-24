@@ -359,6 +359,7 @@
 
 (require 'auto-complete)
 (ac-config-default)
+(setq-default ac-sources '(ac-source-abbrev ac-source-dictionary))
 ;; (global-auto-complete-mode t)
 ;; (define-globalized-minor-mode real-global-auto-complete-mode
 ;;   auto-complete-mode (lambda ()
@@ -368,7 +369,9 @@
 ;; (real-global-auto-complete-mode t)
 (setq tab-always-indent 'complete)
 (setq ac-max-width 0.5)
-(setq ac-use-fuzzy nil)
+;; (setq ac-use-fuzzy nil)
+(setq ac-use-fuzzy t)
+(setq ac-ignore-case (quote smart))
 
 (defun ac-page-next ()
   "Select next candidate."
@@ -469,9 +472,7 @@
         (setq ac-original-point ac-point))
       (setq ac-point (+ ac-original-point start-pos))
       (setq ac-prefix (buffer-substring-no-properties ac-point (point))))
-    (message "res=%S" cands)
-    cands
-    ))
+    cands))
 (advice-add 'ac-candidates-1 :around #'ac-candidates-1-reposition-hook)
 
 (defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
