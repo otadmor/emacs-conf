@@ -433,7 +433,9 @@
                                      (old-sspos sspos)
                                      )
                                  (if (null cands)
-                                     (setq spos 0)
+                                     (progn
+                                       (setq spos 0)
+                                       nil)
                                    (setcdr (last cands) nil)
                                    (dolist (c cands)
                                      (let (
