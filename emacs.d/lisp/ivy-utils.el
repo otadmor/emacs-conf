@@ -90,4 +90,28 @@ If the input is empty, select the previous history element instead."
      t)))
 (advice-add 'counsel-find-file-occur :after #'counsel-find-file-occur-hook)
 
+(defun ivy--mouse-hook (orig-fun &rest args)
+  (let* (
+         (event (car args))
+         )
+    (when event
+      (let* (
+             (event-start (event-start event))
+             (event-column (car (posn-actual-col-row event-start)))
+             (point (posn-point event-start))
+             (line-len (progn
+                         (save-excursion
+                           (goto-char point)
+                           (let* (
+                                  (line-begin (line-beginning-position))
+                                  (line-end (line-end-position))
+                                  )
+                             (- line-end line-begin)))))
+             )
+        (if (< event-column line-len)
+            (apply orig-fun args)
+          (select-window (active-minibuffer-window))
+          nil)))))
+(advice-add 'ivy-mouse-offset :around #'ivy--mouse-hook)
+
 (provide 'ivy-utils)
