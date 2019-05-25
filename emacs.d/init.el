@@ -262,6 +262,9 @@
 (define-key ivy-minibuffer-map [(meta shift t)] 'ivy-new-shell)
 (define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
 (define-key ivy-minibuffer-map sc-status-key 'ivy-magit-status)
+(define-key ivy-minibuffer-map (kbd "M-<up>") 'ivy-previous-history-element)
+(define-key ivy-minibuffer-map (kbd "M-<down>") 'ivy-next-history-element)
+
 (global-set-key (kbd "M-c") 'ivy-resume)
 
 (global-set-key (kbd "C-s") 'swiper-async-search-forward)

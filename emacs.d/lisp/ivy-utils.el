@@ -1,7 +1,7 @@
 (require 'ivy)
 (require 'shell-ext)
 (require 'python-ext)
-
+(require 'utils)
 
 ; (with-current-buffer buffer
 ;   )
@@ -113,5 +113,8 @@ If the input is empty, select the previous history element instead."
           (select-window (active-minibuffer-window))
           nil)))))
 (advice-add 'ivy-mouse-offset :around #'ivy--mouse-hook)
+
+(advice-add 'ivy-next-history-element :around #'ignore-errors-hook)
+(advice-add 'ivy-previous-history-element :around #'ignore-errors-hook)
 
 (provide 'ivy-utils)

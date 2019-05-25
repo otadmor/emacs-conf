@@ -66,4 +66,8 @@ end-of-buffer signals; pass the rest to the default handler."
    (t (command-error-default-function data context caller))))
 (setq command-error-function #'my-command-error-function)
 
+(defun ignore-errors-hook (orig-fun &rest args)
+  (ignore-errors
+    (apply orig-fun args)))
+
 (provide 'utils)
