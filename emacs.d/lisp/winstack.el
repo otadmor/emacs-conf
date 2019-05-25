@@ -403,6 +403,7 @@ Use `winstack-push' and
 (advice-add 'swiper :around #'wrap-winstack-hook)
 (advice-add 'mcs-swiper :around #'wrap-winstack-hook)
 (advice-add 'counsel-ag :around #'wrap-winstack-hook)
+(advice-add 'counsel-ag-preselect :around #'wrap-winstack-hook)
 (advice-add 'find-file :around #'wrap-winstack-hook)
 ; (advice-add 'kill-buffer :around #'wrap-winstack-hook)
 
