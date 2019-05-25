@@ -183,8 +183,10 @@ user to see where it is."
           (beg (car res))
           (pos (cdr res))
           )
-      (ivy--pulse-region beg pos)
-      (goto-char pos))))
+      (save-restriction
+        (widen)
+        (ivy--pulse-region beg pos)
+        (goto-char pos)))))
 
 (defcustom swiper-async-filter-update-time 50
   "The amount of microseconds to wait until updating `swiper--async-filter'."
