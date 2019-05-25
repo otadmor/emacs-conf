@@ -20,11 +20,17 @@
                               (frame-selected-window))
                           (frame-selected-window))
     (let (
-          (pselect-record (list :path buffer-file-name
-                                :line (string-to-number (format-mode-line "%l"))
-                                :context (replace-regexp-in-string "\n$" "" (thing-at-point 'line t))))
+          (text (thing-at-point 'line t))
           )
-      (ag--format-result (expand-file-name proj) pselect-record))))
+      (unless (null text)
+        (let (
+              (pselect-record (list :path buffer-file-name
+                                    :line (string-to-number
+                                           (format-mode-line "%l"))
+                                    :context (replace-regexp-in-string
+                                              "\n$" "" text)))
+              )
+          (ag--format-result (expand-file-name proj) pselect-record))))))
 
 (defun counsel-ag-preselect (&optional initial-input initial-directory extra-ag-args ag-prompt)
   "Grep for a string in the current directory using ag.
