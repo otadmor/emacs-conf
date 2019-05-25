@@ -99,7 +99,7 @@
 (ivy-rich-mode 1)
 
 (setq ivy-format-function #'ivy-format-function-line)
-
+(setq ivy-magic-tilde nil)
 ;(icomplete-mode t)
 (setq ivy-use-virtual-buffers t
       ivy-count-format "%d/%d ")
