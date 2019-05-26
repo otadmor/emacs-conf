@@ -1,3 +1,4 @@
+;; -*- lexical-binding: t; -*-
 (require 'persp-mode)
 
 ;(setq persp-autokill-buffer-on-remove nil)
@@ -164,5 +165,97 @@ of the perspective %s can't be saved."
           #'(lambda (b) (string-prefix-p "epc con" (buffer-name b))))
 (add-hook 'persp-common-buffer-filter-functions
           #'(lambda (b) (string-prefix-p "epc server" (buffer-name b))))
+
+
+(defun buffer-list-persp-mode ()
+  (let (
+        (res (cl-remove-if
+              (lambda (b)
+                (when persp-mode
+                  (let ((persp (get-current-persp)))
+                    (if persp
+                        (not (persp-contain-buffer-p b persp))
+                      nil))))
+              (buffer-list)))
+        )
+    (if (null res)
+        (list (get-buffer "*Messages*"))
+      res)))
+
+;; copied from https://github.com/emacs-mirror/emacs/blob/master/lisp/mouse.el
+(defun mouse-buffer-menu-map-hook ()
+  ;; Make an alist of elements that look like (MENU-ITEM . BUFFER).
+  (let ((buffers (buffer-list-persp-mode)) split-by-major-mode sum-of-squares)
+    (dolist (buf buffers)
+      ;; Divide all buffers into buckets for various major modes.
+      ;; Each bucket looks like (MODE NAMESTRING BUFFERS...).
+      (with-current-buffer buf
+        (let* ((adjusted-major-mode major-mode) elt)
+          (dolist (group mouse-buffer-menu-mode-groups)
+            (when (string-match (car group) (format-mode-line mode-name))
+              (setq adjusted-major-mode (cdr group))))
+          (setq elt (assoc adjusted-major-mode split-by-major-mode))
+          (unless elt
+            (setq elt (list adjusted-major-mode
+                            (if (stringp adjusted-major-mode)
+                                adjusted-major-mode
+                              (format-mode-line mode-name nil nil buf)))
+                  split-by-major-mode (cons elt split-by-major-mode)))
+          (or (memq buf (cdr (cdr elt)))
+              (setcdr (cdr elt) (cons buf (cdr (cdr elt))))))))
+    ;; Compute the sum of squares of sizes of the major-mode buckets.
+    (let ((tail split-by-major-mode))
+      (setq sum-of-squares 0)
+      (while tail
+	(setq sum-of-squares
+	      (+ sum-of-squares
+		 (let ((len (length (cdr (cdr (car tail)))))) (* len len))))
+	(setq tail (cdr tail))))
+    (if (< (* sum-of-squares mouse-buffer-menu-mode-mult)
+	   (* (length buffers) (length buffers)))
+	;; Subdividing by major modes really helps, so let's do it.
+	(let (subdivided-menus (buffers-left (length buffers)))
+	  ;; Sort the list to put the most popular major modes first.
+	  (setq split-by-major-mode
+		(sort split-by-major-mode
+		      (function (lambda (elt1 elt2)
+				  (> (length elt1) (length elt2))))))
+	  ;; Make a separate submenu for each major mode
+	  ;; that has more than one buffer,
+	  ;; unless all the remaining buffers are less than 1/10 of them.
+	  (while (and split-by-major-mode
+		      (and (> (length (car split-by-major-mode)) 3)
+			   (> (* buffers-left 10) (length buffers))))
+	    (let ((this-mode-list (mouse-buffer-menu-alist
+				   (cdr (cdr (car split-by-major-mode))))))
+	      (and this-mode-list
+		   (setq subdivided-menus
+			 (cons (cons
+				(nth 1 (car split-by-major-mode))
+				this-mode-list)
+			       subdivided-menus))))
+	    (setq buffers-left
+		  (- buffers-left (length (cdr (car split-by-major-mode)))))
+	    (setq split-by-major-mode (cdr split-by-major-mode)))
+	  ;; If any major modes are left over,
+	  ;; make a single submenu for them.
+	  (if split-by-major-mode
+	      (let ((others-list
+		     (mouse-buffer-menu-alist
+		      ;; we don't need split-by-major-mode any more,
+		      ;; so we can ditch it with nconc (mapcan).
+		      (mapcan 'cddr split-by-major-mode))))
+		(and others-list
+		     (setq subdivided-menus
+			   (cons (cons "Others" others-list)
+				 subdivided-menus)))))
+          (cons "Buffer Menu" (nreverse subdivided-menus)))
+      (cons "Buffer Menu"
+            (mouse-buffer-menu-split "Select Buffer"
+                                     (mouse-buffer-menu-alist buffers))))))
+(defalias 'mouse-buffer-menu-map 'mouse-buffer-menu-map-hook)
+
+
+
 
 (provide 'persp-mode-ext)
