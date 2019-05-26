@@ -19,8 +19,14 @@
 (defun disconnect-completion-server (mngr)
   (when (not (null mngr))
     (when (eq mngr mngr-complete-epc)
-      (setq-local mngr-complete-epc nil)
-      (kill-local-variable 'mngr-complete-epc))))
+      (let (
+            (connection-buffer
+             (epc:connection-buffer (epc:manager-connection mngr)))
+            )
+        (setq-local mngr-complete-epc nil)
+        (kill-local-variable 'mngr-complete-epc)
+        (when (buffer-live-p connection-buffer)
+          (kill-buffer connection-buffer))))))
 
 (defun fire-exit-hook(orig-fun &rest args)
   (disconnect-completion-server (car args))
@@ -108,6 +114,9 @@
              (epc:incoming-connection-made-mngr mngr working-buffer))))
          (port (cadr (process-contact epc-server-process)))
          )
+    (with-current-buffer working-buffer
+      (add-hook 'kill-buffer-hook (lambda ()
+                                    (epcs:server-stop epc-server-process)) t t))
     (message "EPC Server port %S for buffer %S" port (current-buffer))
     (make-local-variable 'process-environment)
     (setenv "EPC_COMPLETION_SERVER_PORT" (format "%d" port))))
