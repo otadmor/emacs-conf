@@ -117,4 +117,14 @@ If the input is empty, select the previous history element instead."
 (advice-add 'ivy-next-history-element :around #'ignore-errors-hook)
 (advice-add 'ivy-previous-history-element :around #'ignore-errors-hook)
 
+(defcustom ivy-magic-root t
+  "When non-nil, / will move to root when selecting files.
+Otherwise, // will move to root."
+  :type 'boolean)
+(defun ivy--magic-file-slash-hook (orig-fun &rest args)
+  (when (and (string-match-p "^/$" ivy-text) ivy-magic-root)
+    (setq ivy-text "//"))
+  (apply orig-fun args))
+(advice-add 'ivy--magic-file-slash :around #'ivy--magic-file-slash-hook)
+
 (provide 'ivy-utils)
