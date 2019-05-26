@@ -355,8 +355,6 @@
 (global-set-key pop-key 'winstack-pop)
 (global-set-key next-key 'winstack-next)
 
-(global-set-key [(control n)] 'new-buffer-frame)
-
 ;(require 'webkit)
 
 (require 'python-mode)
