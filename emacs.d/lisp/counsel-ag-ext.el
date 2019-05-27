@@ -32,6 +32,24 @@
               )
           (ag--format-result (expand-file-name proj) pselect-record))))))
 
+
+(defun counsel-git-grep-action-hook (orig-fun &rest args)
+  (let (
+        (x (car args))
+        )
+    (if (string-match "\\`\\(.*?\\):\\([0-9]+\\):\\(.*\\)\\'" x)
+      (let* (
+             (file-name (match-string-no-properties 1 x))
+             (file-attributes (file-attributes file-name))
+             (file-size (nth 7 file-attributes))
+             )
+        (when (or (<= file-size large-file-warning-threshold)
+                  (eq this-command 'ivy-alt-done)
+                  (eq this-command 'ivy-done))
+          (apply orig-fun args)))
+      (apply orig-fun args))))
+(advice-add 'counsel-git-grep-action :around #'counsel-git-grep-action-hook)
+
 (defun counsel-ag-preselect (&optional initial-input initial-directory extra-ag-args ag-prompt)
   "Grep for a string in the current directory using ag.
 INITIAL-INPUT can be given as the initial minibuffer input.
