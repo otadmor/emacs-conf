@@ -1333,6 +1333,9 @@ Markers highlights the results in the buffer itself."
   "Select one of CANDIDATES and move there.
 When non-nil, INITIAL-INPUT is the initial search pattern."
   (swiper--init)
+  (setq swiper--opoint (set-marker (make-marker)
+                                   (let ((mark-even-if-inactive t))
+                                     swiper--opoint)))
   (setq swiper-invocation-face
         (plist-get (text-properties-at (point)) 'face))
   (let ((preselect nil)
