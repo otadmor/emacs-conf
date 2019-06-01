@@ -118,6 +118,85 @@ If the input is empty, select the previous history element instead."
 (advice-add 'ivy-previous-history-element :around #'ignore-errors-hook)
 
 
+(defun ivy--parent-dir (filename)
+  "Return parent directory of absolute FILENAME."
+  (let (
+        (curdirname (directory-file-name filename))
+        )
+  (if (string-match "\\`\\(/\\([^/]+:\\)*\\)[^/]+:/?\\'" curdirname)
+      (match-string-no-properties 1 curdirname)
+    (file-name-directory curdirname))))
+
+(defun ivy--directory-done ()
+  "Handle exit from the minibuffer when completing file names."
+  (let (dir)
+    (cond
+      ((equal ivy-text "/sudo::")
+       (setq dir (concat ivy-text (expand-file-name ivy--directory)))
+       (ivy--cd dir)
+       (ivy--exhibit))
+      ((ivy--directory-enter))
+      ((unless (string= ivy-text "")
+         (let ((file (expand-file-name
+                      (if (> ivy--length 0) (ivy-state-current ivy-last) ivy-text)
+                      ivy--directory)))
+           (when (ignore-errors (file-exists-p file))
+             (if (file-directory-p file)
+                 (ivy--cd (file-name-as-directory file))
+               (ivy-done))
+             ivy-text))))
+      ((or (and (equal ivy--directory "/")
+                (string-match-p "\\`[^/]+:.*:.*\\'" ivy-text))
+           (string-match-p "\\`/[^/]+:.*:.*\\'" ivy-text))
+       (ivy-done))
+      ((or (and (equal ivy--directory "/")
+                (cond ((string-match
+                        "\\`\\([^/]+?\\):\\(?:\\(.*\\)@\\)?\\(.*\\)\\'"
+                        ivy-text)
+                       (setq ivy-text (ivy-state-current ivy-last)))
+                      ((string-match
+                        "\\`\\([^/]+?\\):\\(?:\\(.*\\)@\\)?\\(.*\\)\\'"
+                        (ivy-state-current ivy-last))
+                       (setq ivy-text (ivy-state-current ivy-last)))))
+           (string-match
+            "\\`/\\([^/]+?\\):\\(?:\\(.*\\)@\\)?\\(.*\\)\\'"
+            ivy-text))
+       (let ((method (match-string 1 ivy-text))
+             (user (match-string 2 ivy-text))
+             (rest (match-string 3 ivy-text))
+             res)
+         (require 'tramp)
+         (dolist (x (tramp-get-completion-function method))
+           (setq res (append res (funcall (car x) (cadr x)))))
+         (setq res (delq nil res))
+         (when user
+           (dolist (x res)
+             (setcar x user)))
+         (setq res (delete-dups res))
+         (let* ((old-ivy-last ivy-last)
+                (enable-recursive-minibuffers t)
+                (host (let ((ivy-auto-select-single-candidate nil))
+                        (setq ivy--directory (concat "/" method ":"))
+                        (ivy-read (concat "  Find File: /" method ":")
+                                  (mapcar #'ivy-build-tramp-name res)
+                                  :initial-input rest))))
+           (setq ivy-last old-ivy-last)
+           (setq ivy--prompt "  Find File: ")
+           (when host
+             (setq ivy--directory "/")
+             (ivy--cd (concat "/" method ":" host ":"))
+             (setq ivy--directory (expand-file-name ivy--directory)))
+           (ivy--insert-prompt))))
+      ((and (string-match-p "\\`/\\([^/]+:\\)*\\'" ivy--directory)
+            (string-match-p "\\`[^/]+\:\\'" (ivy-state-current ivy-last)))
+       (setq ivy-text (ivy-state-current ivy-last))
+       (ivy--cd (concat ivy--directory ivy-text))
+       (setq ivy--directory (expand-file-name ivy--directory))
+       (ivy--insert-prompt))
+      (t
+       (ivy-done)))))
+
+
 (defun ivy--exhibit ()
   "Insert Ivy completions display.
 Should be run via minibuffer `post-command-hook'."
@@ -143,12 +222,20 @@ Should be run via minibuffer `post-command-hook'."
              (cond ((or (string= "~/" ivy-text)
                         (and (string= "~" ivy-text)
                              ivy-magic-tilde))
-                    (ivy--cd (expand-file-name "~/")))
+                    (ivy--cd
+                     (expand-file-name
+                      (if (string-match "\\`\\(/\\([^/]+:\\)+\\)/" ivy--directory)
+                          (match-string 1 ivy--directory)
+                        "~/"))))
                    ((string-match "/\\'" ivy-text)
-                    (ivy--magic-file-slash))
-                   ((and (string-match "/\\'" ivy--directory)
-                         (string-match-p (regexp-quote ":") ivy-text))
-                    (ivy--magic-file-slash))))
+                    (ivy--magic-file-slash)
+                    (setq ivy--directory (expand-file-name ivy--directory))
+                    (ivy--insert-prompt))
+                   ((and (string-match-p "\\`/\\([^/]+:\\)*\\'" ivy--directory)
+                         (string-match-p "\\`[^/]+\:\\'" ivy-text))
+                    (ivy--magic-file-slash)
+                    (setq ivy--directory (expand-file-name ivy--directory))
+                    (ivy--insert-prompt))))
             ((eq (ivy-state-collection ivy-last) #'internal-complete-buffer)
              (when (or (and (string-match "\\` " ivy-text)
                             (not (string-match "\\` " ivy--old-text)))
@@ -169,12 +256,97 @@ Should be run via minibuffer `post-command-hook'."
   "When non-nil, / will move to root when selecting files.
 Otherwise, // will move to root."
   :type 'boolean)
+
 (defun ivy--magic-file-slash-hook (orig-fun &rest args)
-  (when (and (string-match-p "^/$" ivy-text) ivy-magic-root)
+  (when (and (string= "/" ivy-text) ivy-magic-root)
     (setq ivy-text "//"))
-  (when (string= (concat ivy--directory ivy-text) "/root:")
-    (setq ivy-text "/sudo:root@localhost:"))
+  (if (string= (concat ivy--directory ivy-text) "/root:")
+    (setq ivy-text "/sudo:root@localhost:")
+    (when (string-match "\\`/[^\:]+:[^\:]+:\\'" (concat ivy--directory ivy-text))
+      (setq ivy-text (concat ivy--directory ivy-text))))
   (apply orig-fun args))
 (advice-add 'ivy--magic-file-slash :around #'ivy--magic-file-slash-hook)
+
+
+
+
+(defun ivy-backward-delete-char ()
+  "Forward to `delete-backward-char'.
+Call `ivy-on-del-error-function' if an error occurs, usually when
+there is no more text to delete at the beginning of the
+minibuffer."
+  (interactive)
+  (if (and ivy--directory (= (minibuffer-prompt-end) (point)))
+      (progn
+        (ivy--cd (ivy--parent-dir (expand-file-name ivy--directory)))
+        (ivy--exhibit))
+    (setq prefix-arg current-prefix-arg)
+    (condition-case nil
+        (call-interactively #'delete-backward-char)
+      (error
+       (when ivy-on-del-error-function
+         (funcall ivy-on-del-error-function))))))
+
+(defun ivy--sorted-files (dir)
+  "Return the list of files in DIR.
+Directories come first."
+  (let* ((default-directory dir)
+         (seq (condition-case nil
+                  (all-completions "" #'read-file-name-internal
+                                   (ivy-state-predicate ivy-last))
+                (error
+                 (directory-files dir))))
+         sort-fn)
+    (setq seq (delete-dups seq))
+    (setq seq (delete "./" (delete "../" seq)))
+    (when (eq (setq sort-fn (ivy--sort-function #'read-file-name-internal))
+              #'ivy-sort-file-function-default)
+      (setq seq (mapcar (lambda (x)
+                          (propertize x 'dirp (ivy--dirname-p x)))
+                        seq)))
+    (when sort-fn
+      (setq seq (sort seq sort-fn)))
+    (dolist (dir ivy-extra-directories)
+      (push dir seq))
+    (if (string= dir "/")
+        (cl-remove-if (lambda (s) (string-match ":$" s)) (delete "../" seq))
+      seq)))
+
+(defun ivy--magic-file-slash ()
+  "Handle slash when completing file names."
+  (when (or (and (eq this-command #'self-insert-command)
+                 (eolp))
+            (eq this-command #'ivy-partial-or-done))
+    (let ((canonical (expand-file-name ivy-text ivy--directory))
+          (magic (not (string= ivy-text "/"))))
+      (cond ((member ivy-text ivy--all-candidates)
+             (ivy--cd canonical))
+            ((string-match-p "//\\'" ivy-text)
+             (ivy--cd (if (string-match "\\`/\\([^/]+:\\)+/" ivy--directory)
+                          (match-string 0 ivy--directory)
+                        "/")))
+            ((string-match-p "\\`/ssh:" ivy-text)
+             (ivy--cd (file-name-directory ivy-text)))
+            ((string-match "[[:alpha:]]:/\\'" ivy-text)
+             (let ((drive-root (match-string 0 ivy-text)))
+               (when (file-exists-p drive-root)
+                 (ivy--cd drive-root))))
+            ((and magic (file-directory-p canonical))
+             (ivy--cd canonical))
+            ((let ((default-directory ivy--directory))
+               (and (or (> ivy--index 0)
+                        (= ivy--length 1)
+                        magic)
+                    (not (equal (ivy-state-current ivy-last) ""))
+                    (file-directory-p (ivy-state-current ivy-last))
+                    (or (eq ivy-magic-slash-non-match-action
+                            'ivy-magic-slash-non-match-cd-selected)
+                        (eq this-command #'ivy-partial-or-done))))
+             (ivy--cd
+              (expand-file-name (ivy-state-current ivy-last) ivy--directory)))
+            ((and (eq ivy-magic-slash-non-match-action
+                      'ivy-magic-slash-non-match-create)
+                  magic)
+             (ivy--create-and-cd canonical))))))
 
 (provide 'ivy-utils)
