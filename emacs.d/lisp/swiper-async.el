@@ -1108,8 +1108,9 @@ directly into `ivy--orig-cands'."
 
 (defun swiper--async-create-overlay (start end)
   (let (
-        (overlay (make-overlay start end))
+        (overlay (make-overlay start end nil t t))
         )
+    (overlay-put overlay 'evaporate t)
     (overlay-put overlay 'type 'swiper-async)))
 
 (defun swiper--async-init ()
@@ -1336,6 +1337,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (setq swiper--opoint (set-marker (make-marker)
                                    (let ((mark-even-if-inactive t))
                                      swiper--opoint)))
+  (set-marker-insertion-type swiper--opoint t)
+  (overlay-recenter swiper--opoint)
   (setq swiper-invocation-face
         (plist-get (text-properties-at (point)) 'face))
   (let ((preselect nil)
