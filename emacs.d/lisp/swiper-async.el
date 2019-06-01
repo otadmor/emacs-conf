@@ -441,8 +441,7 @@ at runtime to check if we can start using it or to check for detected problems."
           (swiper--async-parse-process-output process)
           (setq counsel-grep-last-line nil)
           (when (null swiper--async-process-candidates)
-            (setq swiper--async-low-start-point swiper--async-low-end-point)
-            (setq swiper--async-high-start-point swiper--async-high-end-point))
+            (remove-overlays (point-min) (point-max) 'type 'swiper-async))
           (setq swiper--async-process-buffer-processed-point nil)
           (when counsel--async-start
             (setq counsel--async-duration
@@ -505,10 +504,7 @@ end from both."
                   (with-ivy-window
                     (setq beg (filepos-to-bufferpos beg))
                     (setq end (filepos-to-bufferpos end)))
-                  (when (or (and (>= beg swiper--async-low-start-point)
-                                 (<= beg swiper--async-low-end-point))
-                            (and (>= beg swiper--async-high-start-point)
-                                 (<= beg swiper--async-high-end-point)))
+                  (unless (null swiper--async-overlays)
                     (if (not (null swiper--async-process-last-inserted))
                         (let (
                               (new-beg-end (list (cons beg end)))
@@ -727,14 +723,6 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   "Increase the sleeping time by this amount when the used has some
 input or processes has some output."
   :type 'number)
-(defvar swiper--async-high-start-point nil
-  "The starting point of the high search range.")
-(defvar swiper--async-high-end-point nil
-  "The ending point of the high search range.")
-(defvar swiper--async-low-start-point nil
-  "The starting point of the low search range.")
-(defvar swiper--async-low-end-point nil
-  "The ending point of the low search range.")
 (defvar swiper--async-direction-backward nil
   "Tells swiper if searching forward or backward. Used to tell
 the search function which direction to search (search-forward
@@ -804,6 +792,23 @@ the minibuffer with the new candidates."
       (input-pending-p)
       (accept-process-output)))
 
+
+(defun swiper--async-overlay-p (o)
+  "Predicate to check if an overlay is a fake cursor"
+  (eq (overlay-get o 'type) 'swiper-async))
+
+(defun swiper--async-overlays ()
+  (if (not swiper--async-direction-backward)
+      (append (cl-remove-if-not 'swiper--async-overlay-p
+                                (overlays-in swiper--opoint (point-max)))
+              (cl-remove-if-not 'swiper--async-overlay-p
+                                (overlays-in (point-min) (- swiper--opoint 1))))
+    (reverse
+     (append (cl-remove-if-not 'swiper--async-overlay-p
+                               (overlays-in swiper--opoint (point-max)))
+             (cl-remove-if-not 'swiper--async-overlay-p
+                               (overlays-in (point-min) swiper--opoint))))))
+
 (defun swiper--async-isearch(buffer func)
   "The search function of swiper-async and its main brain.
 This function splits the buffer into two ranges: high and low.
@@ -819,19 +824,17 @@ candidates in the minibuffer asynchrounouosly."
     (with-ivy-window
       (save-excursion
         (deactivate-mark)
-        (let (
-              (should-sleep-more nil)
-              (finished-wndcands (not swiper-include-line-number-in-search))
-              (filled-minibuffer-candidates
-               (or (>= (length ivy--orig-cands) (+ max-mini-window-height
-                                                   ivy--index))
-                   (and (= swiper--async-high-start-point
-                           swiper--async-high-end-point)
-                        (= swiper--async-low-start-point
-                           swiper--async-low-end-point))))
-              (found-grep-candidates
-               (not (null swiper--async-process-candidates)))
-              )
+        (let* (
+               (should-sleep-more nil)
+               (finished-wndcands (not swiper-include-line-number-in-search))
+               (overlays (swiper--async-overlays))
+               (filled-minibuffer-candidates
+                (or (>= (length ivy--orig-cands)
+                        (+ max-mini-window-height ivy--index))
+                    (not (null overlays))))
+               (found-grep-candidates
+                (not (null swiper--async-process-candidates)))
+               )
           (when (and swiper-include-line-number-in-search
                      filled-minibuffer-candidates)
             (setq finished-wndcands t)
@@ -922,15 +925,9 @@ candidates in the minibuffer asynchrounouosly."
                   (when (null swiper--async-process-candidates)
                     (setq swiper--async-process-last-inserted nil))
                   (unless (null last-end)
-                    (if (> last-end swiper--async-high-start-point)
-                        (setq swiper--async-high-start-point last-end)
-                      (when (> last-end swiper--async-low-start-point)
-                        (setq swiper--async-low-start-point last-end))))
+                    (remove-overlays (point-min) last-end 'type 'swiper-async))
                   (when (null (get-process swiper--async-process-name))
-                    (setq swiper--async-low-start-point
-                          swiper--async-low-end-point)
-                    (setq swiper--async-high-start-point
-                          swiper--async-high-end-point))
+                    (remove-overlays (point-min) (point-max) 'type 'swiper-async))
                   (when (/= matches-found 0)
                     (setq swiper--async-default-max-matches-per-search
                           (ceiling (/ (* matches-found
@@ -948,111 +945,71 @@ candidates in the minibuffer asynchrounouosly."
                       )
                   (let (
                         (matches-found-time (car (benchmark-and-get-result
-
-                  (if (not swiper--async-direction-backward)
-                      (progn
-                        (when (< swiper--async-high-start-point
-                                 swiper--async-high-end-point)
-                          (goto-char swiper--async-high-start-point)
-                          (while (and (not (setq should-sleep-more
+                    (while (and overlays
+                                (not should-sleep-more)
+                                (< matches-found
+                                   swiper--async-max-matches-per-search)
+                                (< searched-bytes swiper--max-search-length))
+                      (let* (
+                             (overlay (car overlays))
+                             (overlay-start (overlay-start overlay))
+                             (overlay-end (overlay-end overlay))
+                            )
+                        (if (not swiper--async-direction-backward)
+                            (progn
+                              (goto-char overlay-start)
+                              (while (and
+                                      (not (setq should-sleep-more
                                                  (swiper--async-should-quit-async
                                                   should-sleep-more)))
                                       (< matches-found
                                          swiper--async-max-matches-per-search)
+                                      (< searched-bytes swiper--max-search-length)
                                       (re-search-forward
                                        positive-re
-                                       (min swiper--async-high-end-point
-                                            (+ swiper--async-high-start-point
-                                               swiper--max-search-length
-                                               1))
+                                       (min overlay-end
+                                            (+ overlay-start
+                                               swiper--max-search-length 1))
                                        'on-error-go-to-limit))
+                                (cl-incf matches-found)
+                                (funcall func (match-beginning 0) (match-end 0)))
+                              (setq searched-bytes (+ searched-bytes
+                                                      (- (point) overlay-start)))
+                              (move-overlay overlay (point) overlay-end))
+                          (goto-char overlay-end)
+                          (while (and
+                                  (not (setq should-sleep-more
+                                             (swiper--async-should-quit-async
+                                              should-sleep-more)))
+                                  (< matches-found
+                                     swiper--async-max-matches-per-search)
+                                  (< searched-bytes swiper--max-search-length)
+                                  (re-search-backward
+                                   positive-re
+                                   (max overlay-start
+                                        (- overlay-end
+                                           swiper--max-search-length 1))
+                                   'on-error-go-to-limit))
                             (cl-incf matches-found)
                             (funcall func (match-beginning 0) (match-end 0)))
-                          (setq searched-bytes
-                                (+ searched-bytes
-                                   (- (point) swiper--async-high-start-point)))
-                          (setq swiper--async-high-start-point (point)))
-                        (when (< swiper--async-low-start-point
-                                 swiper--async-low-end-point)
-                          (goto-char swiper--async-low-start-point)
-                          (while (and (not (setq should-sleep-more
-                                                 (swiper--async-should-quit-async
-                                                  should-sleep-more)))
-                                      (< matches-found
-                                         swiper--async-max-matches-per-search)
-                                      (re-search-forward
-                                       positive-re
-                                       (min swiper--async-low-end-point
-                                            (+ swiper--async-low-start-point
-                                               swiper--max-search-length
-                                               1))
-                                       'on-error-go-to-limit))
-                            (cl-incf matches-found)
-                            (funcall func (match-beginning 0) (match-end 0)))
-                          (setq searched-bytes
-                                (+ searched-bytes
-                                   (- (point) swiper--async-low-start-point)))
-                          (setq swiper--async-low-start-point (point))))
-                    (progn
-                      (when (< swiper--async-low-start-point
-                               swiper--async-low-end-point)
-                        (goto-char swiper--async-low-end-point)
-                        (while (and (not (setq should-sleep-more
-                                               (swiper--async-should-quit-async
-                                                should-sleep-more)))
-                                    (< matches-found
-                                       swiper--async-max-matches-per-search)
-                                    (re-search-backward
-                                     positive-re
-                                     (max swiper--async-low-start-point
-                                          (- swiper--async-low-end-point
-                                             swiper--max-search-length
-                                             1))
-                                     'on-error-go-to-limit))
-                          (cl-incf matches-found)
-                          (funcall func (match-beginning 0) (match-end 0)))
-                        (setq searched-bytes
-                                (+ searched-bytes
-                                   (- swiper--async-low-end-point (point))))
-                        (setq swiper--async-low-end-point (point)))
-                      (when (< swiper--async-high-start-point
-                               swiper--async-high-end-point)
-                        (goto-char swiper--async-high-end-point)
-                        (while (and (not (setq should-sleep-more
-                                               (swiper--async-should-quit-async
-                                                should-sleep-more)))
-                                    (< matches-found
-                                       swiper--async-max-matches-per-search)
-                                    (re-search-backward
-                                     positive-re
-                                     (max swiper--async-high-start-point
-                                          (- swiper--async-high-end-point
-                                             swiper--max-search-length
-                                             1))
-                                     'on-error-go-to-limit))
-                          (cl-incf matches-found)
-                          (funcall func (match-beginning 0) (match-end 0)))
-                        (setq searched-bytes
-                                (+ searched-bytes
-                                   (- swiper--async-high-end-point (point))))
-                        (setq swiper--async-high-end-point (point)))))
+                          (setq searched-bytes (+ searched-bytes
+                                                  (- overlay-end (point))))
+                          (move-overlay overlay overlay-start (point))))
+                      (setq overlays (cdr overlays)))
                 )))
-                        )
-                    (when (/= searched-bytes 0)
-                      (setq swiper--max-search-length ;(* 10 4096)
-                            (ceiling (/ (* searched-bytes
-                                           swiper--max-search-time)
-                                        matches-found-time))))))))
-            (when (/= matches-found 0)
-              (swiper--async-update-output)))
-          (when (or (not finished-wndcands)
-                    (not (null swiper--async-process-candidates))
-                    (and (not (swiper--async-same-as-disk))
-                         (or (< swiper--async-high-start-point
-                                swiper--async-high-end-point)
-                             (< swiper--async-low-start-point
-                                swiper--async-low-end-point))))
-            (schedule-isearch buffer func should-sleep-more)))))))
+                    )
+                  (when (/= searched-bytes 0)
+                    (setq swiper--max-search-length ;(* 10 4096)
+                          (ceiling (/ (* searched-bytes
+                                         swiper--max-search-time)
+                                      matches-found-time))))))))
+          (when (/= matches-found 0)
+            (swiper--async-update-output)))
+        (when (or (not finished-wndcands)
+                  (not (null swiper--async-process-candidates))
+                  (and (not (swiper--async-same-as-disk))
+                       (not (null overlays))))
+          (schedule-isearch buffer func should-sleep-more)))))))
 
 (defun swiper--async-insertion-sort (candidate-cons comp-func insertion-point)
   "Insert the candidate in `candidate-cons' to the list starting at
@@ -1149,16 +1106,23 @@ directly into `ivy--orig-cands'."
         (setq swiper--width width)
         (setq swiper--format-spec (format "%%-%dd: " swiper--width))))))
 
+(defun swiper--async-create-overlay (start end)
+  (let (
+        (overlay (make-overlay start end))
+        )
+    (overlay-put overlay 'type 'swiper-async)))
 
 (defun swiper--async-init ()
   "Initialize a new async search with a give swiper--opoint."
   (setq counsel--async-time (current-time))
   (setq counsel--async-start counsel--async-time)
   (with-ivy-window
-    (setq swiper--async-high-start-point swiper--opoint)
-    (setq swiper--async-high-end-point (point-max))
-    (setq swiper--async-low-start-point (point-min))
-    (setq swiper--async-low-end-point swiper--async-high-start-point)
+    (if (not swiper--async-direction-backward)
+        (progn
+          (swiper--async-create-overlay swiper--opoint (point-max))
+          (swiper--async-create-overlay (point-min) (- swiper--opoint 1)))
+      (swiper--async-create-overlay (point-min) swiper--opoint)
+      (swiper--async-create-overlay (+ swiper--opoint 1) (point-max)))
     (swiper--async-format-spec)
     (if (swiper--async-same-as-disk)
         (swiper--async-call-counsel-grep)
@@ -1334,6 +1298,7 @@ Markers highlights the results in the buffer itself."
   "Saves the buffer name of the grep process.")
 (defun swiper--async-reset-state ()
   "Reset the state swiper-async is using."
+  (remove-overlays (point-min) (point-max) 'type 'swiper-async)
   (setq swiper--async-process-buffer-processed-point nil)
   (setq swiper--async-process-last-inserted nil)
   (setq swiper--async-process-candidates nil)
