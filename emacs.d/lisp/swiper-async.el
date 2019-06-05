@@ -329,7 +329,7 @@ or one pattern not in a list."
                 (not found))
       (let ((overlay (car overlays)))
         (if (eq (overlay-get overlay 'type) 'swiper-async)
-            (setq found (cons overlay found))))
+            (setq found overlay)))
       (setq overlays (cdr overlays)))
     found))
 
@@ -344,66 +344,71 @@ matches."
                  (< change-begin swiper--async-last-line-pos))
         (setq swiper--async-last-line nil)
         (setq swiper--async-last-line-pos nil))
-      (let (
-            (working-candidates ivy--orig-cands)
-            (chars-diff (- (- inserted-end change-begin) deleted-length))
-            (deleted-end (+ change-begin deleted-length))
-            (deleted-matches 0)
-            (change-index 0)
-            (first-item nil)
-            (last-item nil)
+      (let* (
+             (chars-diff (- (- inserted-end change-begin) deleted-length))
+             (deleted-end (+ change-begin deleted-length))
+             (change-begin-line-point (progn (goto-char change-begin)
+                                             (line-beginning-position)))
+             (inserted-end-line-point (progn (goto-char inserted-end)
+                                             (line-end-position)))
+             (deleted-matches 0)
+             (change-index 0)
+             (first-item nil)
+             (last-item nil)
+             (iterator ivy--orig-cands)
             )
-        (let (
-              (change-end (max deleted-end inserted-end))
-              )
+        (while iterator
           (let (
-                (iterator working-candidates)
+                (item (car iterator))
                 )
-            (while iterator
-              (let (
-                    (item (car iterator))
-                    )
-                (when (<= (swiper--get-line-begin item) change-end)
-                  (when (swiper--async-matchp re-str item)
-                    (cl-incf deleted-matches))
-                  (setq last-item iterator))
-                (when (< (swiper--get-line-end item) change-begin)
-                  (when (swiper--async-matchp re-str item)
-                    (cl-incf change-index)
-                    (cl-decf deleted-matches))
-                  (setq first-item iterator)))
-              (setq iterator (cdr iterator))))
-          (setq last-item (if (null last-item) ivy--orig-cands (cdr last-item)))
-          (if (null first-item)
-              (setq ivy--orig-cands last-item)
-            (setcdr first-item last-item))
-          (dolist (to-update last-item)
-            (swiper--async-move to-update chars-diff))
-          (unless (swiper--async-overlay-at-point change-begin)
-            (let (
-                  (pre-overlay (swiper--async-overlay-at-point (- change-begin 1)))
-                  (pst-overlay (swiper--async-overlay-at-point (+ change-begin 1)))
-                  )
-              (if pre-overlay
-                  (if (null pst-overlay)
-                      (move-overlay pre-overlay
-                                    (overlay-start pre-overlay)
-                                    change-end)
-                    (move-overlay pre-overlay
-                                  (overlay-start pre-overlay)
-                                  (overlay-end pst-overlay))
-                    (delete-overlay pst-overlay))
-                (if (null pst-overlay)
-                    (swiper--async-create-overlay change-begin change-end)
-                  (move-overlay pst-overlay
-                                change-begin
-                                (overlay-end pst-overlay)))))))
-        (when (/= inserted-end change-begin)
+            (when (< (swiper--get-line-end item) change-begin-line-point)
+              (when (swiper--async-matchp re-str item)
+                (cl-incf change-index)
+                (cl-decf deleted-matches))
+              (setq first-item iterator))
+            (when (<= (swiper--get-line-begin item) deleted-end)
+              (when (eq ivy--last-cand iterator)
+                (setq ivy--last-cand nil)
+                (setq ivy--next-cand-index 0))
+              (when (swiper--async-matchp re-str item)
+                (cl-incf deleted-matches))
+              (setq last-item iterator)))
+          (setq iterator (cdr iterator)))
+        (setq last-item (if (null last-item) ivy--orig-cands (cdr last-item)))
+        (if (not (null first-item))
+            (setcdr first-item last-item)
+          (setq ivy--orig-cands last-item)
+          (setq ivy--last-cand nil)
+          (setq ivy--next-cand-index 0))
+        (dolist (to-update last-item)
+          (swiper--async-move to-update chars-diff))
+        (let (
+              (pre-overlay
+               (when (> change-begin-line-point (point-min))
+                 (swiper--async-overlay-at-point (- change-begin-line-point 1))))
+              (pst-overlay
+               (when (< inserted-end-line-point (point-max))
+                 (swiper--async-overlay-at-point (+ inserted-end-line-point 1))))
+              )
+          ;; should support deletions where half are within an existing overlay and half outside an overlay.
+          (when pre-overlay
+            (setq change-begin-line-point (overlay-start pre-overlay)))
+          (when pst-overlay
+            (setq inserted-end-line-point (overlay-end pst-overlay))))
+        (remove-overlays change-begin-line-point
+                         inserted-end-line-point 'type 'swiper-async)
+        (when (/= change-begin-line-point inserted-end-line-point)
+          (swiper--async-create-overlay change-begin-line-point
+                                        inserted-end-line-point)
           (swiper--async-kick-async))
+        (when (/= deleted-length 0)
+          (swiper--async-update-output))
         (when (>= ivy--index change-index)
           (if (>= deleted-matches (- ivy--index change-index))
               (setq ivy--index change-index)
-            (setq ivy--index (- ivy--index deleted-matches)))))
+            (setq ivy--index (- ivy--index deleted-matches))))
+        ;; (swiper--async-update-output)
+        )
       (setq counsel--async-time (current-time)))))
 
 (defun swiper-async-after-change(begin end deleted-length)
@@ -900,11 +905,12 @@ candidates in the minibuffer asynchrounouosly."
           (let (
                 (matches-found 0)
                 (swiper--async-max-matches-per-search
-                 (if (< (length ivy--orig-cands)
-                        (+ max-mini-window-height ivy--index))
-                     (- (+ max-mini-window-height ivy--index)
-                        (length ivy--orig-cands))
-                   swiper--async-default-max-matches-per-search))
+                 (max 1
+                      (if (< (length ivy--orig-cands)
+                             (+ max-mini-window-height ivy--index))
+                          (- (+ max-mini-window-height ivy--index)
+                             (length ivy--orig-cands))
+                        swiper--async-default-max-matches-per-search)))
                 )
             (when found-grep-candidates
               (let (
@@ -928,9 +934,25 @@ candidates in the minibuffer asynchrounouosly."
                   (when (null swiper--async-process-candidates)
                     (setq swiper--async-process-last-inserted nil))
                   (unless (null last-end)
-                    (remove-overlays (point-min) last-end 'type 'swiper-async))
+                    (let (
+                          (overlay-at-last-end (when (< last-end (point-max))
+                                                 (swiper--async-overlay-at-point
+                                                  (+ last-end 1))))
+                          )
+                      (unless (null overlay-at-last-end)
+                        (let (
+                              (overlay-at-last-end-end (overlay-end
+                                                        overlay-at-last-end))
+                              )
+                          (delete-overlay overlay-at-last-end)
+                          (swiper--async-create-overlay
+                           (+ last-end 1)
+                           overlay-at-last-end-end))))
+                    (remove-overlays (point-min)
+                                     last-end 'type 'swiper-async))
                   (when (null (get-process swiper--async-process-name))
-                    (remove-overlays (point-min) (point-max) 'type 'swiper-async))
+                    (remove-overlays (point-min)
+                                     (point-max) 'type 'swiper-async))
                   (when (/= matches-found 0)
                     (setq swiper--async-default-max-matches-per-search
                           (ceiling (/ (* matches-found
@@ -957,62 +979,73 @@ candidates in the minibuffer asynchrounouosly."
                              (overlay (car overlays))
                              (overlay-start (overlay-start overlay))
                              (overlay-end (overlay-end overlay))
-                            )
-                        (if (not swiper--async-direction-backward)
-                            (progn
-                              (goto-char overlay-start)
-                              (while (and
-                                      (not (setq should-sleep-more
-                                                 (swiper--async-should-quit-async
-                                                  should-sleep-more)))
-                                      (< matches-found
-                                         swiper--async-max-matches-per-search)
-                                      (< searched-bytes swiper--max-search-length)
-                                      (re-search-forward
-                                       positive-re
-                                       (min overlay-end
-                                            (+ overlay-start
-                                               swiper--max-search-length 1))
-                                       'on-error-go-to-limit))
-                                (cl-incf matches-found)
-                                (funcall func (match-beginning 0) (match-end 0)))
-                              (setq searched-bytes (+ searched-bytes
-                                                      (- (point) overlay-start)))
-                              (move-overlay overlay (point) overlay-end))
-                          (goto-char overlay-end)
-                          (while (and
-                                  (not (setq should-sleep-more
-                                             (swiper--async-should-quit-async
-                                              should-sleep-more)))
-                                  (< matches-found
-                                     swiper--async-max-matches-per-search)
-                                  (< searched-bytes swiper--max-search-length)
-                                  (re-search-backward
-                                   positive-re
-                                   (max overlay-start
-                                        (- overlay-end
-                                           swiper--max-search-length 1))
-                                   'on-error-go-to-limit))
-                            (cl-incf matches-found)
-                            (funcall func (match-beginning 0) (match-end 0)))
-                          (setq searched-bytes (+ searched-bytes
-                                                  (- overlay-end (point))))
-                          (move-overlay overlay overlay-start (point))))
-                      (setq overlays (cdr overlays)))
-                )))
-                    )
-                  (when (/= searched-bytes 0)
-                    (setq swiper--max-search-length ;(* 10 4096)
-                          (ceiling (/ (* searched-bytes
-                                         swiper--max-search-time)
-                                      matches-found-time))))))))
-          (when (/= matches-found 0)
-            (swiper--async-update-output)))
-        (when (or (not finished-wndcands)
-                  (not (null swiper--async-process-candidates))
-                  (and (not (swiper--async-same-as-disk))
-                       (not (null overlays))))
-          (schedule-isearch buffer func should-sleep-more)))))))
+                             (prev-point)
+                             )
+                        (unless (null overlay-start)
+                          (if (not swiper--async-direction-backward)
+                              (progn
+                                (goto-char overlay-start)
+                                (setq prev-point (point))
+                                (while (and
+                                        (not (setq should-sleep-more
+                                                   (swiper--async-should-quit-async
+                                                    should-sleep-more)))
+                                        (< matches-found
+                                           swiper--async-max-matches-per-search)
+                                        (< searched-bytes swiper--max-search-length)
+                                        (re-search-forward
+                                         positive-re
+                                         (min (+ overlay-end 1)
+                                              (+ overlay-start
+                                                 swiper--max-search-length 1))
+                                         'on-error-go-to-limit))
+                                  (cl-incf matches-found)
+                                  (setq searched-bytes
+                                        (+ searched-bytes
+                                           (- (+ (point) 1) prev-point)))
+                                  (setq prev-point (point))
+                                  ;; (message "found at %S-%S: %S" (match-beginning 0) (match-end 0) (buffer-substring-no-properties (match-beginning 0) (match-end 0)))
+                                  (funcall func (match-beginning 0)
+                                           (match-end 0)))
+                                (swiper--async-move-overlay overlay (point) nil))
+                            (goto-char overlay-end)
+                            (setq prev-point (point))
+                            (while (and
+                                    (not (setq should-sleep-more
+                                               (swiper--async-should-quit-async
+                                                should-sleep-more)))
+                                    (< matches-found
+                                       swiper--async-max-matches-per-search)
+                                    (< searched-bytes swiper--max-search-length)
+                                    (re-search-backward
+                                     positive-re
+                                     (max overlay-start
+                                          (- overlay-end
+                                             swiper--max-search-length 1))
+                                     'on-error-go-to-limit))
+                              (cl-incf matches-found)
+                              (setq searched-bytes
+                                    (+ searched-bytes
+                                       (- (+ prev-point 1) (point))))
+                              (setq prev-point (point))
+                              (funcall func (match-beginning 0) (match-end 0)))
+                            (swiper--async-move-overlay overlay nil (point))))
+                        (when (null (overlay-start overlay))
+                          (setq overlays (cdr overlays)))))
+                    )))
+                        )
+                    (when (/= searched-bytes 0)
+                      (setq swiper--max-search-length ;(* 10 4096)
+                            (ceiling (/ (* searched-bytes
+                                           swiper--max-search-time)
+                                        matches-found-time))))))))
+            (when (/= matches-found 0)
+              (swiper--async-update-output)))
+          (when (or (not finished-wndcands)
+                    (not (null swiper--async-process-candidates))
+                    (and (not (swiper--async-same-as-disk))
+                         (not (null overlays))))
+            (schedule-isearch buffer func should-sleep-more)))))))
 
 (defun swiper--async-insertion-sort (candidate-cons comp-func insertion-point)
   "Insert the candidate in `candidate-cons' to the list starting at
@@ -1115,6 +1148,22 @@ directly into `ivy--orig-cands'."
         )
     (overlay-put overlay 'evaporate t)
     (overlay-put overlay 'type 'swiper-async)))
+
+
+(defun swiper--async-move-overlay (overlay start end)
+  (let (
+        (overlay-start (overlay-start overlay))
+        (overlay-end (overlay-end overlay))
+        )
+    (when (and (or (null start) (>= start overlay-start))
+               (or (null end) (<= end overlay-end)))
+      (delete-overlay overlay)
+      (let (
+            (effective-start (if (not (null start)) start overlay-start))
+            (effective-end (if (not (null end)) end overlay-end))
+            )
+        (when (/= effective-start effective-end)
+          (swiper--async-create-overlay effective-start effective-end))))))
 
 (defun swiper--async-init ()
   "Initialize a new async search with a give swiper--opoint."
