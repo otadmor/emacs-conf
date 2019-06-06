@@ -398,8 +398,12 @@ matches."
         (remove-overlays change-begin-line-point
                          inserted-end-line-point 'type 'swiper-async)
         (when (/= change-begin-line-point inserted-end-line-point)
-          (swiper--async-create-overlay change-begin-line-point
-                                        inserted-end-line-point)
+          (if (not (and (>= swiper--opoint change-begin-line-point)
+                        (<= swiper--opoint inserted-end-line-point)))
+              (swiper--async-create-overlay change-begin-line-point
+                                            inserted-end-line-point)
+            (swiper--async-create-overlays-around-opoint change-begin-line-point
+                                                         inserted-end-line-point))
           (swiper--async-kick-async))
         (when (/= deleted-length 0)
           (swiper--async-update-output))
@@ -1164,29 +1168,32 @@ directly into `ivy--orig-cands'."
         (when (/= effective-start effective-end)
           (swiper--async-create-overlay effective-start effective-end))))))
 
+(defun swiper--async-create-overlays-around-opoint(begin end)
+  (if (not swiper--async-direction-backward)
+      (let (
+            (swiper--opoint-line-begin (progn (goto-char swiper--opoint)
+                                              (line-beginning-position)))
+            )
+        (swiper--async-create-overlay swiper--opoint-line-begin end)
+        (swiper--async-create-overlay begin
+                                      (max begin
+                                           (- swiper--opoint-line-begin 1))))
+    (let (
+          (swiper--opoint-line-end (progn (goto-char swiper--opoint)
+                                          (line-end-position)))
+          )
+      (swiper--async-create-overlay begin swiper--opoint-line-end)
+      (swiper--async-create-overlay (min end
+                                         (+ swiper--opoint-line-end 1))
+                                    end))))
+
 (defun swiper--async-init ()
   "Initialize a new async search with a give swiper--opoint."
   (setq counsel--async-time (current-time))
   (setq counsel--async-start counsel--async-time)
   (with-ivy-window
     (save-excursion
-      (if (not swiper--async-direction-backward)
-          (let (
-                (swiper--opoint-line-begin (progn (goto-char swiper--opoint)
-                                                  (line-beginning-position)))
-                )
-            (swiper--async-create-overlay swiper--opoint-line-begin (point-max))
-            (swiper--async-create-overlay (point-min)
-                                          (max (point-min)
-                                               (- swiper--opoint-line-begin 1))))
-        (let (
-              (swiper--opoint-line-end (progn (goto-char swiper--opoint)
-                                              (line-end-position)))
-              )
-        (swiper--async-create-overlay (point-min) swiper--opoint-line-end)
-        (swiper--async-create-overlay (min (point-max)
-                                           (+ swiper--opoint-line-end 1))
-                                      (point-max)))))
+      (swiper--async-create-overlays-around-opoint (point-min) (point-max)))
     (swiper--async-format-spec)
     (if (swiper--async-same-as-disk)
         (swiper--async-call-counsel-grep)
