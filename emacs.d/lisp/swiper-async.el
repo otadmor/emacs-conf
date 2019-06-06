@@ -808,17 +808,50 @@ the minibuffer with the new candidates."
   "Predicate to check if an overlay is a fake cursor"
   (eq (overlay-get o 'type) 'swiper-async))
 
+
+(defun swiper--async-compare-by-overlay-start (o1 o2)
+  (< (overlay-start o1) (overlay-start o2)))
+
+(defun swiper--async-compare-by-overlay-end (o1 o2)
+  (> (overlay-end o1) (overlay-end o2)))
+
+(defun swiper--async-overlays-sorted ()
+  (save-excursion
+    (if (not swiper--async-direction-backward)
+        (let (
+              (swiper--opoint-line-begin (progn (goto-char swiper--opoint)
+                                                (line-beginning-position)))
+              )
+          (append (sort
+                   (cl-remove-if-not
+                    'swiper--async-overlay-p
+                    (overlays-in swiper--opoint-line-begin (point-max)))
+                   'swiper--async-compare-by-overlay-start)
+                  (sort
+                   (cl-remove-if-not
+                    'swiper--async-overlay-p
+                    (overlays-in (point-min) (max (- swiper--opoint-line-begin 1)
+                                                  (point-min))))
+                   'swiper--async-compare-by-overlay-start)))
+       (let (
+             (swiper--opoint-line-end (progn (goto-char swiper--opoint)
+                                             (line-end-position)))
+             )
+         (append (sort
+                  (cl-remove-if-not
+                   'swiper--async-overlay-p
+                   (overlays-in (point-min) swiper--opoint-line-end))
+                  'swiper--async-compare-by-overlay-end)
+                 (sort
+                  (cl-remove-if-not
+                   'swiper--async-overlay-p
+                   (overlays-in (min (+ swiper--opoint-line-end 1)
+                                     (point-max))
+                                (point-max)))
+                  'swiper--async-compare-by-overlay-end))))))
+
 (defun swiper--async-overlays ()
-  (if (not swiper--async-direction-backward)
-      (append (cl-remove-if-not 'swiper--async-overlay-p
-                                (overlays-in swiper--opoint (point-max)))
-              (cl-remove-if-not 'swiper--async-overlay-p
-                                (overlays-in (point-min) (- swiper--opoint 1))))
-    (reverse
-     (append (cl-remove-if-not 'swiper--async-overlay-p
-                               (overlays-in swiper--opoint (point-max)))
-             (cl-remove-if-not 'swiper--async-overlay-p
-                               (overlays-in (point-min) swiper--opoint))))))
+  (overlays-in (point-min) (point-max)))
 
 (defun swiper--async-isearch(buffer func)
   "The search function of swiper-async and its main brain.
@@ -838,7 +871,7 @@ candidates in the minibuffer asynchrounouosly."
         (let* (
                (should-sleep-more nil)
                (finished-wndcands (not swiper-include-line-number-in-search))
-               (overlays (swiper--async-overlays))
+               (overlays (swiper--async-overlays-sorted))
                (filled-minibuffer-candidates
                 (or (>= (length ivy--orig-cands)
                         (+ max-mini-window-height ivy--index))
@@ -984,7 +1017,8 @@ candidates in the minibuffer asynchrounouosly."
                              (overlay-end (overlay-end overlay))
                              (prev-point)
                              )
-                        (unless (null overlay-start)
+                        (if (null (overlay-buffer overlay))
+                            (setq overlays (cdr overlays))
                           (if (not swiper--async-direction-backward)
                               (progn
                                 (goto-char overlay-start)
@@ -1010,7 +1044,9 @@ candidates in the minibuffer asynchrounouosly."
                                   ;; (message "found at %S-%S: %S" (match-beginning 0) (match-end 0) (buffer-substring-no-properties (match-beginning 0) (match-end 0)))
                                   (funcall func (match-beginning 0)
                                            (match-end 0)))
-                                (swiper--async-move-overlay overlay (point) nil))
+                                (when (null (swiper--async-move-overlay
+                                             overlay (point) nil))
+                                  (setq overlays (cdr overlays))))
                             (goto-char overlay-end)
                             (setq prev-point (point))
                             (while (and
@@ -1032,9 +1068,9 @@ candidates in the minibuffer asynchrounouosly."
                                        (- (+ prev-point 1) (point))))
                               (setq prev-point (point))
                               (funcall func (match-beginning 0) (match-end 0)))
-                            (swiper--async-move-overlay overlay nil (point))))
-                        (when (null (overlay-start overlay))
-                          (setq overlays (cdr overlays)))))
+                            (when (null (swiper--async-move-overlay
+                                         overlay nil (point)))
+                              (setq overlays (cdr overlays)))))))
                     )))
                         )
                     (when (/= searched-bytes 0)
@@ -1150,7 +1186,8 @@ directly into `ivy--orig-cands'."
         (overlay (make-overlay start end nil t t))
         )
     (overlay-put overlay 'evaporate t)
-    (overlay-put overlay 'type 'swiper-async)))
+    (overlay-put overlay 'type 'swiper-async)
+    overlay))
 
 
 (defun swiper--async-move-overlay (overlay start end)
