@@ -1170,12 +1170,24 @@ directly into `ivy--orig-cands'."
   (setq counsel--async-time (current-time))
   (setq counsel--async-start counsel--async-time)
   (with-ivy-window
-    (if (not swiper--async-direction-backward)
-        (progn
-          (swiper--async-create-overlay swiper--opoint (point-max))
-          (swiper--async-create-overlay (point-min) (- swiper--opoint 1)))
-      (swiper--async-create-overlay (point-min) swiper--opoint)
-      (swiper--async-create-overlay (+ swiper--opoint 1) (point-max)))
+    (save-excursion
+      (if (not swiper--async-direction-backward)
+          (let (
+                (swiper--opoint-line-begin (progn (goto-char swiper--opoint)
+                                                  (line-beginning-position)))
+                )
+            (swiper--async-create-overlay swiper--opoint-line-begin (point-max))
+            (swiper--async-create-overlay (point-min)
+                                          (max (point-min)
+                                               (- swiper--opoint-line-begin 1))))
+        (let (
+              (swiper--opoint-line-end (progn (goto-char swiper--opoint)
+                                              (line-end-position)))
+              )
+        (swiper--async-create-overlay (point-min) swiper--opoint-line-end)
+        (swiper--async-create-overlay (min (point-max)
+                                           (+ swiper--opoint-line-end 1))
+                                      (point-max)))))
     (swiper--async-format-spec)
     (if (swiper--async-same-as-disk)
         (swiper--async-call-counsel-grep)
