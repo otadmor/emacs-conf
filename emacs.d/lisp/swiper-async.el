@@ -512,16 +512,15 @@ end from both."
                   (with-ivy-window
                     (setq beg (filepos-to-bufferpos beg))
                     (setq end (filepos-to-bufferpos end)))
-                  (unless (null swiper--async-overlays)
-                    (if (not (null swiper--async-process-last-inserted))
-                        (let (
-                              (new-beg-end (list (cons beg end)))
-                              )
-                          (setcdr swiper--async-process-last-inserted new-beg-end)
-                          (setq swiper--async-process-last-inserted new-beg-end))
-                      (push (cons beg end) swiper--async-process-candidates)
-                      (setq swiper--async-process-last-inserted
-                            swiper--async-process-candidates))))))))))
+                  (if (not (null swiper--async-process-last-inserted))
+                      (let (
+                            (new-beg-end (list (cons beg end)))
+                            )
+                        (setcdr swiper--async-process-last-inserted new-beg-end)
+                        (setq swiper--async-process-last-inserted new-beg-end))
+                    (push (cons beg end) swiper--async-process-candidates)
+                    (setq swiper--async-process-last-inserted
+                          swiper--async-process-candidates)))))))))
     (unless (null swiper--async-process-candidates)
       (swiper--async-kick-async))))
 
