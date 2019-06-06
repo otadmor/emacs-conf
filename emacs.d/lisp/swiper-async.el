@@ -830,7 +830,7 @@ the minibuffer with the new candidates."
                   (sort
                    (cl-remove-if-not
                     'swiper--async-overlay-p
-                    (overlays-in (point-min) (max (- swiper--opoint-line-begin 1)
+                    (overlays-in (point-min) (max (- swiper--opoint-line-begin 2)
                                                   (point-min))))
                    'swiper--async-compare-by-overlay-start)))
        (let (
@@ -1004,16 +1004,12 @@ candidates in the minibuffer asynchrounouosly."
                 (let (
                       (positive-re swiper--async-to-search-positive-re)
                       (searched-bytes 0)
+                      (last-found nil)
                       )
-                  ;; (message "start search")
                   (let (
                         (matches-found-time (car (benchmark-and-get-result
-                    (while (and overlays
-                                (not should-sleep-more)
-                                (< matches-found
-                                   swiper--async-max-matches-per-search)
-                                (< searched-bytes swiper--max-search-length))
-                      ;; (message "len over %S" overlays)
+                    (while (and (not (null overlays))
+                                (not last-found))
                       (let* (
                              (overlay (car overlays))
                              (overlay-start (overlay-start overlay))
@@ -1021,13 +1017,13 @@ candidates in the minibuffer asynchrounouosly."
                              (prev-point)
                              )
                         (if (null (overlay-buffer overlay))
-                            (setq overlays (cdr overlays))
-                          ;; (message "searching")
+                            (progn
+                              (setq overlays (cdr overlays))
+                              (delete-overlay overlay))
                           (if (not swiper--async-direction-backward)
                               (progn
                                 (goto-char overlay-start)
                                 (setq prev-point (point))
-                                ;; (message "searching from %S to %S: %S" overlay-start overlay-end positive-re)
                                 (while (and
                                         (not (setq should-sleep-more
                                                    (swiper--async-should-quit-async
@@ -1035,22 +1031,23 @@ candidates in the minibuffer asynchrounouosly."
                                         (< matches-found
                                            swiper--async-max-matches-per-search)
                                         (< searched-bytes swiper--max-search-length)
-                                        (re-search-forward
-                                         positive-re
-                                         (min (+ overlay-end 1)
-                                              (+ overlay-start
-                                                 swiper--max-search-length 1))
-                                         'on-error-go-to-limit))
+                                        (setq last-found
+                                              (re-search-forward
+                                               positive-re
+                                               (min (+ overlay-end 1)
+                                                    (+ overlay-start
+                                                       swiper--max-search-length
+                                                       1))
+                                               'on-error-go-to-limit)))
                                   (cl-incf matches-found)
                                   (setq searched-bytes
                                         (+ searched-bytes
-                                           (- (+ (point) 1) prev-point)))
+                                           (- (point) prev-point)))
                                   (setq prev-point (point))
-                                  ;; (message "found at %S-%S: %S" (match-beginning 0) (match-end 0) (buffer-substring-no-properties (match-beginning 0) (match-end 0)))
                                   (funcall func (match-beginning 0)
                                            (match-end 0)))
-                                (when (null (swiper--async-move-overlay
-                                             overlay (point) nil))
+                                (swiper--async-move-overlay overlay (point) nil)
+                                (when last-found
                                   (setq overlays (cdr overlays))))
                             (goto-char overlay-end)
                             (setq prev-point (point))
@@ -1061,20 +1058,21 @@ candidates in the minibuffer asynchrounouosly."
                                     (< matches-found
                                        swiper--async-max-matches-per-search)
                                     (< searched-bytes swiper--max-search-length)
-                                    (re-search-backward
-                                     positive-re
-                                     (max overlay-start
-                                          (- overlay-end
-                                             swiper--max-search-length 1))
-                                     'on-error-go-to-limit))
+                                    (setq last-found
+                                          (re-search-backward
+                                           positive-re
+                                           (max overlay-start
+                                                (- overlay-end
+                                                   swiper--max-search-length 1))
+                                           'on-error-go-to-limit)))
                               (cl-incf matches-found)
                               (setq searched-bytes
                                     (+ searched-bytes
-                                       (- (+ prev-point 1) (point))))
+                                       (- prev-point (point))))
                               (setq prev-point (point))
                               (funcall func (match-beginning 0) (match-end 0)))
-                            (when (null (swiper--async-move-overlay
-                                         overlay nil (point)))
+                            (swiper--async-move-overlay overlay nil (point))
+                            (when last-found
                               (setq overlays (cdr overlays)))))))
                     )))
                         )
@@ -1085,7 +1083,6 @@ candidates in the minibuffer asynchrounouosly."
                                         matches-found-time))))))))
             (when (/= matches-found 0)
               (swiper--async-update-output)))
-          ;; (message "have more overlays %S but overlays is %S" (swiper--async-overlays) overlays)
           (when (or (not finished-wndcands)
                     (not (null swiper--async-process-candidates))
                     (and (not (swiper--async-same-as-disk))
@@ -1208,7 +1205,7 @@ directly into `ivy--orig-cands'."
             (effective-start (if (not (null start)) start overlay-start))
             (effective-end (if (not (null end)) end overlay-end))
             )
-        (when (/= effective-start effective-end)
+        (when (<= effective-start effective-end)
           (swiper--async-create-overlay effective-start effective-end))))))
 
 (defun swiper--async-create-overlays-around-opoint(begin end)
