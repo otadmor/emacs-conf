@@ -851,7 +851,8 @@ the minibuffer with the new candidates."
                   'swiper--async-compare-by-overlay-end))))))
 
 (defun swiper--async-overlays ()
-  (overlays-in (point-min) (point-max)))
+  (cl-remove-if-not 'swiper--async-overlay-p (overlays-in (point-min)
+                                                          (point-max))))
 
 (defun swiper--async-isearch(buffer func)
   "The search function of swiper-async and its main brain.
@@ -1004,6 +1005,7 @@ candidates in the minibuffer asynchrounouosly."
                       (positive-re swiper--async-to-search-positive-re)
                       (searched-bytes 0)
                       )
+                  ;; (message "start search")
                   (let (
                         (matches-found-time (car (benchmark-and-get-result
                     (while (and overlays
@@ -1011,6 +1013,7 @@ candidates in the minibuffer asynchrounouosly."
                                 (< matches-found
                                    swiper--async-max-matches-per-search)
                                 (< searched-bytes swiper--max-search-length))
+                      ;; (message "len over %S" overlays)
                       (let* (
                              (overlay (car overlays))
                              (overlay-start (overlay-start overlay))
@@ -1019,10 +1022,12 @@ candidates in the minibuffer asynchrounouosly."
                              )
                         (if (null (overlay-buffer overlay))
                             (setq overlays (cdr overlays))
+                          ;; (message "searching")
                           (if (not swiper--async-direction-backward)
                               (progn
                                 (goto-char overlay-start)
                                 (setq prev-point (point))
+                                ;; (message "searching from %S to %S: %S" overlay-start overlay-end positive-re)
                                 (while (and
                                         (not (setq should-sleep-more
                                                    (swiper--async-should-quit-async
@@ -1080,10 +1085,11 @@ candidates in the minibuffer asynchrounouosly."
                                         matches-found-time))))))))
             (when (/= matches-found 0)
               (swiper--async-update-output)))
+          ;; (message "have more overlays %S but overlays is %S" (swiper--async-overlays) overlays)
           (when (or (not finished-wndcands)
                     (not (null swiper--async-process-candidates))
                     (and (not (swiper--async-same-as-disk))
-                         (not (null overlays))))
+                         (not (null (swiper--async-overlays)))))
             (schedule-isearch buffer func should-sleep-more)))))))
 
 (defun swiper--async-insertion-sort (candidate-cons comp-func insertion-point)
