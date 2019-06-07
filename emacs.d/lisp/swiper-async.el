@@ -798,9 +798,8 @@ the minibuffer with the new candidates."
 (advice-add 'ivy--wnd-cands-to-str :around #'ivy--wnd-cands-to-str-hook)
 
 
-(defun swiper--async-should-quit-async (should-quit)
-  (or should-quit
-      (input-pending-p)
+(defun swiper--async-should-quit-async ()
+  (or (input-pending-p)
       (accept-process-output)))
 
 
@@ -871,6 +870,7 @@ candidates in the minibuffer asynchrounouosly."
         (deactivate-mark)
         (let* (
                (should-sleep-more nil)
+               (yield-isearch nil)
                (finished-wndcands (not swiper-include-line-number-in-search))
                (overlays (swiper--async-overlays-sorted))
                (filled-minibuffer-candidates
@@ -898,9 +898,11 @@ candidates in the minibuffer asynchrounouosly."
                         (overlay-begin (swiper--get-begin wndcand))
                         (overlay-end (swiper--get-end wndcand))
                         )
-                    (while (and (not (setq should-sleep-more
-                                           (swiper--async-should-quit-async
-                                            should-sleep-more)))
+                    (while (and (not (setq yield-isearch
+                                           (or yield-isearch
+                                               (setq should-sleep-more
+                                                     (or should-sleep-more
+                                                         (swiper--async-should-quit-async))))))
                                 (/= line-begin swiper--async-last-line-pos))
                       (swiper--async-line-at-pos
                        (if (> line-begin swiper--async-last-line-pos)
@@ -955,11 +957,14 @@ candidates in the minibuffer asynchrounouosly."
                     )
                 (let (
                       (candidates-create-time (car (benchmark-and-get-result
-                (while (and (not (setq should-sleep-more
-                                       (swiper--async-should-quit-async
-                                        should-sleep-more)))
-                            (< matches-found
-                               swiper--async-max-matches-per-search)
+                (while (and (not (setq yield-isearch
+                                       (or yield-isearch
+                                           (setq should-sleep-more
+                                                 (or should-sleep-more
+                                                     (swiper--async-should-quit-async)))
+                                           (>= matches-found
+                                               swiper--async-max-matches-per-search)
+                                           )))
                             (not (null swiper--async-process-candidates)))
                   (cl-incf matches-found)
                   (let (
@@ -1009,7 +1014,7 @@ candidates in the minibuffer asynchrounouosly."
                   (let (
                         (matches-found-time (car (benchmark-and-get-result
                     (while (and (not (null overlays))
-                                (not last-found))
+                                (not yield-isearch))
                       (let* (
                              (overlay (car overlays))
                              (overlay-start (overlay-start overlay))
@@ -1025,12 +1030,15 @@ candidates in the minibuffer asynchrounouosly."
                                 (goto-char overlay-start)
                                 (setq prev-point (point))
                                 (while (and
-                                        (not (setq should-sleep-more
-                                                   (swiper--async-should-quit-async
-                                                    should-sleep-more)))
-                                        (< matches-found
-                                           swiper--async-max-matches-per-search)
-                                        (< searched-bytes swiper--max-search-length)
+                                        (not
+                                         (setq yield-isearch
+                                               (or yield-isearch
+                                                   (setq should-sleep-more
+                                                         (or should-sleep-more
+                                                             (swiper--async-should-quit-async)))
+                                                   (>= matches-found
+                                                      swiper--async-max-matches-per-search)
+                                                   (>= searched-bytes swiper--max-search-length))))
                                         (setq last-found
                                               (re-search-forward
                                                positive-re
@@ -1047,17 +1055,21 @@ candidates in the minibuffer asynchrounouosly."
                                   (funcall func (match-beginning 0)
                                            (match-end 0)))
                                 (swiper--async-move-overlay overlay (point) nil)
-                                (when last-found
+                                (when (< (point) (+ overlay-end 1))
+                                  (setq yield-isearch t))
+                                (unless yield-isearch
                                   (setq overlays (cdr overlays))))
                             (goto-char overlay-end)
                             (setq prev-point (point))
                             (while (and
-                                    (not (setq should-sleep-more
-                                               (swiper--async-should-quit-async
-                                                should-sleep-more)))
-                                    (< matches-found
-                                       swiper--async-max-matches-per-search)
-                                    (< searched-bytes swiper--max-search-length)
+                                    (not (setq yield-isearch
+                                               (or yield-isearch
+                                                   (setq should-sleep-more
+                                                         (or should-sleep-more
+                                                             (swiper--async-should-quit-async)))
+                                                   (< matches-found
+                                                      swiper--async-max-matches-per-search)
+                                                   (< searched-bytes swiper--max-search-length))))
                                     (setq last-found
                                           (re-search-backward
                                            positive-re
@@ -1072,7 +1084,9 @@ candidates in the minibuffer asynchrounouosly."
                               (setq prev-point (point))
                               (funcall func (match-beginning 0) (match-end 0)))
                             (swiper--async-move-overlay overlay nil (point))
-                            (when last-found
+                            (when (> (point) overlay-start)
+                                  (setq yield-isearch t))
+                            (unless yield-isearch
                               (setq overlays (cdr overlays)))))))
                     )))
                         )
@@ -1083,10 +1097,7 @@ candidates in the minibuffer asynchrounouosly."
                                         matches-found-time))))))))
             (when (/= matches-found 0)
               (swiper--async-update-output)))
-          (when (or (not finished-wndcands)
-                    (not (null swiper--async-process-candidates))
-                    (and (not (swiper--async-same-as-disk))
-                         (not (null (swiper--async-overlays)))))
+          (when yield-isearch
             (schedule-isearch buffer func should-sleep-more)))))))
 
 (defun swiper--async-insertion-sort (candidate-cons comp-func insertion-point)
@@ -1205,8 +1216,9 @@ directly into `ivy--orig-cands'."
             (effective-start (if (not (null start)) start overlay-start))
             (effective-end (if (not (null end)) end overlay-end))
             )
-        (when (<= effective-start effective-end)
-          (swiper--async-create-overlay effective-start effective-end))))))
+        (if (<= effective-start effective-end)
+            (swiper--async-create-overlay effective-start effective-end)
+          (delete-overlay overlay))))))
 
 (defun swiper--async-create-overlays-around-opoint(begin end)
   (if (not swiper--async-direction-backward)
