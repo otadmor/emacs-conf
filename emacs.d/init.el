@@ -500,6 +500,51 @@
   (auto-complete-completion-in-region start end collection predicate)))
 (setq completion-in-region-function 'completion-in-region-auto-complete-or-ivy)
 
+
+(defvar ac-default-min-prefix-length 0
+  "The minimum prefix requirement for completing using auto-complete. Can be determined per-source by setting requires.")
+(defun ac-prefix (requires ignore-list)
+  (cl-loop with current = (point)
+           with point
+           with point-def
+           with prefix-def
+           with sources
+           for source in (ac-compiled-sources)
+           for prefix = (assoc-default 'prefix source)
+           for req = (or (assoc-default 'requires source) requires ac-default-min-prefix-length)
+
+           do
+           (unless (member prefix ignore-list)
+             (save-excursion
+               (setq point (cond
+                            ((symbolp prefix)
+                             (funcall prefix))
+                            ((stringp prefix)
+                             (and (re-search-backward (concat prefix "\\=") nil t)
+                                  (or (match-beginning 1) (match-beginning 0))))
+                            ((stringp (car-safe prefix))
+                             (let ((regexp (nth 0 prefix))
+                                   (end (nth 1 prefix))
+                                   (group (nth 2 prefix)))
+                               (and (re-search-backward (concat regexp "\\=") nil t)
+                                    (funcall (if end 'match-end 'match-beginning)
+                                             (or group 0)))))
+                            (t
+                             (eval prefix))))
+               (if (and point
+                        (integerp req)
+                        (< (- current point) req))
+                   (setq point nil))
+               (when point
+                 (if (null prefix-def)
+                     (setq prefix-def prefix
+                           point-def point))
+                 (if (equal point point-def)
+                     (push source sources)))))
+
+           finally return
+           (and point-def (list prefix-def point-def (nreverse sources)))))
+
 ;; (setq ac-expand-on-auto-complete nil)
 
 (defun ac-complete-when-menu ()
