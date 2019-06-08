@@ -418,7 +418,7 @@
                        (let (
                              (prefix (funcall prefix-cb))
                              )
-                         (when (and (stringp prefix) (> (length prefix) 0))
+                         (when (and (stringp prefix))
                            (funcall ac-epc-complete-request prefix)
                            (let (
                                  (beg (- (point) (length prefix)))
