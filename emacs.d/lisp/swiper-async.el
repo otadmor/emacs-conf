@@ -1062,14 +1062,15 @@ candidates in the minibuffer asynchrounouosly."
                             (goto-char overlay-end)
                             (setq prev-point (point))
                             (while (and
-                                    (not (setq yield-isearch
+                                    (not
+                                         (setq yield-isearch
                                                (or yield-isearch
                                                    (setq should-sleep-more
                                                          (or should-sleep-more
                                                              (swiper--async-should-quit-async)))
-                                                   (< matches-found
+                                                   (>= matches-found
                                                       swiper--async-max-matches-per-search)
-                                                   (< searched-bytes swiper--max-search-length))))
+                                                   (>= searched-bytes swiper--max-search-length))))
                                     (setq last-found
                                           (re-search-backward
                                            positive-re
