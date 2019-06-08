@@ -64,8 +64,12 @@ class EPCCompletionClient(EPCClient):
             return self.complete(*cargs, **ckargs)
         self.register_function(complete)
 
-SYMBOL_CHARS = "._" + string.letters + string.digits
-FIRST_SYMBOL_CHARS = string.letters + string.digits
+if sys.version_info.major == 2:
+    SYMBOL_CHARS = "._" + string.letters + string.digits
+    FIRST_SYMBOL_CHARS = string.letters + string.digits
+else:
+    SYMBOL_CHARS = "._" + string.ascii_letters + string.digits
+    FIRST_SYMBOL_CHARS = string.ascii_letters + string.digits
 class PythonModeEPCCompletion(object):
     def __init__(self):
         pass
