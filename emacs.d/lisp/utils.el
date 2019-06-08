@@ -1,3 +1,5 @@
+;; -*- lexical-binding: t; -*-
+
 (defun last-buffer() (interactive) (switch-to-buffer (other-buffer)))
 (defun next-buff() (interactive) (other-window 1))
 (defun prev-buffer() (interactive) (other-window -1))
@@ -69,5 +71,16 @@ end-of-buffer signals; pass the rest to the default handler."
 (defun ignore-errors-hook (orig-fun &rest args)
   (ignore-errors
     (apply orig-fun args)))
+
+(setq callid 0)
+(defun log-func (fn)
+  (advice-add fn :around (lambda (orig-fun &rest args)
+                           (cl-incf callid)
+                           (message "%S: %S %S" callid fn args)
+                           (let (
+                                 (res (apply orig-fun args))
+                                 )
+                             (message "%S: %S returned %S" callid fn res)
+                             res))))
 
 (provide 'utils)
