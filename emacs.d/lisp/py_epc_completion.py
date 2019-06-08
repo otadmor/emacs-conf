@@ -99,7 +99,7 @@ class PythonModeEPCCompletion(object):
 
     def complete(self, *to_complete):
         text = ''.join(list(to_complete))
-        pretext = ''
+        pre_text = ''
         if len(text) != 0:
             p = 0
             for i, x in enumerate(text[::-1]):
