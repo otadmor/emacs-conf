@@ -1056,6 +1056,9 @@ candidates in the minibuffer asynchrounouosly."
                                   (setq prev-point (point))
                                   (funcall func (match-beginning 0)
                                            (match-end 0)))
+                                (setq searched-bytes
+                                      (+ searched-bytes
+                                         (- (point) prev-point)))
                                 (swiper--async-move-overlay overlay (point) nil)
                                 (when (< (point) (+ overlay-end 1))
                                   (setq yield-isearch t))
@@ -1086,6 +1089,9 @@ candidates in the minibuffer asynchrounouosly."
                                        (- prev-point (point))))
                               (setq prev-point (point))
                               (funcall func (match-beginning 0) (match-end 0)))
+                            (setq searched-bytes
+                                  (+ searched-bytes
+                                     (- prev-point (point))))
                             (swiper--async-move-overlay overlay nil (point))
                             (when (> (point) overlay-start)
                                   (setq yield-isearch t))
