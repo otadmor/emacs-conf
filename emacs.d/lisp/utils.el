@@ -52,11 +52,32 @@
 (defun get-buffers-with-major-mode (find-major-mode)
   "Get a list of buffers in which minor-mode is active"
   (interactive)
-  (let ((major-mode-buffers))
+  (let (
+        (persp (when persp-mode (get-current-persp)))
+        (major-mode-buffers)
+        )
     (dolist (buf (buffer-list) major-mode-buffers)
-      (with-current-buffer buf
-        (when (eq major-mode find-major-mode)
-          (push buf major-mode-buffers))))))
+      (when (and (with-current-buffer buf (eq major-mode find-major-mode))
+                 (or (not persp-mode)
+                     (persp-contain-buffer-p buf persp)))
+        (push buf major-mode-buffers)))))
+
+(defun select-old-or-create-new(major-mode create-func existing-func)
+  (interactive)
+  (let (
+        (buffer (car (get-buffers-with-major-mode major-mode)))
+        )
+    (if (eq buffer nil)
+        (funcall create-func)
+      (let (
+            (window (get-buffer-window buffer))
+            )
+        (if (not (null window))
+            (select-window window)
+          (switch-to-buffer buffer))
+        (funcall existing-func)
+        buffer))))
+
 
 ;; disable error messages
 (defun my-command-error-function (data context caller)

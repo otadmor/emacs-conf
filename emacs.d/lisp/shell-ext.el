@@ -1,4 +1,9 @@
 
+(defun send-shell-command(command)
+  (let ((proc (get-buffer-process (current-buffer))))
+    (if (not proc) (user-error "Current buffer has no process")
+      (funcall comint-input-sender proc command))))
+
 (defun new-shell ()
   "create new shell"
   (interactive)
@@ -26,24 +31,39 @@
   (interactive)
   (let ((current-directory-path (expand-file-name default-directory)))
     (shell)
-    (end-of-buffer)
-    (insert-string "cd " )
-    (insert-string (shell-quote-argument current-directory-path))
-    (comint-send-input)))
-
+    (let (
+          (cd-command (concat "cd "
+                              (shell-quote-argument current-directory-path)))
+          )
+      (send-shell-command cd-command)))
+  (end-of-buffer))
 
 (defun old-shell-with-dir(current-directory-path)
-  (let (
-        (shb (car (get-buffers-with-major-mode 'shell-mode)))
-        )
-    (if (eq shb nil)
-        (new-shell-with-dir current-directory-path)
-      (switch-to-buffer shb)
-      (end-of-buffer)
-      (insert-string "cd " )
-      (insert-string (shell-quote-argument current-directory-path))
-      (comint-send-input))
-    shb))
+  (select-old-or-create-new
+   'shell-mode
+   (lambda () (new-shell-with-dir current-directory-path))
+   (lambda ()
+     (let (
+           (cd-command (concat "cd "
+                               (shell-quote-argument current-directory-path)))
+           )
+       (send-shell-command cd-command))
+     (end-of-buffer))))
+
+;; (defun old-shell-with-dir(current-directory-path)
+;;   (let (
+;;         (shb (car (get-buffers-with-major-mode 'shell-mode)))
+;;         )
+;;     (if (eq shb nil)
+;;         (new-shell-with-dir current-directory-path)
+;;       (switch-to-buffer shb)
+;;       (let (
+;;             (cd-command (concat "cd "
+;;                               (shell-quote-argument current-directory-path)))
+;;           )
+;;         (send-shell-command cd-command))
+;;       (end-of-buffer))
+;;     shb))
 
 (defun old-shell() (interactive)
   (old-shell-with-dir (expand-file-name default-directory)))

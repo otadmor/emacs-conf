@@ -40,19 +40,11 @@ the output."
         )
     (switch-to-buffer b)
     (setq default-directory dir)
-    (with-temp-buffer
-      (python :fast nil :buffer (buffer-name b) :shell (py-choose-shell nil nil)))
-    (let (
-          (proc (get-buffer-process (get-buffer b)))
-          )
-      (py-send-string py-shell-completion-setup-code proc))))
-
+    (new-python-in-buffer b)))
 
 (defun new-python-in-buffer(buffer) (interactive)
   (with-temp-buffer ; py-shell requires the expected buffer not to be the current buffer
-    (python :fast nil
-            :buffer (buffer-name buffer)
-            :shell (py-choose-shell nil nil))
+    (python nil (buffer-name buffer))
     (let (
           (proc (get-buffer-process buffer))
           )
@@ -61,19 +53,21 @@ the output."
 
 (defun new-python() (interactive)
        (let (
-              (buffer (python :fast nil))
+              (buffer (python)) ; :fast nil))
               )
          (let (
                (proc (get-buffer-process (get-buffer buffer)))
                )
            (py-send-string py-shell-completion-setup-code proc))
-         (switch-to-buffer buffer)))
-(defun old-python() (interactive)
-       (let (
-             (pyb (car (get-buffers-with-major-mode 'py-python-shell-mode)))
-             )
-         (if (eq pyb nil)
-             (new-python)
-           (switch-to-buffer pyb))))
+         (switch-to-buffer buffer)
+         buffer))
+
+(defun old-python()
+  (interactive)
+  (select-old-or-create-new
+   'py-python-shell-mode
+   (lambda () (new-python-in-dir (expand-file-name default-directory)))
+   ;; (lambda () (new-python))
+   (lambda () )))
 
 (provide 'python-ext)
