@@ -800,7 +800,8 @@ the minibuffer with the new candidates."
 
 (defun swiper--async-should-quit-async ()
   (or (input-pending-p)
-      (accept-process-output)))
+      ;; (accept-process-output)
+      ))
 
 
 (defun swiper--async-overlay-p (o)
