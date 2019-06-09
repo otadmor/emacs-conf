@@ -865,99 +865,100 @@ searched on the high range (if searching forward) and then
 on the low range.
 This function also responsible for finding line numbers to
 candidates in the minibuffer asynchrounouosly."
-  (when (active-minibuffer-window)
-    (with-ivy-window
-      (save-excursion
-        (deactivate-mark)
-        (let* (
-               (should-sleep-more nil)
-               (yield-isearch nil)
-               (finished-wndcands (not swiper-include-line-number-in-search))
-               (overlays (swiper--async-overlays-sorted))
-               (filled-minibuffer-candidates
-                (or (>= (length ivy--orig-cands)
-                        (+ max-mini-window-height ivy--index))
-                    (not (null overlays))))
-               (found-grep-candidates
-                (not (null swiper--async-process-candidates)))
-               )
-          (when (and swiper-include-line-number-in-search
-                     filled-minibuffer-candidates)
-            (setq finished-wndcands t)
-            (let (
-                  (zero-line-prefix (format swiper--format-spec 0))
-                  (should-update-wndcands nil)
-                  (new-wnd-cands)
-                  )
-              (when (null swiper--async-last-line-pos)
-                (swiper--async-line-at-pos (point-min) t))
-              (dolist (wndcand swiper--async-old-wnd-cands)
-                (if (not (string-prefix-p zero-line-prefix wndcand))
-                    (push wndcand new-wnd-cands)
-                  (let (
-                        (line-begin (swiper--get-line-begin wndcand))
-                        (overlay-begin (swiper--get-begin wndcand))
-                        (overlay-end (swiper--get-end wndcand))
-                        )
-                    (while (and (not (setq yield-isearch
-                                           (or yield-isearch
-                                               (setq should-sleep-more
-                                                     (or should-sleep-more
-                                                         (swiper--async-should-quit-async))))))
-                                (/= line-begin swiper--async-last-line-pos))
-                      (swiper--async-line-at-pos
-                       (if (> line-begin swiper--async-last-line-pos)
-                           (+ swiper--async-last-line-pos
-                              (min (- line-begin swiper--async-last-line-pos)
-                                   swiper--async-max-line-count-size))
-                         (- swiper--async-last-line-pos
-                            (min (- swiper--async-last-line-pos line-begin)
-                                 swiper--async-max-line-count-size)))))
-                    (if (/= line-begin swiper--async-last-line-pos)
-                        (progn
-                          (push wndcand new-wnd-cands)
-                          (setq finished-wndcands nil))
-                      (setq should-update-wndcands t)
-                      (let (
-                            (new-wnd-cand
-                             (concat (format swiper--format-spec
-                                             swiper--async-last-line)
-                                     (substring wndcand
-                                                (length zero-line-prefix)
-                                                (length wndcand))))
-                            )
-                        (put-text-property
-                         0 1 'region-data
-                         (cons
-                          (swiper--async-create-marker overlay-end)
-                          (swiper--async-create-marker overlay-begin))
-                         new-wnd-cand)
-                        (put-text-property
-                         0 1 'line-region-data
-                         (cons
-                          nil
-                          line-begin)
-                         new-wnd-cand)
-                        (push new-wnd-cand new-wnd-cands))))))
-              (when should-update-wndcands
-                (ivy--insert-minibuffer
-                 (ivy--wnd-cands-to-str (reverse new-wnd-cands))))))
-          (let (
-                (matches-found 0)
-                (swiper--async-max-matches-per-search
-                 (max 1
-                      (if (< (length ivy--orig-cands)
-                             (+ max-mini-window-height ivy--index))
-                          (- (+ max-mini-window-height ivy--index)
-                             (length ivy--orig-cands))
-                        swiper--async-default-max-matches-per-search)))
-                )
-            (when found-grep-candidates
+  (save-match-data
+    (when (active-minibuffer-window)
+      (with-ivy-window
+        (save-excursion
+          (deactivate-mark)
+          (let* (
+                 (should-sleep-more nil)
+                 (yield-isearch nil)
+                 (finished-wndcands (not swiper-include-line-number-in-search))
+                 (overlays (swiper--async-overlays-sorted))
+                 (filled-minibuffer-candidates
+                  (or (>= (length ivy--orig-cands)
+                          (+ max-mini-window-height ivy--index))
+                      (not (null overlays))))
+                 (found-grep-candidates
+                  (not (null swiper--async-process-candidates)))
+                 )
+            (when (and swiper-include-line-number-in-search
+                       filled-minibuffer-candidates)
+              (setq finished-wndcands t)
               (let (
-                    (last-end nil)
+                    (zero-line-prefix (format swiper--format-spec 0))
+                    (should-update-wndcands nil)
+                    (new-wnd-cands)
                     )
+                (when (null swiper--async-last-line-pos)
+                  (swiper--async-line-at-pos (point-min) t))
+                (dolist (wndcand swiper--async-old-wnd-cands)
+                  (if (not (string-prefix-p zero-line-prefix wndcand))
+                      (push wndcand new-wnd-cands)
+                    (let (
+                          (line-begin (swiper--get-line-begin wndcand))
+                          (overlay-begin (swiper--get-begin wndcand))
+                          (overlay-end (swiper--get-end wndcand))
+                          )
+                      (while (and (not (setq yield-isearch
+                                             (or yield-isearch
+                                                 (setq should-sleep-more
+                                                       (or should-sleep-more
+                                                           (swiper--async-should-quit-async))))))
+                                  (/= line-begin swiper--async-last-line-pos))
+                        (swiper--async-line-at-pos
+                         (if (> line-begin swiper--async-last-line-pos)
+                             (+ swiper--async-last-line-pos
+                                (min (- line-begin swiper--async-last-line-pos)
+                                     swiper--async-max-line-count-size))
+                           (- swiper--async-last-line-pos
+                              (min (- swiper--async-last-line-pos line-begin)
+                                   swiper--async-max-line-count-size)))))
+                      (if (/= line-begin swiper--async-last-line-pos)
+                          (progn
+                            (push wndcand new-wnd-cands)
+                            (setq finished-wndcands nil))
+                        (setq should-update-wndcands t)
+                        (let (
+                              (new-wnd-cand
+                               (concat (format swiper--format-spec
+                                               swiper--async-last-line)
+                                       (substring wndcand
+                                                  (length zero-line-prefix)
+                                                  (length wndcand))))
+                              )
+                          (put-text-property
+                           0 1 'region-data
+                           (cons
+                            (swiper--async-create-marker overlay-end)
+                            (swiper--async-create-marker overlay-begin))
+                           new-wnd-cand)
+                          (put-text-property
+                           0 1 'line-region-data
+                           (cons
+                            nil
+                            line-begin)
+                           new-wnd-cand)
+                          (push new-wnd-cand new-wnd-cands))))))
+                (when should-update-wndcands
+                  (ivy--insert-minibuffer
+                   (ivy--wnd-cands-to-str (reverse new-wnd-cands))))))
+            (let (
+                  (matches-found 0)
+                  (swiper--async-max-matches-per-search
+                   (max 1
+                        (if (< (length ivy--orig-cands)
+                               (+ max-mini-window-height ivy--index))
+                            (- (+ max-mini-window-height ivy--index)
+                               (length ivy--orig-cands))
+                          swiper--async-default-max-matches-per-search)))
+                  )
+              (when found-grep-candidates
                 (let (
-                      (candidates-create-time (car (benchmark-and-get-result
+                      (last-end nil)
+                      )
+                  (let (
+                        (candidates-create-time (car (benchmark-and-get-result
                 (while (and (not (setq yield-isearch
                                        (or yield-isearch
                                            (setq should-sleep-more
@@ -974,46 +975,46 @@ candidates in the minibuffer asynchrounouosly."
                     (setq last-end (cdr beg-end))
                     (funcall func (car beg-end) (cdr beg-end))))
                 ))))
-                  (when (null swiper--async-process-candidates)
-                    (setq swiper--async-process-last-inserted nil))
-                  (unless (null last-end)
-                    (let (
-                          (overlay-at-last-end (when (< last-end (point-max))
-                                                 (swiper--async-overlay-at-point
-                                                  (+ last-end 1))))
-                          )
-                      (unless (null overlay-at-last-end)
-                        (let (
-                              (overlay-at-last-end-end (overlay-end
-                                                        overlay-at-last-end))
-                              )
-                          (delete-overlay overlay-at-last-end)
-                          (swiper--async-create-overlay
-                           (+ last-end 1)
-                           overlay-at-last-end-end))))
-                    (remove-overlays (point-min)
-                                     last-end 'type 'swiper-async))
-                  (when (null (get-process swiper--async-process-name))
-                    (remove-overlays (point-min)
-                                     (point-max) 'type 'swiper-async))
-                  (when (/= matches-found 0)
-                    (setq swiper--async-default-max-matches-per-search
-                          (ceiling (/ (* matches-found
-                                         swiper--max-search-time)
-                                      candidates-create-time)))))))
-            (when (and (/= (length swiper--async-to-search) 0)
-                       (not (swiper--async-same-as-disk)))
-              (counsel-delete-process swiper--async-process-name)
-              (let (
-                    (re-str swiper--async-to-search-re)
-                    )
+                    (when (null swiper--async-process-candidates)
+                      (setq swiper--async-process-last-inserted nil))
+                    (unless (null last-end)
+                      (let (
+                            (overlay-at-last-end (when (< last-end (point-max))
+                                                   (swiper--async-overlay-at-point
+                                                    (+ last-end 1))))
+                            )
+                        (unless (null overlay-at-last-end)
+                          (let (
+                                (overlay-at-last-end-end (overlay-end
+                                                          overlay-at-last-end))
+                                )
+                            (delete-overlay overlay-at-last-end)
+                            (swiper--async-create-overlay
+                             (+ last-end 1)
+                             overlay-at-last-end-end))))
+                      (remove-overlays (point-min)
+                                       last-end 'type 'swiper-async))
+                    (when (null (get-process swiper--async-process-name))
+                      (remove-overlays (point-min)
+                                       (point-max) 'type 'swiper-async))
+                    (when (/= matches-found 0)
+                      (setq swiper--async-default-max-matches-per-search
+                            (ceiling (/ (* matches-found
+                                           swiper--max-search-time)
+                                        candidates-create-time)))))))
+              (when (and (/= (length swiper--async-to-search) 0)
+                         (not (swiper--async-same-as-disk)))
+                (counsel-delete-process swiper--async-process-name)
                 (let (
-                      (positive-re swiper--async-to-search-positive-re)
-                      (searched-bytes 0)
-                      (last-found nil)
+                      (re-str swiper--async-to-search-re)
                       )
                   (let (
-                        (matches-found-time (car (benchmark-and-get-result
+                        (positive-re swiper--async-to-search-positive-re)
+                        (searched-bytes 0)
+                        (last-found nil)
+                        )
+                    (let (
+                          (matches-found-time (car (benchmark-and-get-result
                     (while (and (not (null overlays))
                                 (not yield-isearch))
                       (let* (
@@ -1091,16 +1092,16 @@ candidates in the minibuffer asynchrounouosly."
                             (unless yield-isearch
                               (setq overlays (cdr overlays)))))))
                     )))
-                        )
-                    (when (/= searched-bytes 0)
-                      (setq swiper--max-search-length ;(* 10 4096)
-                            (ceiling (/ (* searched-bytes
-                                           swiper--max-search-time)
-                                        matches-found-time))))))))
-            (when (/= matches-found 0)
-              (swiper--async-update-output)))
-          (when yield-isearch
-            (schedule-isearch buffer func should-sleep-more)))))))
+                          )
+                      (when (/= searched-bytes 0)
+                        (setq swiper--max-search-length ;(* 10 4096)
+                              (ceiling (/ (* searched-bytes
+                                             swiper--max-search-time)
+                                          matches-found-time))))))))
+              (when (/= matches-found 0)
+                (swiper--async-update-output)))
+            (when yield-isearch
+              (schedule-isearch buffer func should-sleep-more))))))))
 
 (defun swiper--async-insertion-sort (candidate-cons comp-func insertion-point)
   "Insert the candidate in `candidate-cons' to the list starting at
