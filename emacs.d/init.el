@@ -602,6 +602,26 @@
 (global-set-key goto-def-key 'dumb-jump-go)
 
 (which-function-mode 1)
+(defun which-func-ff-hook ()
+  "File find hook for Which Function mode.
+It creates the Imenu index for the buffer, if necessary."
+  (if (not (or (null which-func-maxout)
+               (< buffer-saved-size which-func-maxout)
+               (= which-func-maxout 0)))
+      (setq which-func-mode nil)
+    (which-func-try-to-enable)
+    (condition-case err
+        (if (and which-func-mode
+                 (not (member major-mode which-func-non-auto-modes))
+                 )
+            (setq imenu--index-alist
+                  (save-excursion (funcall imenu-create-index-function))))
+      (imenu-unavailable
+       (setq which-func-mode nil))
+      (error
+       (message "which-func-ff-hook error: %S" err)
+       (setq which-func-mode nil)))))
+
 ;; (require 'ess)
 
 (require 'completion-epc) ; required for frida completion
