@@ -67,6 +67,26 @@
                           buffer))))
  :save-vars '(default-directory))
 
+(def-persp-buffer-save/load
+ :mode 'dired-mode
+ :load-function #'(lambda (savelist default-load-function after-load-function)
+                    (when (persp-is-same-major-mode-from-savelist
+                           savelist 'dired-mode)
+                      (let (
+                            (buffer
+                             (dired
+                              (persp-load-get-default-directory-from-savelist
+                               savelist)))
+                            )
+                        (let (
+                              (buffer-name
+                               (persp-buffer-name-from-savelist savelist))
+                              )
+                          (with-current-buffer buffer
+                            (rename-buffer buffer-name)
+                            (persp-load-variables-from-savelist savelist))))))
+ :save-vars '(default-directory))
+
 ;; magit-status
 (with-eval-after-load "magit-autoloads"
   (autoload 'magit-status-mode "magit")
