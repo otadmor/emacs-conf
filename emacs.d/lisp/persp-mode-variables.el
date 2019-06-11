@@ -230,6 +230,7 @@
 (push 'ivy--last-cand pmv/clear-vars)
 (push 'ivy--next-cand-index pmv/clear-vars)
 
+(push 'recentf-list pmv/specific-vars)
 
 
 (provide 'persp-mode-variables)
