@@ -138,7 +138,7 @@ Use `winstack-push' and
 
 (setq in-winstack nil)
 
-(defun winstack-push(&optional window important)
+(defun winstack-push(&optional window important join)
   (let (
         (window (if window window (selected-window)))
         )
@@ -155,23 +155,33 @@ Use `winstack-push' and
                  bn
                  (not (minibufferp buffer))
                  )
-            (winstack-push-inner window bn mark important)))))))
+            (winstack-push-inner window bn mark important join)))))))
 
 (defun same-buffer-point(o buffer point)
   (and
    (equal (third o) buffer)
-   (equal (winstack-point-from-marker (fourth o)) (winstack-point-from-marker point))))
+   (let ((stored-point (winstack-point-from-marker (fourth o))))
+     (equal stored-point (winstack-point-from-marker point)))))
 
-(defun buffer-point-action(o buffer point important)
+(defun close-buffer-point(o buffer point)
+  (and
+   (equal (third o) buffer)
+   (let ((stored-point (winstack-point-from-marker (fourth o))))
+     (or (equal stored-point (winstack-point-from-marker (- point 1)))
+         (equal stored-point (winstack-point-from-marker (+ point 1)))))))
+
+
+(defun buffer-point-action(o buffer point important join)
   (if (not (same-buffer-point o buffer point))
-      0 ; put new
+      (if (and join (close-buffer-point o buffer point))
+          3 ; join
+        0) ; put new
     (if important
         1 ; replace
-      2 ; do nothing
-    )))
+      2))) ; do nothing
 
 ; compare-window-configurations
-(defun winstack-push-inner(window buffer point &optional important)
+(defun winstack-push-inner(window buffer point &optional important join)
     "Push the current window state onto `winstack-stack'."
     ;;(message "items before push important %S" my-important)
     ;;(print-elements-of-list winstack-future-stack)
@@ -191,25 +201,28 @@ Use `winstack-push' and
     (let (
           (action
            (if (> (winstack-stack-length) 0)
-               (buffer-point-action (winstack-stack-first) buffer point important)
+               (buffer-point-action (winstack-stack-first)
+                                    buffer point important join)
              0)) ; put new
           )
       (if (= action 2) ; do nothing
         (progn
           ;; (message "Current config already pushed %S" my-buffer)
           )
-        (progn
-          (when (= action 1) ; replace - pop existing items
+        (if (= action 3) ; join
+            (progn
+              (setcar (cdddr (winstack-stack-first)) point)
+              )
+          (progn
+            (when (= action 1) ; replace - pop existing items
               (winstack-stack-pop)
-            )
-          ;; (winstack-stack-push (list important window buffer point))
-          ;;(message "winstack-push %S" item)
-          (winstack-stack-push (list important nil buffer point))
+              )
+            ;; (winstack-stack-push (list important window buffer point))
+            ;;(message "winstack-push %S" item)
+            (winstack-stack-push (list important nil buffer point))
 
-          ;; (message (concat "pushed " (number-to-string (length (window-list (selected-frame)))) " window state"))
-          )
-        )
-      )
+            ;; (message (concat "pushed " (number-to-string (length (window-list (selected-frame)))) " window state"))
+            ))))
     ;;(message "items after push")
     ;;(print-elements-of-list winstack-future-stack)
     ;;(message ",")
@@ -322,7 +335,7 @@ Use `winstack-push' and
 
 
 (defun winstack-change-hooks(&rest args)
-  (winstack-push))
+  (winstack-push nil nil t))
 (add-hook 'after-change-functions #'winstack-change-hooks)
 (add-hook 'before-change-functions #'winstack-change-hooks)
 
