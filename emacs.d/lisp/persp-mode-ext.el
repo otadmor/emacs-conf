@@ -131,7 +131,14 @@ of the perspective %s can't be saved."
                   (when persp-mode
                     (let ((persp (get-current-persp)))
                       (if persp
-                          (not (persp-contain-buffer-p b persp))
+                          (if (not (persp-contain-buffer-p b persp))
+                              (if (not ivy-use-virtual-buffers)
+                                  t
+                                (let ((is-virtual-buffer
+                                       (eq (get-text-property 0 'face b)
+                                           'ivy-virtual)))
+                                      (not is-virtual-buffer)))
+                            nil)
                         nil)))))
 
     (setq ivy-sort-functions-alist
