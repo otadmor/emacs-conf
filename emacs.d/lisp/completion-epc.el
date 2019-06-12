@@ -66,6 +66,32 @@
     mngr))
 
 
+
+(defun epc:net-read-or-lose-fix (process)
+  (condition-case nil
+      (epc:net-read)
+    (error nil
+     ;; (message "net-read error: %S" error))
+    ;; (disconnect-completion-server mngr-complete-epc)
+    ))
+(defalias 'epc:net-read-or-lose 'epc:net-read-or-lose-fix)
+
+
+(defun epc:net-read-fix ()
+  "Read a message from the network buffer."
+  (goto-char (point-min))
+  (let* ((length (epc:net-decode-length))
+         (start (+ 6 (point)))
+         (end (+ start length)) content)
+    (when (plusp length)
+      (prog1 (save-restriction
+               (narrow-to-region start end)
+               (read (decode-coding-string
+                      (buffer-string) 'utf-8-unix)))
+        (delete-region (point-min) end)))))
+(defalias 'epc:net-read 'epc:net-read-fix)
+
+
 (defun connect-completion-server (server-port)
   (message "Found EPC server at %S" server-port)
   (let (
