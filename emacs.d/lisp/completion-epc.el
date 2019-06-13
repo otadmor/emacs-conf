@@ -47,6 +47,11 @@
 (advice-add 'epc:process-filter :around #'epc:process-filter-stop-on-error)
 
 
+(defun epc:process-available-input-check-buffer(orig-fun &rest args)
+  (when (buffer-live-p (process-buffer process))
+    (apply orig-fun args)))
+(advice-add 'epc:process-available-input :around #'epc:process-available-input-check-buffer)
+
 
 (defun epc:connect-remote-server (server-address server-port)
   (let (
@@ -430,7 +435,7 @@
                        (let (
                              (prefix (funcall prefix-cb))
                              )
-                         (when (and (stringp prefix))
+                         (when (stringp prefix)
                            (funcall ac-epc-complete-request prefix)
                            (let (
                                  (beg (- (point) (length prefix)))

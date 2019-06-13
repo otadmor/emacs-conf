@@ -121,7 +121,7 @@ class PythonModeEPCCompletion(object):
                 'word' : pre_text + res,
                 'pos' : pos,
                 'doc' : self.try_or_err(lambda:self.doc(res), "Error"),
-                'description' : self.try_or_err(lambda:self.symbol(res), "Error"),
+                'description' : self.try_or_err(lambda:self.symbol(res)[:100], "Error"),
                 'symbol' : self.try_or_err(lambda:self.meta(res), "Error"),
             } for res in self.readline_complete(text)]
         except:
@@ -141,6 +141,8 @@ class PythonModeEPCCompletion(object):
             return ""
         if isinstance(d, type(lambda:None)):
             return get_func_signature(d)
+        elif isinstance(d, (list,tuple,)):
+            return "%r" % (d[:100],)
         else:
             t = "%r" % (d,)
             return t
