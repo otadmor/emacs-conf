@@ -11,6 +11,7 @@ import threading
 from epc.server import EPCServer
 from epc.client import EPCClient
 from collections import namedtuple
+import time
 
 import string
 import sys
@@ -176,19 +177,44 @@ def py_shell_completion_main():
     if epc_port is not None:
         epc_port = int(epc_port)
         # print("Connecting completion server, port=%d" % (epc_port,))
-        rpc_complete = PythonModeEPCCompletionClient(port=epc_port)
-        rpc_complete_thread = threading.Thread(
-            target=rpc_complete.connect,
-            name='PythonModeEPCCompletion',
-            kwargs={'socket_or_address' : ('localhost', epc_port)})
-    else:
-        rpc_complete = PythonModeEPCCompletionServer()
-        rpc_complete.print_port()  # needed for Emacs client
-        rpc_complete_thread = threading.Thread(
-            target=rpc_complete.serve_forever,
-            name='PythonModeEPCCompletion')
-    rpc_complete_thread.setDaemon(True)
-    rpc_complete_thread.start()
+        from epc.client import EPCClientHandler
+        def EPCClientHandler_handle_error(obj, err):
+            # if isinstance(err, (BaseRemoteError, EPCClosed)):
+            #     return True
+            create_completer_thread(s=True)
+            return True
+        EPCClientHandler.handle_error = EPCClientHandler_handle_error
+        EPCClientHandler_finish_orig = EPCClientHandler.finish
+        def EPCClientHandler_finish(obj):
+            try:
+                EPCClientHandler_finish_orig(obh)
+            except Exception as e:
+                pass
+        EPCClientHandler.finish = EPCClientHandler_finish
+
+        def connect_client(s=False):
+            if s:
+                time.sleep(1)
+            rpc_complete = PythonModeEPCCompletionClient(port=epc_port)
+            rpc_complete.connect(socket_or_address=('localhost', epc_port))
+        from epc.utils import ThreadedIterator
+        ThreadedIterator__target = ThreadedIterator._target
+        def ThreadedIterator__target_with_error_handle(obj):
+            try:
+                ThreadedIterator__target(obj)
+            except Exception as e:
+                obj.stop()
+                create_completer_thread(s=True)
+        ThreadedIterator._target = ThreadedIterator__target_with_error_handle
+
+        def create_completer_thread(s):
+            rpc_complete_thread = threading.Thread(
+                target=connect_client,
+                name='PythonModeEPCCompletion',
+                kwargs={'s' : False})
+            rpc_complete_thread.setDaemon(True)
+            rpc_complete_thread.start()
+        create_completer_thread(s=False)
 
 if os.environ["TERM"] == "dumb":
     py_shell_completion_main()

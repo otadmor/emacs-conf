@@ -16,43 +16,35 @@
 (setq mngr-complete-epc nil)
 (make-local-variable 'mngr-complete-epc)
 
-(defun disconnect-completion-server (mngr)
-  (when (not (null mngr))
-    (when (eq mngr mngr-complete-epc)
-      (let (
-            (connection-buffer
-             (epc:connection-buffer (epc:manager-connection mngr)))
-            )
+(defun completion-epc-clear-completion-epc-hook(orig-fun &rest args)
+  (let (
+        (mngr (car args))
+        )
+    (unless (null mngr)
+      (when (eq mngr-complete-epc mngr)
         (setq-local mngr-complete-epc nil)
-        (kill-local-variable 'mngr-complete-epc)
-        (when (buffer-live-p connection-buffer)
-          (kill-buffer connection-buffer))))))
+        (kill-local-variable 'mngr-complete-epc))
+      (apply orig-fun args))))
+(advice-add 'epc:stop-epc :around #'completion-epc-clear-completion-epc-hook)
 
-(defun fire-exit-hook(orig-fun &rest args)
-  (disconnect-completion-server (car args))
+(defun epc:with-manager-for-connection (connection func)
+  (loop
+   for mngr in epc:live-connections collect
+   (list (when (eq (epc:manager-connection mngr) connection )
+           (funcall func mngr)))))
+
+(defun epc:process-filter-stop-on-error(orig-fun &rest args)
   (condition-case err
       (apply orig-fun args)
-    (error (epc:log "Error on exit-hooks : %S / " err mngr))))
-(advice-add 'epc:manager-fire-exit-hook :around #'fire-exit-hook)
-
-
-(defun process-sentinel-hook(orig-fun &rest args)
-  (apply orig-fun args)
-  (let (
-        (connection (car args))
-        )
-    (let (
-          (conn-name (epc:connection-name connection))
-          )
-      (dolist (mngr epc:live-connections)
-        (let (
-              (cur-conn-name (epc:connection-name (epc:manager-connection mngr)))
-              )
-          (if (string= cur-conn-name conn-name)
-              (condition-case err
-                  (epc:manager-fire-exit-hook mngr)
-                (error (epc:log "Error on exit-hooks : %S / " err mngr)))))))))
-(advice-add 'epc:process-sentinel :around #'process-sentinel-hook)
+    (error
+     (let (
+           (connection (car args))
+           )
+       (unless (null connection)
+         (epc:with-manager-for-connection
+          connection
+          (lambda (mngr) (epc:stop-epc mngr))))))))
+(advice-add 'epc:process-filter :around #'epc:process-filter-stop-on-error)
 
 
 
@@ -66,14 +58,8 @@
     mngr))
 
 
-
 (defun epc:net-read-or-lose-fix (process)
-  (condition-case nil
-      (epc:net-read)
-    (error nil
-     ;; (message "net-read error: %S" error))
-    ;; (disconnect-completion-server mngr-complete-epc)
-    ))
+  (epc:net-read))
 (defalias 'epc:net-read-or-lose 'epc:net-read-or-lose-fix)
 
 
@@ -83,12 +69,14 @@
   (let* ((length (epc:net-decode-length))
          (start (+ 6 (point)))
          (end (+ start length)) content)
-    (when (plusp length)
+    (if (plusp length)
       (prog1 (save-restriction
                (narrow-to-region start end)
                (read (decode-coding-string
                       (buffer-string) 'utf-8-unix)))
-        (delete-region (point-min) end)))))
+        (delete-region (point-min) end))
+      (signal error "(plusp length)")
+      nil)))
 (defalias 'epc:net-read 'epc:net-read-fix)
 
 
@@ -99,8 +87,7 @@
                "localhost"
                server-port))
         )
-    (setq-local mngr-complete-epc mngr)
-    (epc:manager-add-exit-hook mngr (lambda () (disconnect-completion-server mngr)))))
+    (setq-local mngr-complete-epc mngr)))
 
 
 (defun epcs:server-start-with-host-reuseaddr-nowait (connect-function &optional port host)
@@ -151,8 +138,7 @@
 (defun epc:incoming-connection-made-mngr (mngr working-buffer)
   (with-current-buffer working-buffer
     (message "EPC client connected in buffer %S" (current-buffer))
-    (setq-local mngr-complete-epc mngr)
-    (epc:manager-add-exit-hook mngr (lambda () (disconnect-completion-server mngr)))))
+    (setq-local mngr-complete-epc mngr)))
 
 (defun completion--comint-output-filter (string)
   (save-match-data
@@ -189,7 +175,7 @@
     (condition-case nil
         (epc:call-deferred mngr 'complete to-complete)
       (error (progn
-               (disconnect-completion-server mngr)
+               ;; (epc:stop-epc mngr)
                (message "error in completion server")
                (deferred:next (lambda () '())))))))
 
