@@ -13,7 +13,11 @@
 (defun server-create-window-system-frame-hook(orig-fun &rest args)
   (setq server-inside-emacs-client t)
   (check-frames-connection)
-  (apply orig-fun args)
+  (let (
+        (res (apply orig-fun args))
+        )
+    (persp-load-state-from-file)
+    res)
 ;;   (let (
 ;;         (expected-display (car-safe args))
 ;;         (frame-display (frame-parameter (selected-frame) 'display))
