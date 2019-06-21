@@ -1,3 +1,4 @@
+#  systemctl --user enable emacs
 cd () {
     command pushd "$@" > /dev/null
 }
