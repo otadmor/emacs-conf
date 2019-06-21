@@ -3,6 +3,10 @@
     (dolist (frame (frame-list))
       (when (eq (framep frame) 'x)
         (x-check-frame frame)))))
+(defun check-frames-connection-timer ()
+  (check-frames-connection)
+  (run-at-time 2 nil 'check-frames-connection-timer))
+(run-at-time 2 nil 'check-frames-connection-timer)
 
 (setq server-inside-emacs-client nil)
 ; patches the call at server.el:1237
