@@ -132,6 +132,8 @@
 (setq scroll-step 1) ;; keyboard scroll one line at a time
 
 (setenv "PAGER" "cat")
+(setenv "EDITOR" "emacsclient")
+(setenv "VISUAL" "emacsclient")
 
 (add-to-list 'package-archives
              '("melpa-stable" . "http://stable.melpa.org/packages/") t)
