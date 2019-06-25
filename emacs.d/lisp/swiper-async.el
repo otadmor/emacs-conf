@@ -169,6 +169,9 @@ candidate is limited to isearch-swiper-limit(default=3) while searching."
               (cons (match-beginning 0) (match-end 0))
             (cons beg pos)))))))
 
+(defvar swiper--async-did-action nil
+  "Changed to t when the action function is called for the first time
+on the current search.")
 (defun swiper--async-action(x)
   "goto the candidate position in the file and mark it for a second for the
 user to see where it is."
@@ -179,6 +182,7 @@ user to see where it is."
                    )
                (swiper--async-match-in-buffer x)))
         )
+    (setq swiper--async-did-action t)
     (let (
           (beg (car res))
           (pos (cdr res))
@@ -572,6 +576,7 @@ from"
   (with-ivy-window
     (setq ivy--old-re nil)
     (setq isearch-string ivy-text)
+    (setq swiper--async-did-action nil)
     (unless (= (length ivy-text--persp-variables) 0)
       (setq string ivy-text--persp-variables)
       (setq ivy-text ivy-text--persp-variables)
@@ -762,7 +767,7 @@ the minibuffer with the new candidates."
     (setq ivy--old-re nil) ; force recalculation
     (ivy--insert-minibuffer
      (ivy--format
-      (swiper--async-update-all-candidates)))
+      (swiper--async-update-all-candidates (not swiper--async-did-action))))
     (swiper--async-update-input-ivy)))
 
 (defun swiper-async--join-re-positive (re-str)
