@@ -15,16 +15,18 @@
 
 (setq mngr-complete-epc nil)
 (make-local-variable 'mngr-complete-epc)
+(defun completion-epc-kill-mngr (mngr)
+  (unless (null mngr)
+    (when (eq mngr-complete-epc mngr)
+      (setq-local mngr-complete-epc nil)
+      (kill-local-variable 'mngr-complete-epc))))
 
 (defun completion-epc-clear-completion-epc-hook(orig-fun &rest args)
   (let (
         (mngr (car args))
         )
-    (unless (null mngr)
-      (when (eq mngr-complete-epc mngr)
-        (setq-local mngr-complete-epc nil)
-        (kill-local-variable 'mngr-complete-epc))
-      (apply orig-fun args))))
+    (completion-epc-kill-mngr mngr)
+    (apply orig-fun args)))
 (advice-add 'epc:stop-epc :around #'completion-epc-clear-completion-epc-hook)
 
 (defun epc:with-manager-for-connection (connection func)
@@ -182,6 +184,7 @@
       (error (progn
                ;; (epc:stop-epc mngr)
                (message "error in completion server")
+               (completion-epc-kill-mngr mngr)
                (deferred:next (lambda () '())))))))
 
 (defun epc-complete-deferred (to-complete)
