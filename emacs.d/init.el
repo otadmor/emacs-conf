@@ -330,7 +330,7 @@
 (setq ivy-use-virtual-buffers t)
 (setq ivy-wrap t)
 (setq ivy-auto-select-single-candidate t)
-
+(setq ivy-on-del-error-function 'ignore)
 ;(setq ivy-magic-slash-non-match-action nil)
 
 (require 'ivy-utils)
