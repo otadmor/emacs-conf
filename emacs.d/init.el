@@ -339,6 +339,7 @@
 
 (define-key ivy-minibuffer-map (kbd "C-d") #'ivy-immediate-done)
 (define-key ivy-minibuffer-map (kbd "RET") #'ivy-alt-done)
+(define-key ivy-minibuffer-map [(control return)] #'ivy-done)
 (define-key ivy-minibuffer-map [(meta t)] 'ivy-shell)
 (define-key ivy-minibuffer-map [(meta shift t)] 'ivy-new-shell)
 (define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
