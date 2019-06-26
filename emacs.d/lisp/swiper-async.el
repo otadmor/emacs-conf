@@ -189,11 +189,13 @@ user to see where it is."
           )
       (save-restriction
         (widen)
-        (ivy--pulse-region beg pos)
-        ;; (let (
-        ;;       (search-highlight t)
-        ;;       )
-        ;;   (isearch-highlight beg pos))
+        (if (or (eq this-command 'ivy-alt-done)
+                (eq this-command 'ivy-done))
+          (ivy--pulse-region beg pos)
+          (let (
+                (search-highlight t)
+                )
+            (isearch-highlight beg pos)))
         (goto-char pos)))))
 
 (defcustom swiper-async-filter-update-time 50
@@ -1406,36 +1408,6 @@ Markers highlights the results in the buffer itself."
   "Called when `ivy' input is updated."
   (with-ivy-window
     (swiper--cleanup)
-    (when (> (length ivy--all-candidates) 0)
-      (let (
-            (item (ivy-state-current ivy-last))
-            )
-        (let (
-              ;; XXX : a bug here with invalid marker when executed from
-              ;; XXX : ivy--exhibit from timer and using persp-mode.
-              ;; XXX : exit gracefully, but need a better way of stoping
-              ;; XXX : the exhibit.
-              (res (save-excursion
-                     (condition-case nil
-                         (swiper--async-match-in-buffer item)
-                       (error (progn nil)))))
-              )
-          (unless (null res)
-            (let (
-                  (beg (car res))
-                  (pos (cdr res))
-                  )
-              ;; (when (not (memq this-command '(ivy-yank-word
-              ;;                                 ivy-yank-symbol
-              ;;                                 ivy-yank-char
-              ;;                                 scroll-other-window
-              ;;                                 swiper-async)))
-              ;;   (goto-char pos))
-              ;; (let (
-              ;;       (search-highlight t)
-              ;;       )
-              ;;   (isearch-highlight beg pos))
-              )))))
     (swiper--async-mark-candidates-in-window)))
 
 (defvar swiper--async-process-name "*swiper--async*"
