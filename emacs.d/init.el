@@ -278,6 +278,9 @@
 
 (global-set-key (kbd "M-d") 'switch-to-minibuffer)
 
+(define-key compilation-mode-map (kbd "n") 'next-error-no-select)
+(define-key compilation-mode-map (kbd "p") 'previous-error-no-select)
+
 (require 'redo+)
 (global-set-key [(control z)] 'undo)
 (global-set-key [(control y)] 'redo)
