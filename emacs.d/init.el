@@ -281,6 +281,10 @@
 (define-key compilation-mode-map (kbd "n") 'next-error-no-select)
 (define-key compilation-mode-map (kbd "p") 'previous-error-no-select)
 
+(defun update-next-error-which-function ()
+  (which-func-update-1 (selected-window)))
+(add-hook 'next-error-hook 'update-next-error-which-function)
+
 (require 'redo+)
 (global-set-key [(control z)] 'undo)
 (global-set-key [(control y)] 'redo)
