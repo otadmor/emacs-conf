@@ -363,6 +363,7 @@
 (define-key swiper-map (kbd "C-k") 'swiper-kill-line)
 (define-key swiper-map (kbd "M-f") 'swiper-convert-to-ag)
 (define-key ivy-minibuffer-map (kbd "M-f") 'swiper-convert-to-ag)
+(define-key counsel-find-file-map (kbd "M-f") 'find-file-convert-to-ag)
 
 (require 'multiple-cursors-swiper)
 

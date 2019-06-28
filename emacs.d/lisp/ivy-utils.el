@@ -57,6 +57,11 @@
   (ivy-quit-and-run
     (counsel-ag-preselect ivy-text)))
 
+(defun find-file-convert-to-ag ()
+  (interactive)
+  (ivy-quit-and-run
+    (counsel-ag-preselect ivy--directory)))
+
 (defun swiper--goto-original-point()
   (interactive)
   (with-ivy-window
