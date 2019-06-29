@@ -668,6 +668,8 @@
 (bash-completion-setup)
 
 (require 'sr-speedbar-ext)
+;; (global-set-key (kbd "C-e") 'sr-speedbar-toggle-keep-window)
+(global-set-key (kbd "C-e") 'sr-speedbar-toggle)
 
 (require 'ivy-dumb-jump)
 (global-set-key goto-def-key 'dumb-jump-go)

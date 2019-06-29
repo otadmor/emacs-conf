@@ -81,6 +81,5 @@ of a speedbar-window.  It will be created if necessary."
       (sr-speedbar-open)
       (setq speedbar-last-window (frame-selected-window))
       (sr-speedbar-select-window))))
-(global-set-key (kbd "C-e") 'sr-speedbar-toggle-keep-window)
 
 (provide 'sr-speedbar-ext)
