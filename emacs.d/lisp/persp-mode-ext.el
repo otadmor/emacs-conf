@@ -124,9 +124,15 @@
 
 
 (setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*"))
-(add-hook 'persp-created-functions
-         #'(lambda (&rest _)
-             (persp-add-buffer persp-shared-buffers)))
+(defun persp-mode-add-shared-buffers (orig-fun &rest args)
+  (let (
+        (res (apply orig-fun args))
+        )
+    (condition-case nil
+        (persp-add-buffer persp-shared-buffers)
+      (error nil))
+    res))
+(advice-add 'set-frame-persp :around #'persp-mode-add-shared-buffers)
 
 (defun persp-parameters-to-savelist-hide-message (persp)
   `(def-params ,(remove-if
