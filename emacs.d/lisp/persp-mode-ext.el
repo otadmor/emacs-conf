@@ -124,9 +124,9 @@
 
 
 (setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*"))
-(add-hook 'persp-activated-functions
-          #'(lambda (_)
-              (persp-add-buffer persp-shared-buffers)))
+(add-hook 'persp-created-functions
+         #'(lambda (&rest _)
+             (persp-add-buffer persp-shared-buffers)))
 
 (defun persp-parameters-to-savelist-hide-message (persp)
   `(def-params ,(remove-if
