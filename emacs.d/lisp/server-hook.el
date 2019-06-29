@@ -51,7 +51,6 @@
       (condition-case nil
           (persp-load-state-from-file)
         (error nil))
-      (setq tty-name nil)
       res)))
 (advice-add 'server-create-window-system-frame :around #'server-create-window-system-frame-hook)
 
