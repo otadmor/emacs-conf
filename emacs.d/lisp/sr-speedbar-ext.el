@@ -2,10 +2,20 @@
 (require 'sr-speedbar)
 (sr-speedbar-refresh-turn-off)
 (defun sr-speedbar-find-window-buffer()
-  (setq sr-speedbar-window (get-buffer-window sr-speedbar-buffer-name 'visible))
+  (setq sr-speedbar-window (get-buffer-window sr-speedbar-buffer-name))
   (if sr-speedbar-window
       (setq speedbar-buffer (window-buffer sr-speedbar-window))
-      (setq speedbar-buffer nil)))
+    (setq speedbar-buffer nil)))
+
+
+(setq sr-speedbar-buffer-name-orig sr-speedbar-buffer-name)
+(defun persp-mode-speedbar-after-activate-hook(frame-or-window)
+  (setq sr-speedbar-buffer-name (concat sr-speedbar-buffer-name-orig
+                                        (if (null (get-current-persp))
+                                            ""
+                                          (safe-persp-name (get-current-persp)))))
+  (setq sr-speedbar-window (get-buffer-window sr-speedbar-buffer-name)))
+(add-hook 'persp-activated-functions #'persp-mode-speedbar-after-activate-hook)
 
 (setq sr-speedbar-right-side t)
 
@@ -31,12 +41,6 @@
               ;; Otherwise select left widnow.
               current-window)))))
 
-(defun sr-speedbar-exist-p-hook(orig-fun &rest args)
-  (sr-speedbar-find-window-buffer)
-  (apply orig-fun args)
-  ;(get-buffer-window sr-speedbar-buffer-name 'visible)
-  )
-(advice-add 'sr-speedbar-exist-p :around #'sr-speedbar-exist-p-hook)
 
 (defun sr-speedbar-navigate() (interactive)
   (let (
