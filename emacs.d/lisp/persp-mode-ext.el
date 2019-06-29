@@ -142,7 +142,7 @@ of the perspective %s can't be saved."
                  (safe-persp-parameters persp))))
 (defalias 'persp-parameters-to-savelist 'persp-parameters-to-savelist-hide-message)
 (setq persp-mode-hide-autosave-errors t)
-(with-eval-after-load "persp-mode"
+(with-eval-after-load "persp-mode-autoloads"
   (setq wg-morph-on nil)
   (set-persp-parameter 'dont-save-to-file t nil)
   (with-eval-after-load "ivy"
