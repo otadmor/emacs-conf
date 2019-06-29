@@ -148,17 +148,10 @@
 (defun persp-variables-post-resume()
   (when (active-minibuffer-window)
     (with-ivy-window
-      (when (not (null swiper--async-high-start-point))
-        (swiper--async-add-hooks)
-        (when (or (< swiper--async-high-start-point
-                     swiper--async-high-end-point)
-                  (< swiper--async-low-start-point
-                     swiper--async-low-end-point))
-          ;; (add-hook 'post-command-hook #'ivy--queue-exhibit nil t)
-          (schedule-isearch
-           (current-buffer)
-           'swiper--async-found-new-candidate)
-          (swiper--async-update-input-ivy))))))
+      (schedule-isearch
+       (current-buffer)
+       'swiper--async-found-new-candidate)
+      (swiper--async-update-input-ivy))))
 
 (defun persp-variables-after-activate-hook(frame-or-window)
   (run-at-time nil nil
@@ -217,10 +210,7 @@
 ; (push 'ivy--pulse-overlay pmv/specific-vars)
 
 (push 'swiper--async-to-search pmv/specific-vars)
-(push 'swiper--async-high-start-point pmv/specific-vars)
-(push 'swiper--async-high-end-point pmv/specific-vars)
-(push 'swiper--async-low-start-point pmv/specific-vars)
-(push 'swiper--async-low-end-point pmv/specific-vars)
+
 (push 'swiper--async-direction-backward pmv/specific-vars)
 
 
