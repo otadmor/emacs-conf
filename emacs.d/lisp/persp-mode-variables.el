@@ -222,5 +222,6 @@
 
 (push 'recentf-list pmv/specific-vars)
 
+;; (push 'sr-speedbar-width pmv/saved-specific-vars)
 
 (provide 'persp-mode-variables)

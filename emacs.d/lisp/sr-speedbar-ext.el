@@ -1,12 +1,6 @@
 (setq helm-alive-p nil) ; fix sr-speedbur bug
 (require 'sr-speedbar)
 (sr-speedbar-refresh-turn-off)
-(defun sr-speedbar-find-window-buffer()
-  (setq sr-speedbar-window (get-buffer-window sr-speedbar-buffer-name))
-  (if sr-speedbar-window
-      (setq speedbar-buffer (window-buffer sr-speedbar-window))
-    (setq speedbar-buffer nil)))
-
 
 (setq sr-speedbar-buffer-name-orig sr-speedbar-buffer-name)
 (defun persp-mode-speedbar-after-activate-hook(frame-or-window)
@@ -14,7 +8,9 @@
                                         (if (null (get-current-persp))
                                             ""
                                           (safe-persp-name (get-current-persp)))))
-  (setq sr-speedbar-window (get-buffer-window sr-speedbar-buffer-name)))
+  (setq sr-speedbar-window (get-buffer-window sr-speedbar-buffer-name))
+  (when (null sr-speedbar-window)
+    (setq speedbar-buffer nil)))
 (add-hook 'persp-activated-functions #'persp-mode-speedbar-after-activate-hook)
 
 (setq sr-speedbar-right-side t)
@@ -66,24 +62,25 @@
              ))
 
 (setq speedbar-last-window nil)
-(defun sr-speedbar-toggle-keep-window ()
-  "Toggle sr-speedbar window.
-Toggle visibility of sr-speedbar by resizing
-the `sr-speedbar-window' to a minimal width
-or the last width when visible.
-Use this function to create or toggle visibility
-of a speedbar-window.  It will be created if necessary."
+(defun sr-speedbar-toggle-keep-window (orig-fun &rest args)
   (interactive)
-  (if (sr-speedbar-exist-p)
-      (progn
-        (sr-speedbar-close)
-        (when
-            (and speedbar-last-window (window-live-p speedbar-last-window))
-          (select-window speedbar-last-window))
-        (setq speedbar-last-window nil))
-    (progn
-      (sr-speedbar-open)
-      (setq speedbar-last-window (frame-selected-window))
-      (sr-speedbar-select-window))))
+  (let* (
+         (before-open-selected-window (frame-selected-window))
+         (speedbar-shown-before (sr-speedbar-window-exist-p sr-speedbar-window))
+         (res (apply orig-fun args))
+         (speedbar-shown-after (sr-speedbar-window-exist-p sr-speedbar-window))
+        )
+    (when (and speedbar-shown-before
+               (not speedbar-shown-after))
+      (when (and speedbar-last-window
+                 (window-live-p speedbar-last-window))
+        (select-window speedbar-last-window))
+      (setq speedbar-last-window nil))
+    (when (and (not speedbar-shown-before)
+               speedbar-shown-after)
+      (setq speedbar-last-window before-open-selected-window)
+      (sr-speedbar-select-window))
+    res))
+(advice-add 'sr-speedbar-toggle :around #'sr-speedbar-toggle-keep-window)
 
 (provide 'sr-speedbar-ext)
