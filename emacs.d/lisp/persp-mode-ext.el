@@ -198,6 +198,8 @@ of the perspective %s can't be saved."
           #'(lambda (b) (string-prefix-p "epc con" (buffer-name b))))
 (add-hook 'persp-common-buffer-filter-functions
           #'(lambda (b) (string-prefix-p "epc server" (buffer-name b))))
+(add-hook 'persp-common-buffer-filter-functions
+          #'(lambda (b) (string-prefix-p "*SPEEDBAR*" (buffer-name b))))
 
 
 (defun buffer-list-persp-mode ()
