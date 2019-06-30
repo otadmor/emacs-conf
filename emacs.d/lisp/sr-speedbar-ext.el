@@ -9,8 +9,9 @@
                                             ""
                                           (safe-persp-name (get-current-persp)))))
   (setq sr-speedbar-window (get-buffer-window sr-speedbar-buffer-name))
-  (when (null sr-speedbar-window)
-    (setq speedbar-buffer nil)))
+  (if (null sr-speedbar-window)
+      (setq speedbar-buffer nil)
+    (setq speedbar-buffer (window-buffer sr-speedbar-window))))
 (add-hook 'persp-activated-functions #'persp-mode-speedbar-after-activate-hook)
 
 (setq sr-speedbar-right-side t)
