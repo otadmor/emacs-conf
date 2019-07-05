@@ -15,3 +15,8 @@ Put the content of .emacs.d/lisp/completion_epc.gdbinit in ~/.gdbinit.
 - *Ctrl-z*: undo last edit
 - *Ctrl-y*: redo last edit
 - *f5*: maximize window to frame
+## Emacs compilation
+A wild tale tells lucid works better than gtk3 when using emacs daemon. These are the suggested compilation flags:
+```
+./configure --with-x-toolkit=lucid --with-kerberos --with-kerberos5 --with-wide-int --with-mailutils
+```
