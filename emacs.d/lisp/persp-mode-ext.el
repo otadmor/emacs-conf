@@ -187,8 +187,11 @@ of the perspective %s can't be saved."
   (add-hook 'after-init-hook
             #'(lambda ()
                 (progn
+                  (add-hook 'persp-after-load-state-functions
+                            (lambda (persp-file phash persp-names)
+                              (perspsw1)))
                   (persp-mode 1)
-                  (run-at-time 0.1 nil 'perspsw1)
+
                   )))
   )
 
