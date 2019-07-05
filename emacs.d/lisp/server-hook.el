@@ -55,6 +55,11 @@
 (advice-add 'server-create-window-system-frame :around #'server-create-window-system-frame-hook)
 
 
+(defun save-persp-on-delete-frame (frame)
+  (condition-case nil
+      (persp-save-state-to-file)
+    (error nil)))
+(add-hook 'delete-frame-functions #'save-persp-on-delete-frame)
 (defun exit-emacs-or-close-frame() (interactive)
        (if server-inside-emacs-client (delete-frame) (save-buffers-kill-emacs)))
 
