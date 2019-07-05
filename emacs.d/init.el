@@ -673,7 +673,7 @@
           '(lambda ()
              (define-key speedbar-mode-map (kbd "<backspace>") 'speedbar-up-directory)
              (define-key speedbar-mode-map [right] 'speedbar-flush-expand-line)
-             (define-key speedbar-mode-map [left] 'speedbar-contract-line)
+             (define-key speedbar-mode-map [left] 'speedbar-contract-line-or-go-up)
              (define-key speedbar-mode-map [M-up] 'speedbar-restricted-prev)
              (define-key speedbar-mode-map [M-down] 'speedbar-restricted-next)
              (define-key speedbar-mode-map [up] 'speedbar-prev)

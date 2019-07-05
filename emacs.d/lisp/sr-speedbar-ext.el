@@ -78,4 +78,24 @@
     res))
 (advice-add 'sr-speedbar-toggle :around #'sr-speedbar-toggle-keep-window)
 
+(defun speedbar-goto-parent ()
+  (condition-case nil
+      (speedbar-backward-list)
+    (error nil))
+  (speedbar-prev 1))
+
+(defun speedbar-contract-line-or-go-up ()
+  "Contract the line under the cursor."
+  (interactive)
+  (beginning-of-line)
+  (condition-case nil
+      (progn
+	(re-search-forward ":\\s-*.-. "
+			   (line-end-position))
+	(forward-char -2)
+	(speedbar-do-function-pointer))
+    (error
+     (speedbar-goto-parent)
+     (speedbar-position-cursor-on-line))))
+
 (provide 'sr-speedbar-ext)
