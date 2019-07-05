@@ -19,11 +19,13 @@
       (when (eq (framep frame) 'x)
         (safe-x-check-frame frame)))))
 
+(defun server-sentinel-hook (&rest _)
+  (safe-check-frames-connection))
+(advice-add 'server-sentinel :before #'server-sentinel-hook)
 
 (setq server-inside-emacs-client nil)
 (defun server-create-window-system-frame-hook(orig-fun &rest args)
   (setq server-inside-emacs-client t)
-  (check-frames-connection)
   (let* (
          (expected-display (car-safe args))
          (frame-display (unless (null (selected-frame))
