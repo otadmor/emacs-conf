@@ -38,15 +38,17 @@
               ;; Otherwise select left widnow.
               current-window)))))
 
+(defun sr-speedbar-navigate-dir (root-dir)
+  (with-temp-buffer
+    (setq default-directory root-dir)
+    (speedbar-refresh t))
+  root-dir)
 
 (defun sr-speedbar-navigate() (interactive)
   (let (
         (root-dir (read-directory-name "Navigate Speedbar: "))
         )
-    (with-temp-buffer
-      (setq default-directory root-dir)
-      (speedbar-refresh))
-    root-dir))
+    (sr-speedbar-navigate-dir root-dir)))
 
 (add-hook 'speedbar-reconfigure-keymaps-hook
           '(lambda ()
