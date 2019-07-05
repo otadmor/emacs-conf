@@ -36,7 +36,9 @@
                 ;; Select right window when `sr-speedbar-right-side' is enable.
                 new-window
               ;; Otherwise select left widnow.
-              current-window)))))
+              current-window))))
+  (select-window sr-speedbar-window)
+  sr-speedbar-window)
 
 (defun sr-speedbar-navigate-dir (root-dir)
   (with-temp-buffer
