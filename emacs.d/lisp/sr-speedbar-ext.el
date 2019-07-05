@@ -98,4 +98,15 @@
      (speedbar-goto-parent)
      (speedbar-position-cursor-on-line))))
 
+(defun buffer-close-in-dir (dirname)
+  (dolist (buffer (buffer-list))
+    (with-current-buffer buffer
+      (when (string-prefix-p dirname default-directory)
+        (kill-buffer)))))
+
+(defun speedbar-close-all-buffers-in-dir ()
+  (interactive)
+  (buffer-close-in-dir (speedbar-line-file)))
+
+
 (provide 'sr-speedbar-ext)
