@@ -181,7 +181,9 @@ of the perspective %s can't be saved."
                                    (inhibit-message persp-mode-hide-autosave-errors)
                                    (save-silently t)
                                    )
-                               (persp-save-state-to-file))))
+                               (condition-case err
+                                   (persp-save-state-to-file)
+                                 (error (message "failed to save persp %S" err) nil)))))
 
   ;; switch off the animation of restoring window configuration
   (add-hook 'after-init-hook
