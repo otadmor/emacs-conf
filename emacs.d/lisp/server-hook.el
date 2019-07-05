@@ -45,21 +45,23 @@
     ;;  (message "CAR %S is iq %S" expected-display (string-equal (car-safe args) "localhost:current"))
     ;;  (message "CDR %S" other-arguments)
     ;;  (message "REJOIN %S" (cons frame-display other-arguments))
-    (let (
-          (res (apply orig-fun (cons display other-arguments)))
-          )
-      (condition-case nil
-          (persp-load-state-from-file)
-        (error nil))
-      res)))
+    (apply orig-fun (cons display other-arguments))))
 (advice-add 'server-create-window-system-frame :around #'server-create-window-system-frame-hook)
-
 
 (defun save-persp-on-delete-frame (frame)
   (condition-case nil
       (persp-save-state-to-file)
     (error nil)))
 (add-hook 'delete-frame-functions #'save-persp-on-delete-frame)
+
+(setq initial-buffer-choice
+      (lambda ()
+        (run-at-time 0 nil (lambda ()
+                             (condition-case nil
+                                 (persp-load-state-from-file)
+                               (error nil))))
+        (current-buffer)))
+
 (defun exit-emacs-or-close-frame() (interactive)
        (if server-inside-emacs-client (delete-frame) (save-buffers-kill-emacs)))
 
