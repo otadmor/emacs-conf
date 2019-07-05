@@ -14,6 +14,11 @@
 (defvar pmv/clear-vars nil
   "A list of vars that will be set to nil when switching back to a perspective.")
 
+(defcustom persp-variables-restored nil
+  "Hooks to runs after loading variable for a perspective."
+  :group 'persp-mode
+  :type 'hook)
+
 (push 'persp-variables-has-minibuffer pmv/specific-vars)
 (push 'persp-variables-has-minibuffer-focus pmv/specific-vars)
 
@@ -71,6 +76,7 @@
     (set var (persp-parameter var persp)))
   (dolist (var pmv/clear-vars)
     (set var nil))
+ (run-hook-with-args 'persp-variables-restored)
   persp)
 
 (defun ivy-cancel-timers()
