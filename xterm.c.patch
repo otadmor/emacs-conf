@@ -1,6 +1,4 @@
 diff --git a/src/xterm.c b/src/xterm.c
-old mode 100644
-new mode 100755
 index 3cadf69..eeba08a
 --- a/src/xterm.c
 +++ b/src/xterm.c
@@ -122,6 +120,10 @@ index 3cadf69..eeba08a
  /* Flush display of frame F.  */
 
  static void
+diff --git a/src/xterm.c b/src/xterm.c
+index 3cadf69..eeba08a
+--- a/src/xterm.c
++++ b/src/xterm.c
 @@ -13406,4 +13517,11 @@ gtk_window_move to set or store frame positions and disables some time
  consuming frame position adjustments.  In newer versions of GTK, Emacs
  always uses gtk_window_move and ignores the value of this variable.  */);
