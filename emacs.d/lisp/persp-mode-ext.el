@@ -123,7 +123,7 @@
   )
 
 
-(setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*"))
+(setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*" "*server*"))
 (defun persp-mode-add-shared-buffers (orig-fun &rest args)
   (let (
         (res (apply orig-fun args))
