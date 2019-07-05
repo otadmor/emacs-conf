@@ -9,6 +9,13 @@
 (setq persp-nil-name "nil")
 (setq persp-add-buffer-on-after-change-major-mode 'free)
 
+(defun persp-delete-frame-hook(fun &rest args)
+  (let (
+        (debug-on-error nil)
+        )
+    (apply fun args)))
+(advice-add 'persp-delete-frame :around #'persp-delete-frame-hook)
+
 (defun persp-buffer-name-from-savelist (savelist)
   (destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
     buffer-name))
