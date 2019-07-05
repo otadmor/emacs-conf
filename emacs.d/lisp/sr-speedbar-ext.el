@@ -3,16 +3,20 @@
 (sr-speedbar-refresh-turn-off)
 
 (setq sr-speedbar-buffer-name-orig sr-speedbar-buffer-name)
-(defun persp-mode-speedbar-after-activate-hook(frame-or-window)
+
+(push 'speedbar-shown-directories pmv/specific-vars)
+(push 'speedbar-directory-contents-alist pmv/specific-vars)
+(defun sr-speedbar-refresh-perspective ()
   (setq sr-speedbar-buffer-name (concat sr-speedbar-buffer-name-orig
                                         (if (null (get-current-persp))
                                             ""
                                           (safe-persp-name (get-current-persp)))))
   (setq sr-speedbar-window (get-buffer-window sr-speedbar-buffer-name))
-  (if (null sr-speedbar-window)
+  (if (not (sr-speedbar-window-exist-p sr-speedbar-window))
       (setq speedbar-buffer nil)
-    (setq speedbar-buffer (window-buffer sr-speedbar-window))))
-(add-hook 'persp-activated-functions #'persp-mode-speedbar-after-activate-hook)
+    (setq speedbar-buffer (window-buffer sr-speedbar-window))
+    (sr-speedbar-navigate-dir (car (last speedbar-shown-directories)))))
+(add-hook 'persp-variables-restored #'sr-speedbar-refresh-perspective)
 
 (setq sr-speedbar-right-side t)
 
