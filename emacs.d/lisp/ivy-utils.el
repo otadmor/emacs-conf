@@ -3,6 +3,17 @@
 (require 'python-ext)
 (require 'utils)
 
+(setq ivy-format-function #'ivy-format-function-line)
+(setq ivy-magic-tilde nil)
+;(icomplete-mode t)
+(setq ivy-use-virtual-buffers t)
+(setq ivy-count-format "%d/%d ")
+
+(setq ivy-wrap t)
+(setq ivy-auto-select-single-candidate t)
+(setq ivy-on-del-error-function 'ignore)
+;(setq ivy-magic-slash-non-match-action nil)
+
 ; (with-current-buffer buffer
 ;   )
 ; (ivy-exit-with-action

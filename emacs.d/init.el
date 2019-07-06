@@ -6,6 +6,8 @@
 ;; You may delete these explanatory comments.
 (package-initialize)
 (require 'package)
+(add-to-list 'package-archives
+             '("melpa-stable" . "http://stable.melpa.org/packages/") t)
 
 (setq enable-local-eval nil)
 (setq enable-local-variables nil)
@@ -19,19 +21,17 @@
         "~/.emacs.d/abbrev_defs")  ;; definitions from...
 (setq save-abbrevs 'silent)        ;; save abbrevs when files are saved
 
-;(require 'server)
-;(setq server-use-tcp t
-;      server-host "192.168.1.116"
-;      server-socket-dir "~/.emacs.d/server")
-;(unless (server-running-p)
-;    (server-start))
-
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:foundry "adobe" :slant normal :weight normal :height 120 :width normal)))))
+ '(default ((t (:foundry "adobe" :slant normal :weight normal :height 100 :width normal)))))
+
+(setq CONFIGURATION-PATH (expand-file-name "~/.emacs.d/lisp"))
+(setq load-path (cons (expand-file-name (concat CONFIGURATION-PATH "/jss-master")) load-path))
+(setq load-path (cons (expand-file-name (concat CONFIGURATION-PATH "/ess-18.10.2/lisp/")) load-path))
+(setq load-path (cons CONFIGURATION-PATH load-path))
 
 ;; (set-cursor-color "white")
 ;; (set-mouse-color "white")
@@ -46,18 +46,6 @@
 (delete-selection-mode 1)
 
 (global-eldoc-mode -1)
-
-;; Speedbar settings
-(setq speedbar-default-position 'left)
-(setq speedbar-frame-parameters '((minibuffer . nil)
-                                  (width . 20)
-                                  (border-width . 0)
-                                  (menu-bar-lines . 0)
-                                  (tool-bar-lines . 0)
-                                  (unsplittable . t)
-                                  (left-fringe . 0)
-                                  (left . 0)
-                                  ))
 
 ; Do not create back-up files
 (setq make-backup-files nil)
@@ -83,44 +71,12 @@
 
 (global-hi-lock-mode 1)
 
+(require 'ivy)
 (setq ivy-do-completion-in-region nil)
 (ivy-mode t)
 
-(require 'ivy-rich)
-(defun popup-item-summary-or-empty(item)
-  (if (null item)
-      ""
-    (let (
-          (data (popup-item-summary item))
-          )
-      (if (null data)
-          ""
-        data))))
-(defun popup-item-symbol-or-empty(item)
-  (if (null item)
-      ""
-    (let (
-          (data (popup-item-symbol item))
-          )
-      (if (null data)
-          ""
-        data))))
-(add-to-list
- 'ivy-rich-display-transformers-list
- '(:columns
-   ((ivy-cleanup-string (:width 30))
-    (popup-item-summary-or-empty (:width 30 :face font-lock-doc-face))
-    (popup-item-symbol-or-empty (:face font-lock-comment-face)))))
-(add-to-list
- 'ivy-rich-display-transformers-list
- 'ivy-completion-in-region)
-(ivy-rich-mode 1)
+(require 'ivy-rich-ext)
 
-(setq ivy-format-function #'ivy-format-function-line)
-(setq ivy-magic-tilde nil)
-;(icomplete-mode t)
-(setq ivy-use-virtual-buffers t
-      ivy-count-format "%d/%d ")
 (fset 'yes-or-no-p 'y-or-n-p)
 
 (setq global-mark-ring-max 1000)
@@ -134,13 +90,6 @@
 (setenv "PAGER" "cat")
 (setenv "EDITOR" "emacsclient")
 (setenv "VISUAL" "emacsclient")
-
-(add-to-list 'package-archives
-             '("melpa-stable" . "http://stable.melpa.org/packages/") t)
-(setq CONFIGURATION-PATH (expand-file-name "~/.emacs.d/lisp"))
-(setq load-path (cons (expand-file-name (concat CONFIGURATION-PATH "/jss-master")) load-path))
-(setq load-path (cons (expand-file-name (concat CONFIGURATION-PATH "/ess-18.10.2/lisp/")) load-path))
-(setq load-path (cons CONFIGURATION-PATH load-path))
 
 (require 'server-hook)
 (require 'scratch-util)
@@ -162,65 +111,7 @@
 ;; Corrects (and improves) org-mode's native fontification.
 (doom-themes-org-config)
 
-(require 'powerline)
-(defvar blacklist-powerline-mode-list '()
-  "Hidden minor-modes list in powerline.")
-(defun blacklist-powerline-mode-func (x)
-  (let (
-        (car-x (car x))
-        (cadr-x (cadr x))
-        )
-    (when (and (symbolp car-x)
-               (symbol-value car-x)
-               (or (not (stringp cadr-x))
-                   (null (member cadr-x blacklist-powerline-mode-list))))
-      x)))
-
-(defpowerline powerline-major-mode
-  (when (null (member mode-name blacklist-powerline-mode-list))
-    (propertize (format-mode-line mode-name)
-                'mouse-face 'mode-line-highlight
-                'help-echo "Major mode\n\ mouse-1: Display major mode menu\n\ mouse-2: Show help for major mode\n\ mouse-3: Toggle minor modes"
-                'local-map (let ((map (make-sparse-keymap)))
-                             (define-key map [mode-line down-mouse-1]
-                               `(menu-item ,(purecopy "Menu Bar") ignore
-                                           :filter (lambda (_) (mouse-menu-major-mode-map))))
-                             (define-key map [mode-line mouse-2] 'describe-mode)
-                             (define-key map [mode-line down-mouse-3] mode-line-mode-menu)
-                             map))))
-
-(defpowerline powerline-minor-modes
-  (mapconcat (lambda (mm)
-               (propertize mm
-                           'mouse-face 'mode-line-highlight
-                           'help-echo "Minor mode\n mouse-1: Display minor mode menu\n mouse-2: Show help for minor mode\n mouse-3: Toggle minor modes"
-                           'local-map (let ((map (make-sparse-keymap)))
-                                        (define-key map
-                                          [mode-line down-mouse-1]
-                                          (powerline-mouse 'minor 'menu mm))
-                                        (define-key map
-                                          [mode-line mouse-2]
-                                          (powerline-mouse 'minor 'help mm))
-                                        (define-key map
-                                          [mode-line down-mouse-3]
-                                          (powerline-mouse 'minor 'menu mm))
-                                        (define-key map
-                                          [header-line down-mouse-3]
-                                          (powerline-mouse 'minor 'menu mm))
-                                        map)))
-             (split-string (format-mode-line
-                            (delq nil (mapcar 'blacklist-powerline-mode-func
-                                              minor-mode-alist))))
-             (propertize " " 'face face)))
-
-(add-to-list 'blacklist-powerline-mode-list " Outl")
-(add-to-list 'blacklist-powerline-mode-list "Emacs-Lisp")
-(add-to-list 'blacklist-powerline-mode-list "Lisp Interaction")
-(add-to-list 'blacklist-powerline-mode-list " AC")
-(add-to-list 'blacklist-powerline-mode-list " ivy")
-(add-to-list 'blacklist-powerline-mode-list "Py")
-(add-to-list 'blacklist-powerline-mode-list "Messages")
-
+(require 'powerline-ext)
 (powerline-default-theme)
 
 (require 'cl) ; required for defun*
@@ -281,10 +172,6 @@
 (define-key compilation-mode-map (kbd "n") 'next-error-no-select)
 (define-key compilation-mode-map (kbd "p") 'previous-error-no-select)
 
-(defun update-next-error-which-function ()
-  (which-func-update-1 (selected-window)))
-(add-hook 'next-error-hook 'update-next-error-which-function)
-
 (require 'redo+)
 (global-set-key [(control z)] 'undo)
 (global-set-key [(control y)] 'redo)
@@ -317,25 +204,15 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(column-number-mode t)
- '(frame-background-mode (quote dark))
+ '(frame-background-mode 'dark)
  '(package-selected-packages
-   (quote
-    (fuzzy ivy-rich pcre2el doom-themes powerline ag dumb-jump counsel sr-speedbar persp-mode python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
- '(show-paren-mode t)
- '(tool-bar-mode nil))
+   '(perspective debbugs fuzzy ivy-rich pcre2el r-autoyas ess-smart-underscore ess-smart-equals company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
 
 (require 'xwidget-ext)
 
 (with-eval-after-load 'magit-mode
   (define-key magit-mode-map [(control tab)] 'other-window))
 (setq magit-completing-read-function 'ivy-completing-read)
-
-(setq ivy-use-virtual-buffers t)
-(setq ivy-wrap t)
-(setq ivy-auto-select-single-candidate t)
-(setq ivy-on-del-error-function 'ignore)
-;(setq ivy-magic-slash-non-match-action nil)
 
 (require 'ivy-utils)
 
@@ -445,190 +322,13 @@
 (global-set-key (kbd "M-<f3>") 'mc/mark-all-like-this)
 (global-set-key (kbd "C-S-l") 'mc/edit-ends-of-lines)
 
-
-
-(require 'auto-complete)
-(ac-config-default)
-(setq-default ac-sources '(ac-source-abbrev ac-source-dictionary))
-;; (global-auto-complete-mode t)
-;; (define-globalized-minor-mode real-global-auto-complete-mode
-;;   auto-complete-mode (lambda ()
-;;                        (if (not (minibufferp (current-buffer)))
-;;                          (auto-complete-mode 1))
-;;                        ))
-;; (real-global-auto-complete-mode t)
-(setq tab-always-indent 'complete)
-(setq ac-max-width 0.5)
-;; (setq ac-use-fuzzy nil)
-(setq ac-use-fuzzy t)
-(setq ac-ignore-case (quote smart))
-
-(defun ac-page-next ()
-  "Select next candidate."
-  (interactive)
-  (when (ac-menu-live-p)
-    (when (popup-hidden-p ac-menu)
-      (ac-show-menu))
-    (popup-page-next ac-menu)
-    (if (eq this-command 'ac-page-next)
-        (setq ac-dwim-enable t))))
-
-(defun ac-page-previous ()
-  "Select previous candidate."
-  (interactive)
-  (when (ac-menu-live-p)
-    (when (popup-hidden-p ac-menu)
-      (ac-show-menu))
-    (popup-page-previous ac-menu)
-    (if (eq this-command 'ac-page-previous)
-        (setq ac-dwim-enable t))))
-
-(defun ac-first ()
-  (interactive)
-  (when (ac-menu-live-p)
-    (when (popup-hidden-p ac-menu)
-      (ac-show-menu))
-    (popup-jump ac-menu 0)
-    (if (eq this-command 'ac-first)
-        (setq ac-dwim-enable t))))
-
-(defun ac-last ()
-  (interactive)
-  (when (ac-menu-live-p)
-    (when (popup-hidden-p ac-menu)
-      (ac-show-menu))
-    (let (
-          (popup-length (length (popup-list ac-menu)))
-          (popup-height (popup-height ac-menu))
-          )
-      (when (> popup-length popup-height)
-        (setf (popup-scroll-top ac-menu) (- popup-length popup-height)))
-      (setf (popup-cursor ac-menu) (- popup-length 1)))
-    (popup-draw ac-menu)
-    (if (eq this-command 'ac-last)
-        (setq ac-dwim-enable t))))
-
-
-(defun auto-complete-completion-in-region (start end collection &optional predicate)
-  (let* (
-         (fixed-candidate-source
-          (list
-           (list 'candidates (lambda ()
-                               (let (
-                                     (cands
-                                      (completion-all-completions
-                                       (buffer-substring-no-properties start end)
-                                       collection predicate
-                                       (- end start))
-                                      )
-                                     )
-                                 (unless (null cands)
-                                   (setcdr (last cands) nil))
-                                 (dolist (s cands)
-                                   (ivy--remove-props s 'face))
-                                 cands)))
-           (list 'prefix (lambda () start))))
-         )
-    (auto-complete (list fixed-candidate-source))))
-
-(defvar ac-original-point nil
-  "Stores the original ac-point for relocation use.")
-(defun ac-clear-ac-original-point (&rest args)
-  (setq ac-original-point nil))
-(advice-add 'ac-start :before #'ac-clear-ac-original-point)
-(defun ac-candidates-1-reposition-hook (orig-fun &rest args)
-  (let (
-        (start-pos nil)
-        (start 0)
-        (cands (apply orig-fun args))
-        )
-    (unless (null cands)
-      (dolist (c cands)
-        (let (
-              (pos (get-text-property 0 :pos c))
-              )
-          (unless (null pos)
-            (if (null start-pos)
-                (setq start-pos pos)
-              (setq start-pos (min start-pos pos))))))
-      (when (null start-pos)
-        (setq start-pos 0))
-      (setq cands (cl-mapcar
-                   (lambda (s)
-                     ;; (ivy--remove-props s 'face)
-                     (substring s start-pos nil))
-                   cands))
-      (when (null ac-original-point)
-        (setq ac-original-point ac-point))
-      (setq ac-point (+ ac-original-point start-pos))
-      (setq ac-prefix (buffer-substring-no-properties ac-point (point))))
-    cands))
-(advice-add 'ac-candidates-1 :around #'ac-candidates-1-reposition-hook)
-
-(defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
-  (if (eq (selected-window) (active-minibuffer-window))
-    (ivy-completion-in-region start end collection predicate)
-  (auto-complete-completion-in-region start end collection predicate)))
-(setq completion-in-region-function 'completion-in-region-auto-complete-or-ivy)
-
-
-(defvar ac-default-min-prefix-length 0
-  "The minimum prefix requirement for completing using auto-complete. Can be determined per-source by setting requires.")
-(defun ac-prefix (requires ignore-list)
-  (cl-loop with current = (point)
-           with point
-           with point-def
-           with prefix-def
-           with sources
-           for source in (ac-compiled-sources)
-           for prefix = (assoc-default 'prefix source)
-           for req = (or (assoc-default 'requires source) requires ac-default-min-prefix-length)
-
-           do
-           (unless (member prefix ignore-list)
-             (save-excursion
-               (setq point (cond
-                            ((symbolp prefix)
-                             (funcall prefix))
-                            ((stringp prefix)
-                             (and (re-search-backward (concat prefix "\\=") nil t)
-                                  (or (match-beginning 1) (match-beginning 0))))
-                            ((stringp (car-safe prefix))
-                             (let ((regexp (nth 0 prefix))
-                                   (end (nth 1 prefix))
-                                   (group (nth 2 prefix)))
-                               (and (re-search-backward (concat regexp "\\=") nil t)
-                                    (funcall (if end 'match-end 'match-beginning)
-                                             (or group 0)))))
-                            (t
-                             (eval prefix))))
-               (if (and point
-                        (integerp req)
-                        (< (- current point) req))
-                   (setq point nil))
-               (when point
-                 (if (null prefix-def)
-                     (setq prefix-def prefix
-                           point-def point))
-                 (if (equal point point-def)
-                     (push source sources)))))
-
-           finally return
-           (and point-def (list prefix-def point-def (nreverse sources)))))
-
-;; (setq ac-expand-on-auto-complete nil)
-
-(defun ac-complete-when-menu ()
-  (interactive)
-  (if ac-show-menu
-      (ac-complete)
-    (ac-abort)
-    (ac-fallback-command)))
+(require 'autocomplete-ext)
 (define-key ac-complete-mode-map (kbd "RET") 'ac-complete-when-menu) ; ac-complete-mode-map, ac-menu-map
 (define-key ac-complete-mode-map (kbd "<next>") 'ac-page-next)
 (define-key ac-complete-mode-map (kbd "<prior>") 'ac-page-previous)
 (define-key ac-complete-mode-map (kbd "<home>") 'ac-first)
 (define-key ac-complete-mode-map (kbd "<end>") 'ac-last)
+(setq completion-in-region-function 'completion-in-region-auto-complete-or-ivy)
 
 (require 'jedi-core)
 (add-hook 'python-mode-hook 'jedi:setup)
@@ -689,25 +389,6 @@
 (global-set-key goto-def-key 'dumb-jump-go)
 
 (which-function-mode 1)
-(defun which-func-ff-hook ()
-  "File find hook for Which Function mode.
-It creates the Imenu index for the buffer, if necessary."
-  (if (not (or (null which-func-maxout)
-               (< buffer-saved-size which-func-maxout)
-               (= which-func-maxout 0)))
-      (setq which-func-mode nil)
-    (which-func-try-to-enable)
-    (condition-case err
-        (if (and which-func-mode
-                 (not (member major-mode which-func-non-auto-modes))
-                 )
-            (setq imenu--index-alist
-                  (save-excursion (funcall imenu-create-index-function))))
-      (imenu-unavailable
-       (setq which-func-mode nil))
-      (error
-       (message "which-func-ff-hook error: %S" err)
-       (setq which-func-mode nil)))))
 
 ;; (require 'ess)
 

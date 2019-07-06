@@ -1,5 +1,18 @@
 (setq helm-alive-p nil) ; fix sr-speedbur bug
+(require 'speedbar)
 (require 'sr-speedbar)
+;; Speedbar settings
+(setq speedbar-default-position 'left)
+(setq speedbar-frame-parameters '((minibuffer . nil)
+                                  (width . 20)
+                                  (border-width . 0)
+                                  (menu-bar-lines . 0)
+                                  (tool-bar-lines . 0)
+                                  (unsplittable . t)
+                                  (left-fringe . 0)
+                                  (left . 0)
+                                  ))
+
 (sr-speedbar-refresh-turn-off)
 
 (setq sr-speedbar-buffer-name-orig sr-speedbar-buffer-name)
