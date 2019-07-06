@@ -1,7 +1,4 @@
 python
-ALLOW_COMPLETION_SERVER = False
-
-
 def rl_attempted_completion(s, start=None, end=None):
     s = ''.join(s).splitlines()[-1]
     x = gdb.execute('complete ' + s, to_string=True)
@@ -10,7 +7,6 @@ def rl_attempted_completion(s, start=None, end=None):
 
 import os
 if os.environ.get("TERM", "") == 'dumb':
-    gdb.execute("set pagination off")
     try:
         from collections import namedtuple
         from epc.server import EPCServer
@@ -65,6 +61,7 @@ if os.environ.get("TERM", "") == 'dumb':
         def start_completion_thread(epc_port=None):
             if epc_port is None:
                 epc_port = os.environ.get("EPC_COMPLETION_SERVER_PORT", None)
+            rpc_complete_thread = None
             if epc_port is not None:
                 epc_port = int(epc_port)
                 rpc_complete = GDBEPCCompletionClient(port=epc_port)
@@ -72,15 +69,9 @@ if os.environ.get("TERM", "") == 'dumb':
                     target=rpc_complete.connect,
                     name="PythonModeEPCCompletion",
                     kwargs={'socket_or_address': ("localhost", epc_port)})
-            elif ALLOW_COMPLETION_SERVER:
-                rpc_complete = GDBEPCCompletionServer()
-                if True: # XXX : check if gdb run in batch (-batch) or quiet (-q, -quiet) modes.
-                    rpc_complete.print_port()  # needed for Emacs client
-                rpc_complete_thread = threading.Thread(
-                    target=rpc_complete.serve_forever,
-                    name="PythonModeEPCCompletion")
-            rpc_complete_thread.daemon = True
-            rpc_complete_thread.start()
+            if rpc_complete_thread is not None:
+                rpc_complete_thread.daemon = True
+                rpc_complete_thread.start()
             return rpc_complete_thread
 else:
     def start_completion_thread(epc_port=None):
