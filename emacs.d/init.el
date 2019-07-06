@@ -1,5 +1,3 @@
-;;;  -*- lexical-binding: t -*-
-
 ;; Added by Package.el.  This must come before configurations of
 ;; installed packages.  Don't delete this line.  If you don't want it,
 ;; just comment it out by adding a semicolon to the start of the line.
@@ -204,9 +202,10 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(frame-background-mode 'dark)
+ '(frame-background-mode (quote dark))
  '(package-selected-packages
-   '(perspective debbugs fuzzy ivy-rich pcre2el r-autoyas ess-smart-underscore ess-smart-equals company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode python python-x pyimport elpy bind-key company-web company-irony-c-headers jedi android-mode anaconda-mode company-shell company magit hydra exwm xelb)))
+   (quote
+    (company-jedi company-quickhelp perspective debbugs fuzzy ivy-rich pcre2el r-autoyas ess-smart-underscore ess-smart-equals company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra exwm xelb))))
 
 (require 'xwidget-ext)
 
@@ -322,34 +321,25 @@
 (global-set-key (kbd "M-<f3>") 'mc/mark-all-like-this)
 (global-set-key (kbd "C-S-l") 'mc/edit-ends-of-lines)
 
-(require 'autocomplete-ext)
-(define-key ac-complete-mode-map (kbd "RET") 'ac-complete-when-menu) ; ac-complete-mode-map, ac-menu-map
-(define-key ac-complete-mode-map (kbd "<next>") 'ac-page-next)
-(define-key ac-complete-mode-map (kbd "<prior>") 'ac-page-previous)
-(define-key ac-complete-mode-map (kbd "<home>") 'ac-first)
-(define-key ac-complete-mode-map (kbd "<end>") 'ac-last)
-(setq completion-in-region-function 'completion-in-region-auto-complete-or-ivy)
+;; (require 'autocomplete-ext)
+;; (define-key ac-complete-mode-map (kbd "RET") 'ac-complete-when-menu) ; ac-complete-mode-map, ac-menu-map
+;; (define-key ac-complete-mode-map (kbd "<next>") 'ac-page-next)
+;; (define-key ac-complete-mode-map (kbd "<prior>") 'ac-page-previous)
+;; (define-key ac-complete-mode-map (kbd "<home>") 'ac-first)
+;; (define-key ac-complete-mode-map (kbd "<end>") 'ac-last)
+;; ;; (setq completion-in-region-function 'completion-in-region-auto-complete-or-ivy)
+
+(require 'company-ext)
+(setq completion-in-region-function 'completion-in-region-company-or-ivy)
 
 (require 'jedi-core)
-(add-hook 'python-mode-hook 'jedi:setup)
-(setq jedi:complete-on-dot t)                 ; optional
 (define-key jedi-mode-map goto-def-key 'jedi:goto-definition)
 
-(defun jedi:complete-no-expand ()
-  (interactive)
-  (jedi:complete :expand nil)
-  nil)
 (defalias 'py-complete-completion-at-point (lambda() nil))
-(setq py-complete-function 'jedi:complete-no-expand)
 
-(define-key jedi-mode-map complete-key 'jedi:complete-no-expand)
-; (setq py-complete-function 'jedi:complete-no-expand)
-
-; (define-key jedi-mode-map complete-key 'completion-at-point)
-; (setq py-complete-function 'completion-at-point)
-
-
-
+(require 'company-jedi)
+(add-to-list 'company-backends 'company-jedi)
+(setq py-complete-function 'company-complete)
 
 
 ; (fringe-mode '(0 . nil))
@@ -423,3 +413,4 @@
 (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
 
 (require 'persp-mode-ext)
+(auto-complete-mode 0)

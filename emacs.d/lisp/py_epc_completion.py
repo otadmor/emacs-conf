@@ -19,15 +19,21 @@ import readline
 import rlcompleter
 readline.set_completer(rlcompleter.Completer().complete)
 
-def get_func_signature(d):
-    symbol = d.func_name
+def get_builtin_method_signature(d, without_name=False):
+    ddoc = d.__doc__
+    ddoc = ddoc[:ddoc.find('\n')]
+    ddoc = ddoc[ddoc.find("(") + 1 if without_name else 0:ddoc.find(")") + 1]
+    return ddoc
+
+def get_func_signature(d, without_name=False):
+    symbol = d.func_name + "(" if not without_name else ""
     args = d.func_code.co_varnames[:d.func_code.co_argcount]
     defaults = d.func_defaults
     if defaults is not None:
         dl = len(defaults)
-        desc = "%s(%s)" % (symbol, ', '.join(args[:-dl] + tuple("%s=%r" % x for x in zip(args[-dl:], defaults))))
+        desc = "%s%s)" % (symbol, ', '.join(args[:-dl] + tuple("%s=%r" % x for x in zip(args[-dl:], defaults))))
     else:
-        desc = "%s(%s)" % (symbol, ', '.join(args))
+        desc = "%s%s)" % (symbol, ', '.join(args))
     return desc
 
 def find_obj(symbol):
@@ -64,6 +70,14 @@ class EPCCompletionClient(EPCClient):
         def complete(*cargs, **ckargs):
             return self.complete(*cargs, **ckargs)
         self.register_function(complete)
+
+functiontype = type(lambda:None)
+class _DUMMY_:
+    def __init__(self):
+        pass
+classtype = type(_DUMMY_)
+methodtype = type(_DUMMY_.__init__)
+del _DUMMY_
 
 if sys.version_info.major == 2:
     SYMBOL_CHARS = "._" + string.letters + string.digits
@@ -139,16 +153,24 @@ class PythonModeEPCCompletion(object):
             d = find_obj(symbol)
         except AttributeError:
             return ""
-        if isinstance(d, type(lambda:None)):
-            return get_func_signature(d)
+        if isinstance(d, functiontype):
+            return get_func_signature(d, without_name=True)
+        elif isinstance(d, methodtype):
+            return get_func_signature(d, without_name=True)
+        elif isinstance(d, classtype):
+            if hasattr(d, "__init__"):
+                return "(" + get_func_signature(d.__init__, without_name=True)
+        elif isinstance(d, type(eval)):
+            return get_builtin_method_signature(d, without_name=True)
+        elif isinstance(d, type(eval.__delattr__)):
+            return get_builtin_method_signature(d, without_name=True)
         elif isinstance(d, (list,tuple,)):
-            return "%r" % (d[:100],)
-        else:
-            t = "%r" % (d,)
-            return t
-            if len(t) > 15:
-                t = t[:13] + "..."
-            return t
+            return " = %r" % (d[:100],)
+        t = " = %r" % (d,)
+        return t
+            # if len(t) > 15:
+            #     t = t[:13] + "..."
+            # return t
 
     def doc(self, *candidate):
         symbol = ''.join(list(candidate))
