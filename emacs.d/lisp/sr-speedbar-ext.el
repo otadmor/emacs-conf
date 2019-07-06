@@ -1,4 +1,3 @@
-(setq helm-alive-p nil) ; fix sr-speedbur bug
 (require 'speedbar)
 (require 'sr-speedbar)
 ;; Speedbar settings

@@ -58,5 +58,6 @@
 (add-to-list 'blacklist-powerline-mode-list " ivy")
 (add-to-list 'blacklist-powerline-mode-list "Py")
 (add-to-list 'blacklist-powerline-mode-list "Messages")
+(add-to-list 'blacklist-powerline-mode-list "company")
 
 (provide 'powerline-ext)

@@ -1,3 +1,5 @@
+(require 'server)
+
 (defun check-frames-connection ()
   (when (functionp 'x-check-frame)
     (dolist (frame (frame-list))
