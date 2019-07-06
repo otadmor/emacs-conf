@@ -34,6 +34,8 @@
 ;; (set-cursor-color "white")
 ;; (set-mouse-color "white")
 
+(setq helm-alive-p nil) ; fix sr-speedbur bug
+
 (tool-bar-mode -1)
 (setq inhibit-splash-screen t)
 
@@ -78,6 +80,10 @@
 (setq mouse-wheel-progressive-speed 1) ;; don't accelerate scrolling
 (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
 (setq scroll-step 1) ;; keyboard scroll one line at a time
+
+(setq frame-background-mode 'dark)
+(setq custom-theme-load-path (cons (expand-file-name "~/.emacs.d/lisp/themes") custom-theme-load-path))
+(load-theme 'normal-black t)
 
 (setenv "PAGER" "cat")
 (setenv "EDITOR" "emacsclient")
@@ -164,23 +170,30 @@
 (global-set-key (kbd "C-;") 'lines-in-region)
 (global-set-key (kbd "C-/") 'my-comment-or-uncomment-region)
 
-(require 'winstack)
-
 (require 'simple)
-(global-set-key pop-key 'winstack-pop)
-(global-set-key next-key 'winstack-next)
-
+; ess-smart-underscore ess-smart-equals  exwm xelb
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(frame-background-mode (quote dark))
  '(package-selected-packages
    (quote
-    (company-jedi company-quickhelp perspective debbugs fuzzy ivy-rich pcre2el r-autoyas ess-smart-underscore ess-smart-equals company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra exwm xelb))))
+    (company-jedi company-quickhelp persp-mode perspective debbugs fuzzy ivy-rich pcre2el r-autoyas company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra))))
+
+(let (
+      (need-install nil)
+      )
+  (dolist (package package-selected-packages)
+    (condition-case nil
+        (require package)
+      (error (setq need-install t))))
+  (when need-install
+    (package-refresh-contents)
+    (package-install-selected-packages)))
 
 (require 'ivy)
+(ivy-mode nil)
 (setq ivy-do-completion-in-region nil)
 (ivy-mode t)
 
@@ -199,11 +212,8 @@
 (setq doom-themes-enable-bold t)   ; if nil, bold is universally disabled
 (setq doom-themes-enable-italic t) ; if nil, italics is universally disabled
 
-(setq custom-theme-load-path (cons (expand-file-name "~/.emacs.d/lisp/themes") custom-theme-load-path))
-
 ;; Load the theme
 (load-theme 'doom-mhfc t)
-; (load-theme 'normal-black t)
 
 ;; Enable flashing mode-line on errors
 (doom-themes-visual-bell-config)
@@ -412,6 +422,10 @@
 (global-set-key (kbd "M-8") (defun perspsw8() (interactive) (persp-switch "8")))
 (global-set-key (kbd "M-9") (defun perspsw9() (interactive) (persp-switch "9")))
 (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
+
+(require 'winstack)
+(global-set-key pop-key 'winstack-pop)
+(global-set-key next-key 'winstack-next)
 
 (require 'persp-mode-ext)
 (auto-complete-mode 0)
