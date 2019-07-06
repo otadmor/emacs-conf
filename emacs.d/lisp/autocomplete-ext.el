@@ -1,3 +1,5 @@
+;;;  -*- lexical-binding: t -*-
+
 (require 'auto-complete)
 (ac-config-default)
 (setq-default ac-sources '(ac-source-abbrev ac-source-dictionary))
