@@ -248,7 +248,8 @@
              (interactive (list 'interactive))
              (cl-case command
                (interactive (company-begin-backend 'completion-func))
-               (prefix (funcall prefix-cb))
+               (prefix (unless (null mngr-complete-epc)
+                         (funcall prefix-cb)))
                (candidates (completion-epc-complete-deferred arg))
                (meta (get-text-property 0 :symbol arg))
                (doc-buffer (company-doc-buffer (get-text-property 0 :doc arg)))
