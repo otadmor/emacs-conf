@@ -73,7 +73,7 @@
 (setq ivy-do-completion-in-region nil)
 (ivy-mode t)
 
-(require 'ivy-rich-ext)
+(require 'ivy-utils)
 
 (fset 'yes-or-no-p 'y-or-n-p)
 
@@ -91,39 +91,16 @@
 
 (require 'server-hook)
 (require 'scratch-util)
-(require 'doom-themes)
-
-;; Global settings (defaults)
-(setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
-      doom-themes-enable-italic t) ; if nil, italics is universally disabled
-
-(setq custom-theme-load-path (cons (expand-file-name "~/.emacs.d/lisp/themes") custom-theme-load-path))
-
-;; Load the theme
-(load-theme 'doom-mhfc t)
-; (load-theme 'normal-black t)
-
-;; Enable flashing mode-line on errors
-(doom-themes-visual-bell-config)
-
-;; Corrects (and improves) org-mode's native fontification.
-(doom-themes-org-config)
-
-(require 'powerline-ext)
-(powerline-default-theme)
 
 (require 'cl) ; required for defun*
 (require 'utils)
 
 (global-set-key [(control x) (control c)] 'dont-kill-emacs)
 
-(require 'server)
-
 (global-set-key [(control x) (c)] 'exit-emacs-or-close-frame)
 (global-set-key [(control z)] 'undo)
 (global-set-key [f9] 'compile)
 
-(require 'counsel-ag-ext)
 
 (defvar next-key (kbd "C-M-n"))
 (defvar pop-key (kbd "C-M-p"))
@@ -132,7 +109,6 @@
 (defvar complete-key (kbd "C-SPC"))
 (defvar sc-status-key (kbd "M-h"))
 
-(global-set-key [(meta f)] 'counsel-ag-preselect)
 (global-set-key [f4] 'next-error)
 (global-set-key [(shift f4)] 'previous-error)
 (global-set-key [f1] 'manual-entry)
@@ -153,13 +129,13 @@
 (global-set-key (kbd "C-S-<iso-lefttab>") 'prev-buffer)
 (global-set-key [(pause)] 'kill-this-buffer)
 (global-set-key (kbd "C-M-k") 'kill-this-buffer)
-(global-set-key [(scroll-lock)] 'kill-this-buffer)
 
 (global-set-key [(meta left)] 'backward-sexp)
 (global-set-key [(meta right)] 'forward-sexp)
 
 (global-set-key (kbd "C-x C-z") (lambda() (interactive) (message "Dont minimize")))
 
+(require 'windmove)
 (global-set-key (kbd "C-M-<left>") 'windmove-left)
 (global-set-key (kbd "C-M-<right>") 'windmove-right)
 (global-set-key (kbd "C-M-<up>") 'windmove-up)
@@ -187,7 +163,6 @@
 
 
 (require 'shell-ext) ; for f2 to create a new shell window
-
 (global-set-key [(meta t)] 'old-shell)
 ; (global-set-key [(meta \\)] 'shell-change-to-current-dir)
 (global-set-key [(meta shift t)] 'new-shell)
@@ -196,6 +171,13 @@
 (require 'column-marker)
 (global-set-key (kbd "C-;") 'lines-in-region)
 (global-set-key (kbd "C-/") 'my-comment-or-uncomment-region)
+
+(require 'winstack)
+(require 'winstack-list)
+
+(require 'simple)
+(global-set-key pop-key 'winstack-pop)
+(global-set-key next-key 'winstack-next)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -207,13 +189,37 @@
    (quote
     (company-jedi company-quickhelp perspective debbugs fuzzy ivy-rich pcre2el r-autoyas ess-smart-underscore ess-smart-equals company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra exwm xelb))))
 
+(require 'ivy-rich-ext)
+
+(require 'doom-themes)
+
+;; Global settings (defaults)
+(setq doom-themes-enable-bold t)   ; if nil, bold is universally disabled
+(setq doom-themes-enable-italic t) ; if nil, italics is universally disabled
+
+(setq custom-theme-load-path (cons (expand-file-name "~/.emacs.d/lisp/themes") custom-theme-load-path))
+
+;; Load the theme
+(load-theme 'doom-mhfc t)
+; (load-theme 'normal-black t)
+
+;; Enable flashing mode-line on errors
+(doom-themes-visual-bell-config)
+
+;; Corrects (and improves) org-mode's native fontification.
+(doom-themes-org-config)
+
+(require 'powerline-ext)
+(powerline-default-theme)
+
+(require 'counsel-ag-ext)
+(global-set-key [(meta f)] 'counsel-ag-preselect)
+
 (require 'xwidget-ext)
 
 (with-eval-after-load 'magit-mode
   (define-key magit-mode-map [(control tab)] 'other-window))
 (setq magit-completing-read-function 'ivy-completing-read)
-
-(require 'ivy-utils)
 
 (require 'swiper-async)
 
@@ -294,13 +300,6 @@
 ;(ascope-init "/home/ubuntu/sources/chromium/")
 
 (require 'jss) ; remote js debugger
-
-(require 'winstack)
-(require 'winstack-list)
-
-(require 'simple)
-(global-set-key pop-key 'winstack-pop)
-(global-set-key next-key 'winstack-next)
 
 ;(require 'webkit)
 
