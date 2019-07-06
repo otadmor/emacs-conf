@@ -2,6 +2,7 @@
 
 (require 'company)
 (add-hook 'after-init-hook 'global-company-mode)
+(setq company-minimum-prefix-length 0)
 
 (require 'company-quickhelp)
 (company-quickhelp-mode)
