@@ -69,12 +69,6 @@
 
 (global-hi-lock-mode 1)
 
-(require 'ivy)
-(setq ivy-do-completion-in-region nil)
-(ivy-mode t)
-
-(require 'ivy-utils)
-
 (fset 'yes-or-no-p 'y-or-n-p)
 
 (setq global-mark-ring-max 1000)
@@ -143,8 +137,6 @@
 
 (global-set-key (kbd "M-d") 'switch-to-minibuffer)
 
-(define-key compilation-mode-map (kbd "n") 'next-error-no-select)
-(define-key compilation-mode-map (kbd "p") 'previous-error-no-select)
 
 (require 'redo+)
 (global-set-key [(control z)] 'undo)
@@ -173,7 +165,6 @@
 (global-set-key (kbd "C-/") 'my-comment-or-uncomment-region)
 
 (require 'winstack)
-(require 'winstack-list)
 
 (require 'simple)
 (global-set-key pop-key 'winstack-pop)
@@ -189,7 +180,18 @@
    (quote
     (company-jedi company-quickhelp perspective debbugs fuzzy ivy-rich pcre2el r-autoyas ess-smart-underscore ess-smart-equals company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra exwm xelb))))
 
+(require 'ivy)
+(setq ivy-do-completion-in-region nil)
+(ivy-mode t)
+
+(require 'ivy-utils)
+
+(define-key compilation-mode-map (kbd "n") 'next-error-no-select)
+(define-key compilation-mode-map (kbd "p") 'previous-error-no-select)
+
 (require 'ivy-rich-ext)
+
+(require 'winstack-list)
 
 (require 'doom-themes)
 
