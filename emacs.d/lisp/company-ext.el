@@ -35,6 +35,7 @@
               (doc-buffer (company-doc-buffer (popup-item-documentation arg)))
               (annotation (popup-item-summary arg))
               (location nil)
+              (no-cache t)
               (sorted t))
             ))
          )

@@ -254,6 +254,7 @@
                (doc-buffer (company-doc-buffer (get-text-property 0 :doc arg)))
                (annotation (get-text-property 0 :description arg))
                (location nil)
+               (no-cache t)
                (sorted t))
              ))
           )
