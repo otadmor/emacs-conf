@@ -1,5 +1,6 @@
 # emacs-conf
 My personal Emacs configuration
+See also https://github.com/aviramc/.emacs.d
 ## Installation
 ```shell
 mv ~/.emacs.d{,.orig} || true
