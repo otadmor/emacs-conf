@@ -342,39 +342,21 @@
 (global-set-key (kbd "M-<f3>") 'mc/mark-all-like-this)
 (global-set-key (kbd "C-S-l") 'mc/edit-ends-of-lines)
 
-;; (require 'autocomplete-ext)
-;; (define-key ac-complete-mode-map (kbd "RET") 'ac-complete-when-menu) ; ac-complete-mode-map, ac-menu-map
-;; (define-key ac-complete-mode-map (kbd "<next>") 'ac-page-next)
-;; (define-key ac-complete-mode-map (kbd "<prior>") 'ac-page-previous)
-;; (define-key ac-complete-mode-map (kbd "<home>") 'ac-first)
-;; (define-key ac-complete-mode-map (kbd "<end>") 'ac-last)
-;; ;; (setq completion-in-region-function 'completion-in-region-auto-complete-or-ivy)
-
 (require 'company-ext)
 (setq completion-in-region-function 'completion-in-region-company-or-ivy)
 
 (defalias 'py-complete-completion-at-point (lambda() nil))
-
-;; (require 'jedi-core)
-;; (define-key jedi-mode-map goto-def-key 'jedi:goto-definition)
-
-;; (require 'company-jedi)
-;; (add-to-list 'company-backends 'company-jedi)
-;; (setq py-complete-function 'company-complete)
 
 (setq python-shell-interpreter "python3") ; needed for anaconda-mode
 
 ; (fringe-mode '(0 . nil))
 (require 'anaconda-mode)
 (add-hook 'python-mode-hook 'anaconda-mode)
-; ; (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
-(define-key anaconda-mode-map goto-def-key 'anaconda-mode-find-definitions)
-; (define-key anaconda-mode-map find-ref-key 'anaconda-mode-find-references)
-; ; (define-key anaconda-mode-map complete-key 'anaconda-mode-complete)
+(add-hook 'python-mode-hook 'anaconda-eldoc-mode)
+(define-key anaconda-mode-map goto-def-key 'anaconda-mode-find-assignments)
 
 (require 'company-anaconda)
 (add-to-list 'company-backends 'company-anaconda)
-;; (setq py-complete-function 'anaconda-mode-complete)
 (setq py-complete-function 'company-complete)
 
 (require 'bash-completion)
