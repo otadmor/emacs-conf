@@ -353,27 +353,29 @@
 (require 'company-ext)
 (setq completion-in-region-function 'completion-in-region-company-or-ivy)
 
-(require 'jedi-core)
-(define-key jedi-mode-map goto-def-key 'jedi:goto-definition)
-
 (defalias 'py-complete-completion-at-point (lambda() nil))
 
-(require 'company-jedi)
-(add-to-list 'company-backends 'company-jedi)
-(setq py-complete-function 'company-complete)
+;; (require 'jedi-core)
+;; (define-key jedi-mode-map goto-def-key 'jedi:goto-definition)
 
+;; (require 'company-jedi)
+;; (add-to-list 'company-backends 'company-jedi)
+;; (setq py-complete-function 'company-complete)
+
+(setq python-shell-interpreter "python3") ; needed for anaconda-mode
 
 ; (fringe-mode '(0 . nil))
-; (require 'anaconda-mode)
-; (add-hook 'python-mode-hook 'anaconda-mode)
+(require 'anaconda-mode)
+(add-hook 'python-mode-hook 'anaconda-mode)
 ; ; (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
-; (define-key anaconda-mode-map goto-def-key 'anaconda-mode-find-definitions)
+(define-key anaconda-mode-map goto-def-key 'anaconda-mode-find-definitions)
 ; (define-key anaconda-mode-map find-ref-key 'anaconda-mode-find-references)
 ; ; (define-key anaconda-mode-map complete-key 'anaconda-mode-complete)
 
-; ; (setq py-complete-function 'anaconda-mode-complete)
-; (setq py-complete-function 'company-complete)
-
+(require 'company-anaconda)
+(add-to-list 'company-backends 'company-anaconda)
+;; (setq py-complete-function 'anaconda-mode-complete)
+(setq py-complete-function 'company-complete)
 
 (require 'bash-completion)
 (bash-completion-setup)
