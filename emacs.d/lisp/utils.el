@@ -78,12 +78,12 @@ It creates the Imenu index for the buffer, if necessary."
   "Get a list of buffers in which minor-mode is active"
   (interactive)
   (let (
-        (persp (when persp-mode (get-current-persp)))
+        (persp (when (and (boundp 'persp-mode) persp-mode) (get-current-persp)))
         (major-mode-buffers)
         )
     (dolist (buf (buffer-list) major-mode-buffers)
       (when (and (with-current-buffer buf (eq major-mode find-major-mode))
-                 (or (not persp-mode)
+                 (or (not (and (boundp 'persp-mode) persp-mode))
                      (persp-contain-buffer-p buf persp)))
         (push buf major-mode-buffers)))))
 

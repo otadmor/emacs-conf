@@ -59,5 +59,6 @@
 (add-to-list 'blacklist-powerline-mode-list "Py")
 (add-to-list 'blacklist-powerline-mode-list "Messages")
 (add-to-list 'blacklist-powerline-mode-list "company")
+(add-to-list 'blacklist-powerline-mode-list "#nil")
 
 (provide 'powerline-ext)

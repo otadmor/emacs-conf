@@ -71,6 +71,7 @@
 
 (global-hi-lock-mode 1)
 
+(ido-mode) ;; before ivy is installed
 (fset 'yes-or-no-p 'y-or-n-p)
 
 (setq global-mark-ring-max 1000)
@@ -135,6 +136,14 @@
 
 (global-set-key (kbd "C-x C-z") (lambda() (interactive) (message "Dont minimize")))
 
+
+(global-set-key [(meta p)] 'run-python)
+(global-set-key [(meta shift p)] 'run-python)
+
+(require 'shell)
+(define-key shell-mode-map [(meta p)] 'run-python)
+(define-key shell-mode-map [(meta shift p)] 'run-python)
+
 (require 'windmove)
 (global-set-key (kbd "C-M-<left>") 'windmove-left)
 (global-set-key (kbd "C-M-<right>") 'windmove-right)
@@ -171,7 +180,7 @@
 (global-set-key (kbd "C-/") 'my-comment-or-uncomment-region)
 
 (require 'simple)
-; ess-smart-underscore ess-smart-equals  exwm xelb
+; ess-smart-underscore ess-smart-equals  exwm xelb perspective fuzzy
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -179,7 +188,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (company-jedi company-quickhelp persp-mode perspective debbugs fuzzy ivy-rich pcre2el r-autoyas company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra))))
+    (r-autoyas company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra))))
 
 (let (
       (need-install nil)
@@ -192,6 +201,7 @@
     (package-refresh-contents)
     (package-install-selected-packages)))
 
+(ido-mode nil)
 (require 'ivy)
 (ivy-mode nil)
 (setq ivy-do-completion-in-region nil)
