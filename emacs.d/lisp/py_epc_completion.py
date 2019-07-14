@@ -124,12 +124,19 @@ class PythonModeEPCCompletion(object):
             if len(res) > 0:
                 for i in res:
                     yield imp + os.path.splitext(i)[0][len(p) + len(os.path.sep) + len(imp):]
-        raise StopIteration
+        if sys.version_info.major == 2:
+            raise StopIteration
 
     def from_import_complete(self, text):
         if not (text.startswith("from ") and " import " not in text):
+            if sys.version_info.major == 2:
+                raise StopIteration
+            else:
+                return
+        if sys.version_info.major == 2:
             raise StopIteration
-        raise StopIteration
+        if False:
+            yield None
 
     def symbol_or_import_complete(self, text):
         for c in self.readline_complete(text):
