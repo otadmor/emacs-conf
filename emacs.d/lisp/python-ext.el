@@ -70,4 +70,7 @@ the output."
    ;; (lambda () (new-python))
    (lambda () )))
 
+(add-to-list 'exec-path "/home/ubuntu/.pyenv/bin")
+(add-to-list 'exec-path "/home/ubuntu/.pyenv/shims")
+
 (provide 'python-ext)
