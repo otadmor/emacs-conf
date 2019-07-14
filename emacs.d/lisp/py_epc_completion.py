@@ -12,7 +12,7 @@ from epc.server import EPCServer
 from epc.client import EPCClient
 from collections import namedtuple
 import time
-
+import glob
 import string
 import sys
 import readline
@@ -110,6 +110,35 @@ class PythonModeEPCCompletion(object):
             yield res
             i += 1
 
+    def import_complete(self, text):
+        # if not text.startswith("import "):
+        #     return
+        # text = text[len("import "):]
+        imports = [imp.strip() for imp in text.split(",")]
+        imp = imports[-1]
+        # print ("imp = " + imp)
+        for p in sys.path:
+            # print("search " + os.path.join(p, imp.replace(".", "/")) + "*")
+            res = glob.glob(os.path.join(p, imp.replace(".", "/")) + "*")
+            # print(res)
+            if len(res) > 0:
+                for i in res:
+                    yield imp + os.path.splitext(i)[0][len(p) + len(os.path.sep) + len(imp):]
+        raise StopIteration
+
+    def from_import_complete(self, text):
+        if not (text.startswith("from ") and " import " not in text):
+            raise StopIteration
+        raise StopIteration
+
+    def symbol_or_import_complete(self, text):
+        for c in self.readline_complete(text):
+            yield c
+        for c in self.import_complete(text):
+            yield c
+        for c in self.from_import_complete(text):
+            yield c
+
     def try_or_err(self, f, err):
         try:
             return f()
@@ -137,7 +166,7 @@ class PythonModeEPCCompletion(object):
                 'doc' : self.try_or_err(lambda:self.doc(res), "Error"),
                 'description' : self.try_or_err(lambda:self.symbol(res)[:100], "Error"),
                 'symbol' : self.try_or_err(lambda:self.meta(res), "Error"),
-            } for res in self.readline_complete(text)]
+            } for res in set(self.symbol_or_import_complete(text))]
         except:
             import traceback; traceback.print_exc()
             return []
