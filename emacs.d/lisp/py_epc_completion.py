@@ -26,9 +26,20 @@ def get_builtin_method_signature(d, without_name=False):
     return ddoc
 
 def get_func_signature(d, without_name=False):
-    symbol = d.func_name + "(" if not without_name else ""
-    args = d.func_code.co_varnames[:d.func_code.co_argcount]
-    defaults = d.func_defaults
+    try:
+        fn = d.func_name
+    except AttributeError:
+        fn = d.__name__
+    symbol = fn + "(" if not without_name else ""
+    try:
+        fc = d.func_code
+    except AttributeError:
+        fc = d.__code__
+    args = fc.co_varnames[:fc.co_argcount]
+    try:
+        defaults = d.func_defaults
+    except AttributeError:
+        defaults = d.__defaults__
     if defaults is not None:
         dl = len(defaults)
         desc = "%s%s)" % (symbol, ', '.join(args[:-dl] + tuple("%s=%r" % x for x in zip(args[-dl:], defaults))))
@@ -41,7 +52,10 @@ def find_obj(symbol):
     if len(ss) == 0:
         raise AttributeError("No name")
     n = ss[0]
-    gg  = readline.get_completer().im_self.namespace
+    try:
+        gg  = readline.get_completer().im_self.namespace
+    except AttributeError:
+        gg  = readline.get_completer().__self__.namespace
     if n not in gg:
         raise AttributeError(n)
     d = reduce(lambda d, s: getattr(d, s), ss[1:], gg[n])
@@ -78,6 +92,12 @@ class _DUMMY_:
 classtype = type(_DUMMY_)
 methodtype = type(_DUMMY_.__init__)
 del _DUMMY_
+
+try:
+    _ = reduce
+except NameError:
+    import functools
+    reduce = functools.reduce
 
 if sys.version_info.major == 2:
     SYMBOL_CHARS = "._" + string.letters + string.digits
