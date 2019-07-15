@@ -179,6 +179,9 @@
 (global-set-key (kbd "C-;") 'lines-in-region)
 (global-set-key (kbd "C-/") 'my-comment-or-uncomment-region)
 
+(require 'lockstep)
+(lockstep)
+
 (require 'simple)
 ; ess-smart-underscore ess-smart-equals  exwm xelb perspective fuzzy
 (custom-set-variables
