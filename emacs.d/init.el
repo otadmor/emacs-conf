@@ -355,7 +355,7 @@
 ; (fringe-mode '(0 . nil))
 (require 'anaconda-mode)
 (add-hook 'python-mode-hook 'anaconda-mode)
-(add-hook 'python-mode-hook 'anaconda-eldoc-mode)
+;; (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
 (define-key anaconda-mode-map goto-def-key 'anaconda-mode-find-assignments)
 
 (require 'company-anaconda)
