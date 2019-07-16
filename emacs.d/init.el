@@ -140,6 +140,12 @@
 (global-set-key [(meta p)] 'run-python)
 (global-set-key [(meta shift p)] 'run-python)
 
+;; ;; window resize (alt+shift)
+;; (global-set-key [(meta shift left)] 'shrink-window-horizontally)
+;; (global-set-key [(meta shift right)] 'enlarge-window-horizontally)
+;; (global-set-key [(meta shift down)] 'enlarge-window)
+;; (global-set-key [(meta shift up)] 'shrink-window)
+
 (require 'shell)
 (define-key shell-mode-map [(meta p)] 'run-python)
 (define-key shell-mode-map [(meta shift p)] 'run-python)
