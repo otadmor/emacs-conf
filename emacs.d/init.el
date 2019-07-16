@@ -149,6 +149,7 @@
 (require 'shell)
 (define-key shell-mode-map [(meta p)] 'run-python)
 (define-key shell-mode-map [(meta shift p)] 'run-python)
+(define-key shell-mode-map [(shift return)] 'newline)
 
 (require 'windmove)
 (global-set-key (kbd "C-M-<left>") 'windmove-left)
@@ -168,6 +169,7 @@
 (define-key comint-mode-map [C-up] 'comint-previous-matching-input-from-input)
 (define-key comint-mode-map [C-down] 'comint-next-matching-input-from-input)
 (define-key comint-mode-map (kbd "M-r") 'counsel-shell-history)
+(define-key comint-mode-map [(shift return)] 'newline)
 
 (require 'comint-ext)
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
