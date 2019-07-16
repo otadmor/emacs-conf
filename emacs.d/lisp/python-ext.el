@@ -73,4 +73,6 @@ the output."
 (add-to-list 'exec-path "/home/ubuntu/.pyenv/bin")
 (add-to-list 'exec-path "/home/ubuntu/.pyenv/shims")
 
+(add-hook py-python-shell-mode-hook (lambda () (electric-indent-mode nil)))
+
 (provide 'python-ext)
