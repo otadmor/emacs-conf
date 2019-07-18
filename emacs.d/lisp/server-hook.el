@@ -1,3 +1,5 @@
+;; -*- lexical-binding: t; -*-
+
 (require 'server)
 
 (defun check-frames-connection ()
@@ -49,7 +51,13 @@
     ;;  (message "CAR %S is iq %S" expected-display (string-equal (car-safe args) "localhost:current"))
     ;;  (message "CDR %S" other-arguments)
     ;;  (message "REJOIN %S" (cons frame-display other-arguments))
-    (apply orig-fun (cons display other-arguments))))
+    (let (
+          (frame (apply orig-fun (cons display other-arguments)))
+          )
+      (run-at-time 0 nil (lambda ()
+                           (with-selected-frame frame
+                             (lockstep-and-prepare-persp))))
+      frame)))
 (advice-add 'server-create-window-system-frame :around #'server-create-window-system-frame-hook)
 
 (defun save-persp-on-delete-frame (frame)
@@ -58,13 +66,27 @@
     (error nil)))
 (add-hook 'delete-frame-functions #'save-persp-on-delete-frame)
 
-(setq initial-buffer-choice
-      (lambda ()
-        (run-at-time 0 nil (lambda ()
-                             (condition-case nil
-                                 (persp-load-state-from-file)
-                               (error nil))))
-        (current-buffer)))
+
+(require 'lockstep)
+(defun lockstep-and-prepare-persp () ;;persp-file phash persp-names)
+  (lockstep)
+  (let* (
+         (this-frame (selected-frame))
+         (x-frame-list (remove-if
+                        (lambda (frame) (or (not (eq (framep frame) 'x))
+                                            (equal this-frame frame)))
+                        (frame-list)))
+         )
+    (if (null x-frame-list)
+        (perspsw1)
+      (let* (
+             (first-frame (car x-frame-list))
+             (persp (get-frame-persp first-frame))
+             (persp-name (safe-persp-name persp))
+             )
+        (persp-switch persp-name)))))
+
+(setq initial-buffer-choice (lambda () (current-buffer)))
 
 (defun exit-emacs-or-close-frame() (interactive)
        (if server-inside-emacs-client (delete-frame) (save-buffers-kill-emacs)))

@@ -91,6 +91,11 @@
 (setenv "VISUAL" "emacsclient")
 
 (require 'server-hook)
+
+(find-file (expand-file-name "~/.emacs.d/server.log"))
+(setq server-buffer (get-file-buffer "~/.emacs.d/server.log"))
+(setq server-log t)
+
 (require 'scratch-util)
 
 (require 'cl) ; required for defun*
@@ -188,7 +193,8 @@
 (global-set-key (kbd "C-/") 'my-comment-or-uncomment-region)
 
 (require 'lockstep)
-(lockstep)
+(unless server-inside-emacs-client
+  (lockstep))
 
 (require 'simple)
 ; ess-smart-underscore ess-smart-equals  exwm xelb perspective fuzzy

@@ -154,6 +154,13 @@ of the perspective %s can't be saved."
                           t))
                  (safe-persp-parameters persp))))
 (defalias 'persp-parameters-to-savelist 'persp-parameters-to-savelist-hide-message)
+
+(defun switch-to-persp1-after-load-state (persp-file phash persp-names)
+  (remove-hook 'persp-after-load-state-functions
+               'switch-to-persp1-after-load-state)
+  (lambda (persp-file phash persp-names)
+    (perspsw1)))
+
 (setq persp-mode-hide-autosave-errors t)
 (with-eval-after-load "persp-mode-autoloads"
   (setq wg-morph-on nil)
@@ -190,15 +197,17 @@ of the perspective %s can't be saved."
                                    )
                                (condition-case err
                                    (persp-save-state-to-file)
-                                 (error (message "failed to save persp %S" err) nil)))))
+                                 (error
+                                  (remove-hook 'persp-after-load-state-functions
+                                               'switch-to-persp1-after-load-state)
+                                  (message "failed to save persp %S" err) nil)))))
 
   ;; switch off the animation of restoring window configuration
   (add-hook 'after-init-hook
             #'(lambda ()
                 (progn
                   (add-hook 'persp-after-load-state-functions
-                            (lambda (persp-file phash persp-names)
-                              (perspsw1)))
+                            'switch-to-persp1-after-load-state)
                   (persp-mode 1)
 
                   )))

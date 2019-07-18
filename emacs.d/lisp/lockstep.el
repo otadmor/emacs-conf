@@ -1,4 +1,5 @@
-; lockstep.el
+
+                                        ; lockstep.el
 ; Trevor Jim
 ; Keep frames in lock step, useful for pair programming with emacsclients
 ; Requires Emacs 24
@@ -16,6 +17,7 @@
   (turn-on-lockstep))
 
 (defun turn-on-lockstep ()
+
   "Synchronize this frame's windows and points."
   (interactive)
   (when (not (memq (selected-frame) lockstep-frames))
@@ -31,6 +33,7 @@
 (setq lockstep--recursion-protect t)
 (defun lockstep-needed ()
   (setq lockstep-frames (remove-if-not 'frame-live-p lockstep-frames))
+  (setq lockstep-frames (remove-if-not (lambda (frame) (eq (framep frame) 'x)) lockstep-frames))
   (and lockstep--recursion-protect
        (> (length lockstep-frames) 1)
        (memq (selected-frame) lockstep-frames)))
@@ -64,6 +67,7 @@
                          (lockstep-window-state-put (window-state-get this-frame-window) other-frame-window)
                          (when master-frame
                            ;; if called from turn-on-lockstep, synchronize point as well
+                           (set-window-start other-frame-window (window-start this-frame-window))
                            (set-window-point other-frame-window (window-point this-frame-window))))))))
       (add-hook 'window-configuration-change-hook 'lockstep-frame))))
 
@@ -188,7 +192,9 @@ windows can get as small as `window-safe-min-height' and
     ;; (lockstep-frame)
     (let* (
            (this-frame (selected-frame))
-           (other-frames (remove-if (lambda (frame) (equal this-frame frame)) lockstep-frames))
+           (other-frames (remove-if
+                          (lambda (frame) (equal this-frame frame))
+                          lockstep-frames))
            (persp (get-current-persp this-frame))
            (lockstep--recursion-protect nil)
            )
@@ -198,8 +204,7 @@ windows can get as small as `window-safe-min-height' and
                    (setq persp-last-persp-name (safe-persp-name persp))
                    (set-frame-persp persp frame)
                    (when persp-init-frame-behaviour
-                     (persp-restore-window-conf frame persp))))))
-    ))
+                     (persp-restore-window-conf frame persp))))))))
 (add-hook 'persp-activated-functions 'lockstep-persp-before-switch)
 
 (defun lockstep-point ()
