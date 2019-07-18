@@ -4,7 +4,7 @@
 ;(setq persp-autokill-buffer-on-remove nil)
 (setq persp-auto-resume-time 0.01)
 (setq persp-auto-save-fname "autosave")
-; (setq persp-auto-save-opt 1)
+(setq persp-auto-save-opt 2)
 (setq persp-nil-hidden t)
 (setq persp-nil-name "nil")
 (setq persp-add-buffer-on-after-change-major-mode 'free)
