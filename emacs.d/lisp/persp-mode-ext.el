@@ -139,8 +139,8 @@
     (save-excursion
       (condition-case nil
           (persp-add-buffer persp-shared-buffers)
-        (error nil)))
-    (persp-switch-to-buffer buffer)
+        (error nil))
+      (persp-switch-to-buffer buffer))
     res))
 (advice-add 'set-frame-persp :around #'persp-mode-add-shared-buffers)
 
