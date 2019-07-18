@@ -69,7 +69,6 @@
 
 (require 'lockstep)
 (defun lockstep-and-prepare-persp () ;;persp-file phash persp-names)
-  (lockstep)
   (let* (
          (this-frame (selected-frame))
          (x-frame-list (remove-if
@@ -84,7 +83,8 @@
              (persp (get-frame-persp first-frame))
              (persp-name (safe-persp-name persp))
              )
-        (persp-switch persp-name)))))
+        (persp-switch persp-name)))
+    (lockstep)))
 
 (setq initial-buffer-choice (lambda () (current-buffer)))
 

@@ -134,10 +134,13 @@
 (defun persp-mode-add-shared-buffers (orig-fun &rest args)
   (let (
         (res (apply orig-fun args))
+        (buffer (current-buffer))
         )
-    (condition-case nil
-        (persp-add-buffer persp-shared-buffers)
-      (error nil))
+    (save-excursion
+      (condition-case nil
+          (persp-add-buffer persp-shared-buffers)
+        (error nil)))
+    (persp-switch-to-buffer buffer)
     res))
 (advice-add 'set-frame-persp :around #'persp-mode-add-shared-buffers)
 
