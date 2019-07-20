@@ -189,7 +189,6 @@ windows can get as small as `window-safe-min-height' and
 (defun* lockstep-persp-before-switch (frame-or-window)
   (when (and (lockstep-needed)
              (eq frame-or-window 'frame))
-    ;; (lockstep-frame)
     (let* (
            (this-frame (selected-frame))
            (other-frames (remove-if
@@ -198,14 +197,32 @@ windows can get as small as `window-safe-min-height' and
            (persp (get-current-persp this-frame))
            (lockstep--recursion-protect nil)
            )
+      (persp-frame-save-state this-frame)
       (loop for frame in other-frames
             do (progn
                  (with-selected-frame frame
                    (setq persp-last-persp-name (safe-persp-name persp))
                    (set-frame-persp persp frame)
-                   (when persp-init-frame-behaviour
-                     (persp-restore-window-conf frame persp))))))))
+                   (persp-restore-window-conf frame persp)))))))
 (add-hook 'persp-activated-functions 'lockstep-persp-before-switch)
+
+(defun lockstep-frame (&optional frame)
+  (when (and (lockstep-needed)
+             (not (eq this-command 'persp-switch)))
+    (unwind-protect
+        (let* (
+               (this-frame (or frame (selected-frame)))
+               (other-frames (remove-if
+                              (lambda (frame) (equal this-frame frame))
+                              lockstep-frames))
+               (persp (get-current-persp this-frame))
+               (lockstep--recursion-protect nil)
+               )
+          (persp-frame-save-state this-frame)
+          (loop for frame in other-frames
+                do (progn
+                     (with-selected-frame frame
+                       (persp-restore-window-conf frame persp))))))))
 
 (defun lockstep-point ()
   "Synchronize point in all windows in other lockstep frames visiting this buffer."

@@ -315,6 +315,8 @@ of the perspective %s can't be saved."
 (defalias 'mouse-buffer-menu-map 'mouse-buffer-menu-map-hook)
 
 
-
+(defun persp-switch-set-this-command (&rest args)
+  (setq this-command 'persp-switch))
+(advice-add 'persp-switch :before #'persp-switch-set-this-command)
 
 (provide 'persp-mode-ext)
