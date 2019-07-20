@@ -7,6 +7,7 @@
 (add-to-list 'package-archives
              '("melpa-stable" . "http://stable.melpa.org/packages/") t)
 
+(toggle-debug-on-error)
 (setq enable-local-eval nil)
 (setq enable-local-variables nil)
 
@@ -106,6 +107,7 @@
 (global-set-key [(control x) (c)] 'exit-emacs-or-close-frame)
 (global-set-key [(control z)] 'undo)
 (global-set-key [f9] 'compile)
+(global-set-key (kbd "C-l") 'my-toggle-truncate-lines)
 
 
 (defvar next-key (kbd "C-M-n"))
@@ -227,13 +229,12 @@
     (package-refresh-contents)
     (package-install-selected-packages)))
 
-(ido-mode nil)
-(require 'ivy)
-(ivy-mode nil)
-(setq ivy-do-completion-in-region nil)
-(ivy-mode t)
-
-(require 'ivy-utils)
+(with-eval-after-load 'ivy
+  (ido-mode nil)
+  (ivy-mode nil)
+  (setq ivy-do-completion-in-region nil)
+  (ivy-mode t)
+  (require 'ivy-utils))
 
 (define-key compilation-mode-map (kbd "n") 'next-error-no-select)
 (define-key compilation-mode-map (kbd "p") 'previous-error-no-select)
@@ -242,26 +243,29 @@
 
 (require 'winstack-list)
 
-(require 'doom-themes)
+(with-eval-after-load 'doom-themes
+;; (require 'doom-themes)
 
-;; Global settings (defaults)
-(setq doom-themes-enable-bold t)   ; if nil, bold is universally disabled
-(setq doom-themes-enable-italic t) ; if nil, italics is universally disabled
+  ;; Global settings (defaults)
+  (setq doom-themes-enable-bold t)   ; if nil, bold is universally disabled
+  (setq doom-themes-enable-italic t) ; if nil, italics is universally disabled
 
-;; Load the theme
-(load-theme 'doom-mhfc t)
+  ;; Load the theme
+  (load-theme 'doom-mhfc t)
 
-;; Enable flashing mode-line on errors
-(doom-themes-visual-bell-config)
+  ;; Enable flashing mode-line on errors
+  (doom-themes-visual-bell-config)
 
-;; Corrects (and improves) org-mode's native fontification.
-(doom-themes-org-config)
+  ;; Corrects (and improves) org-mode's native fontification.
+  (doom-themes-org-config))
 
-(require 'powerline-ext)
-(powerline-default-theme)
+(with-eval-after-load 'powerline
+  (require 'powerline-ext)
+  (powerline-default-theme))
 
-(require 'counsel-ag-ext)
-(global-set-key [(meta f)] 'counsel-ag-preselect)
+(with-eval-after-load 'counsel
+  (require 'counsel-ag-ext)
+  (global-set-key [(meta f)] 'counsel-ag-preselect))
 
 (require 'xwidget-ext)
 
@@ -269,73 +273,89 @@
   (define-key magit-mode-map [(control tab)] 'other-window))
 (setq magit-completing-read-function 'ivy-completing-read)
 
-(require 'swiper-async)
+(with-eval-after-load 'ivy
+  (define-key ivy-minibuffer-map (kbd "C-d") #'ivy-immediate-done)
+  (define-key ivy-minibuffer-map (kbd "RET") #'ivy-alt-done)
+  (define-key ivy-minibuffer-map [(control return)] #'ivy-done)
+  (define-key ivy-minibuffer-map [(meta t)] 'ivy-shell)
+  (define-key ivy-minibuffer-map [(meta shift t)] 'ivy-new-shell)
+  (define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
+  (define-key ivy-minibuffer-map sc-status-key 'ivy-magit-status)
+  (define-key ivy-minibuffer-map (kbd "M-<up>") 'ivy-previous-history-element)
+  (define-key ivy-minibuffer-map (kbd "M-<down>") 'ivy-next-history-element)
+  (define-key ivy-minibuffer-map (kbd "C-r") 'ivy-previous-line-or-history-2)
+  (define-key ivy-minibuffer-map (kbd "C-d") 'ivy-occur)
+  (define-key ivy-minibuffer-map (kbd "C-w") 'ivy-yank-word)
 
-(define-key ivy-minibuffer-map (kbd "C-d") #'ivy-immediate-done)
-(define-key ivy-minibuffer-map (kbd "RET") #'ivy-alt-done)
-(define-key ivy-minibuffer-map [(control return)] #'ivy-done)
-(define-key ivy-minibuffer-map [(meta t)] 'ivy-shell)
-(define-key ivy-minibuffer-map [(meta shift t)] 'ivy-new-shell)
-(define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
-(define-key ivy-minibuffer-map sc-status-key 'ivy-magit-status)
-(define-key ivy-minibuffer-map (kbd "M-<up>") 'ivy-previous-history-element)
-(define-key ivy-minibuffer-map (kbd "M-<down>") 'ivy-next-history-element)
+  (define-key ivy-minibuffer-map (kbd "C-l") 'my-toggle-truncate-lines)
 
-(global-set-key (kbd "M-c") 'ivy-resume)
+  (global-set-key (kbd "M-c") 'ivy-resume)
 
-(global-set-key (kbd "C-s") 'swiper-async-search-forward)
-(global-set-key (kbd "C-r") 'swiper-async-search-backward)
-(global-set-key (kbd "C-c C-a") 'mcs-swiper)
+  (with-eval-after-load 'swiper
+    (setq swiper-include-line-number-in-search t)
 
-(setq swiper-include-line-number-in-search t)
+    (define-key swiper-map (kbd "C-/") 'swiper-comment-or-uncomment-line)
+    (define-key swiper-map (kbd "C-k") 'swiper-kill-line)
+    (define-key swiper-map (kbd "M-f") 'swiper-convert-to-ag)
+    (define-key swiper-map (kbd "C-g") 'mcs-minibuffer-keyboard-quit)
+    (define-key swiper-map (kbd "C-SPC") 'mcs-toggle-cursor-at-point)
+    (define-key swiper-map (kbd "C->") 'mcs-mark-next-like-this)
+    (define-key swiper-map (kbd "C-<") 'mcs-mark-previous-like-this)
+    (define-key swiper-map (kbd "<down>") 'ivy-next-line-and-call)
+    (define-key swiper-map (kbd "<up>") 'ivy-previous-line-and-call)
+    (define-key swiper-map (kbd "C-<up>") 'ivy-previous-line)
+    (define-key swiper-map (kbd "C-<down>") 'ivy-next-line)
+    (define-key swiper-map (kbd "M-r") 'ivy-rotate-preferred-builders)
 
-(define-key swiper-map (kbd "C-/") 'swiper-comment-or-uncomment-line)
-(define-key swiper-map (kbd "C-k") 'swiper-kill-line)
-(define-key swiper-map (kbd "M-f") 'swiper-convert-to-ag)
-(define-key ivy-minibuffer-map (kbd "M-f") 'swiper-convert-to-ag)
-(define-key counsel-find-file-map (kbd "M-f") 'find-file-convert-to-ag)
+    (define-key swiper-map (kbd "C-l") 'my-toggle-truncate-lines)
+    (define-key swiper-map (kbd "M-C-p") 'swiper--goto-original-point))
 
-(require 'multiple-cursors-swiper)
+  (with-eval-after-load 'counsel
+    (require 'swiper-async)
+    (global-set-key (kbd "C-s") 'swiper-async-search-forward)
+    (global-set-key (kbd "C-r") 'swiper-async-search-backward)
 
-(define-key swiper-map (kbd "C-g") 'mcs-minibuffer-keyboard-quit)
-(define-key swiper-map (kbd "C-SPC") 'mcs-toggle-cursor-at-point)
-(define-key swiper-map (kbd "C->") 'mcs-mark-next-like-this)
-(define-key swiper-map (kbd "C-<") 'mcs-mark-previous-like-this)
-(define-key swiper-map (kbd "<down>") 'ivy-next-line-and-call)
-(define-key swiper-map (kbd "<up>") 'ivy-previous-line-and-call)
-(define-key swiper-map (kbd "C-<up>") 'ivy-previous-line)
-(define-key swiper-map (kbd "C-<down>") 'ivy-next-line)
-(define-key swiper-map (kbd "M-r") 'ivy-rotate-preferred-builders)
+    (define-key ivy-minibuffer-map (kbd "M-f") 'swiper-convert-to-ag)
+    (define-key counsel-find-file-map (kbd "M-f") 'find-file-convert-to-ag)
+    (define-key counsel-find-file-map (kbd "C-o") 'ivy-find-file-as-root)
 
-(define-key swiper-map (kbd "M-C-p") 'swiper--goto-original-point)
+    (define-key counsel-ag-map (kbd "<down>") 'ivy-next-line-and-call)
+    (define-key counsel-ag-map (kbd "<up>") 'ivy-previous-line-and-call)
+    (define-key counsel-ag-map (kbd "C-<up>") 'ivy-previous-line)
+    (define-key counsel-ag-map (kbd "C-<down>") 'ivy-next-line)
 
-(define-key counsel-find-file-map (kbd "C-o") 'ivy-find-file-as-root)
+    ;; (setq ido-file-extensions-order t)
+    (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+    (global-set-key (kbd "M-x") 'counsel-M-x)
+    (global-set-key (kbd "C-x C-a") 'counsel-locate)
+    (global-set-key (kbd "C-x p") 'counsel-git)
+    )
+  )
 
-;; (setq ido-file-extensions-order t)
-(global-set-key (kbd "C-x C-f") 'counsel-find-file)
-(global-set-key (kbd "M-x") 'counsel-M-x)
-(global-set-key (kbd "C-x C-a") 'counsel-locate)
-(global-set-key (kbd "C-x p") 'counsel-git)
+(with-eval-after-load 'multiple-cursors
+  (with-eval-after-load 'swiper
+    (require 'multiple-cursors-swiper)
+    (global-set-key (kbd "C-c C-a") 'mcs-swiper))
 
-(define-key ivy-minibuffer-map (kbd "C-r") 'ivy-previous-line-or-history-2)
-(define-key ivy-minibuffer-map (kbd "C-d") 'ivy-occur)
-(define-key ivy-minibuffer-map (kbd "C-w") 'ivy-yank-word)
+  (require 'multiple-cursors-yank)
+  (require 'multiple-cursors-sync-window)
+  ;; (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
+  (global-set-key (kbd "C->") 'mc/mark-next-like-this)
+  (global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
+  (global-set-key (kbd "M-<f3>") 'mc/mark-all-like-this)
+  (global-set-key (kbd "C-S-l") 'mc/edit-ends-of-lines))
 
-(define-key ivy-minibuffer-map (kbd "C-l") 'my-toggle-truncate-lines)
-(define-key swiper-map (kbd "C-l") 'my-toggle-truncate-lines)
-(global-set-key (kbd "C-l") 'my-toggle-truncate-lines)
+;; (require 'multiple-cursors)
 
-(define-key counsel-ag-map (kbd "<down>") 'ivy-next-line-and-call)
-(define-key counsel-ag-map (kbd "<up>") 'ivy-previous-line-and-call)
-(define-key counsel-ag-map (kbd "C-<up>") 'ivy-previous-line)
-(define-key counsel-ag-map (kbd "C-<down>") 'ivy-next-line)
-(global-set-key complete-key 'completion-at-point)
 
 ;(global-set-key [(f2)] 'gud-break)
 
-(require 'ahg) ; for mercurial source control, like magit
-;(global-set-key sc-status-key 'ahg-status)
-(global-set-key sc-status-key 'magit-status)
+;; (require 'ahg) ; for mercurial source control, like magit
+;; (with-eval-after-load 'ahg
+;;   (global-set-key sc-status-key 'ahg-status))
+
+(with-eval-after-load 'magit
+  (global-set-key sc-status-key 'magit-status))
 
 ;(require 'ascope)
 ;(global-set-key [(meta f9)] 'ascope-find-this-text-stringy)
@@ -351,112 +371,120 @@
 
 ;(require 'webkit)
 
-(require 'python-mode)
-(require 'python-ext)
+(with-eval-after-load 'python-mode
+  (require 'python-ext)
 
-(global-set-key [(meta p)] 'old-python)
-(global-set-key [(meta shift p)] 'new-python)
-(define-key shell-mode-map [(meta p)] 'old-python)
-(define-key shell-mode-map [(meta shift p)] 'new-python)
+  (global-set-key [(meta p)] 'old-python)
+  (global-set-key [(meta shift p)] 'new-python)
+  (define-key shell-mode-map [(meta p)] 'old-python)
+  (define-key shell-mode-map [(meta shift p)] 'new-python)
 
-(require 'multiple-cursors)
-(require 'multiple-cursors-yank)
-(require 'multiple-cursors-sync-window)
-; (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
-(global-set-key (kbd "C->") 'mc/mark-next-like-this)
-(global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
-(global-set-key (kbd "M-<f3>") 'mc/mark-all-like-this)
-(global-set-key (kbd "C-S-l") 'mc/edit-ends-of-lines)
+  (defalias 'py-complete-completion-at-point (lambda() nil))
 
-(require 'company-ext)
-(setq completion-in-region-function 'completion-in-region-company-or-ivy)
+  ;; (fringe-mode '(0 . nil))
+  ;; (require 'anaconda-mode)
+  (with-eval-after-load 'anaconda-mode
+    (setq python-shell-interpreter "python3") ; needed for anaconda-mode
+    (add-hook 'python-mode-hook 'anaconda-mode)
+    ;; (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
+    (define-key anaconda-mode-map goto-def-key 'anaconda-mode-find-assignments)
 
-(defalias 'py-complete-completion-at-point (lambda() nil))
+    (with-eval-after-load 'company
+      ;; (require 'company-anaconda)
+      (with-eval-after-load 'company-anaconda
+        (add-to-list 'company-backends 'company-anaconda)
+        (setq py-complete-function 'company-complete)))))
+;; (require 'python-mode)
 
-(setq python-shell-interpreter "python3") ; needed for anaconda-mode
+(with-eval-after-load 'company
+  (require 'company-ext)
+  (with-eval-after-load 'ivy
+    (setq completion-in-region-function 'completion-in-region-company-or-ivy))
+  (global-set-key complete-key 'completion-at-point))
 
-; (fringe-mode '(0 . nil))
-(require 'anaconda-mode)
-(add-hook 'python-mode-hook 'anaconda-mode)
-;; (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
-(define-key anaconda-mode-map goto-def-key 'anaconda-mode-find-assignments)
+(with-eval-after-load 'bash-completion
+  (bash-completion-setup))
+;; (require 'bash-completion)
 
-(require 'company-anaconda)
-(add-to-list 'company-backends 'company-anaconda)
-(setq py-complete-function 'company-complete)
+(with-eval-after-load 'sr-speedbar
+  (require 'sr-speedbar-ext)
+  ;; (global-set-key (kbd "C-e") 'sr-speedbar-toggle-keep-window)
+  (add-hook 'speedbar-reconfigure-keymaps-hook
+            '(lambda ()
+               (define-key speedbar-mode-map (kbd "<backspace>") 'speedbar-up-directory)
+               (define-key speedbar-mode-map [right] 'speedbar-flush-expand-line)
+               (define-key speedbar-mode-map [left] 'speedbar-contract-line-or-go-up)
+               (define-key speedbar-mode-map [M-up] 'speedbar-restricted-prev)
+               (define-key speedbar-mode-map [M-down] 'speedbar-restricted-next)
+               (define-key speedbar-mode-map [up] 'speedbar-prev)
+               (define-key speedbar-mode-map [down] 'speedbar-next)
+               (define-key speedbar-mode-map (kbd "M-g") 'sr-speedbar-navigate)
+               (define-key speedbar-mode-map [(control meta p)] 'winstack-pop)
+               (define-key speedbar-mode-map [(control meta n)] 'winstack-next)
+               ))
 
-(require 'bash-completion)
-(bash-completion-setup)
+  (global-set-key (kbd "C-e") 'sr-speedbar-toggle))
 
-(require 'sr-speedbar-ext)
-;; (global-set-key (kbd "C-e") 'sr-speedbar-toggle-keep-window)
-(add-hook 'speedbar-reconfigure-keymaps-hook
-          '(lambda ()
-             (define-key speedbar-mode-map (kbd "<backspace>") 'speedbar-up-directory)
-             (define-key speedbar-mode-map [right] 'speedbar-flush-expand-line)
-             (define-key speedbar-mode-map [left] 'speedbar-contract-line-or-go-up)
-             (define-key speedbar-mode-map [M-up] 'speedbar-restricted-prev)
-             (define-key speedbar-mode-map [M-down] 'speedbar-restricted-next)
-             (define-key speedbar-mode-map [up] 'speedbar-prev)
-             (define-key speedbar-mode-map [down] 'speedbar-next)
-             (define-key speedbar-mode-map (kbd "M-g") 'sr-speedbar-navigate)
-             (define-key speedbar-mode-map [(control meta p)] 'winstack-pop)
-             (define-key speedbar-mode-map [(control meta n)] 'winstack-next)
-             ))
-
-(global-set-key (kbd "C-e") 'sr-speedbar-toggle)
-
-(require 'ivy-dumb-jump)
-(global-set-key goto-def-key 'dumb-jump-go)
+(with-eval-after-load 'dump-jump
+  (with-eval-after-load 'ivy
+    (require 'ivy-dumb-jump)
+    (global-set-key goto-def-key 'dumb-jump-go)))
 
 (which-function-mode 1)
 
 ;; (require 'ess)
 
-(require 'completion-epc) ; required for frida completion
+(with-eval-after-load 'epc
+  (with-eval-after-load 'epcs
+    (with-eval-after-load 'company
+      (require 'completion-epc)
 
-(defun shell-completion-prefix ()
-    ;; Note that the input string does not include its terminal newline.
-  (let (
-        (proc (get-buffer-process (current-buffer)))
-        )
-    (when proc
-      (widen)
-      (let (
-            (pmark (process-mark proc))
-            )
-        (when (>= (point) (marker-position pmark))
-          (buffer-substring-no-properties pmark (point)))))))
-(epc-completion-add 'shell-mode 'comint-mode-hook 'shell-completion-prefix)
+      (defun shell-completion-prefix ()
+        ;; Note that the input string does not include its terminal newline.
+        (let (
+              (proc (get-buffer-process (current-buffer)))
+              )
+          (when proc
+            (widen)
+            (let (
+                  (pmark (process-mark proc))
+                  )
+              (when (>= (point) (marker-position pmark))
+                (buffer-substring-no-properties pmark (point)))))))
+      (epc-completion-add 'shell-mode 'comint-mode-hook 'shell-completion-prefix)
 
-(require 'company-py-shell)
+      (with-eval-after-load 'python-mode
+        (require 'company-py-shell))))) ; required for frida completion
 
-(require 'persp-mode)
-(global-set-key (kbd "M-1") (defun perspsw1() (interactive) (persp-switch "1")))
-(global-set-key (kbd "M-2") (defun perspsw2() (interactive) (persp-switch "2")))
-(global-set-key (kbd "M-3") (defun perspsw3() (interactive) (persp-switch "3")))
-(global-set-key (kbd "M-4") (defun perspsw4() (interactive) (persp-switch "4")))
-(global-set-key (kbd "M-5") (defun perspsw5() (interactive) (persp-switch "5")))
-(global-set-key (kbd "M-6") (defun perspsw6() (interactive) (persp-switch "6")))
-(global-set-key (kbd "M-7") (defun perspsw7() (interactive) (persp-switch "7")))
-(global-set-key (kbd "M-8") (defun perspsw8() (interactive) (persp-switch "8")))
-(global-set-key (kbd "M-9") (defun perspsw9() (interactive) (persp-switch "9")))
-(global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
+;; (require 'persp-mode)
+(with-eval-after-load 'persp-mode
+  (global-set-key (kbd "M-1") (defun perspsw1() (interactive) (persp-switch "1")))
+  (global-set-key (kbd "M-2") (defun perspsw2() (interactive) (persp-switch "2")))
+  (global-set-key (kbd "M-3") (defun perspsw3() (interactive) (persp-switch "3")))
+  (global-set-key (kbd "M-4") (defun perspsw4() (interactive) (persp-switch "4")))
+  (global-set-key (kbd "M-5") (defun perspsw5() (interactive) (persp-switch "5")))
+  (global-set-key (kbd "M-6") (defun perspsw6() (interactive) (persp-switch "6")))
+  (global-set-key (kbd "M-7") (defun perspsw7() (interactive) (persp-switch "7")))
+  (global-set-key (kbd "M-8") (defun perspsw8() (interactive) (persp-switch "8")))
+  (global-set-key (kbd "M-9") (defun perspsw9() (interactive) (persp-switch "9")))
+  (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
 
-(define-key term-mode-map (kbd "M-1") (defun perspsw1() (interactive) (persp-switch "1")))
-(define-key term-mode-map (kbd "M-2") (defun perspsw2() (interactive) (persp-switch "2")))
-(define-key term-mode-map (kbd "M-3") (defun perspsw3() (interactive) (persp-switch "3")))
-(define-key term-mode-map (kbd "M-4") (defun perspsw4() (interactive) (persp-switch "4")))
-(define-key term-mode-map (kbd "M-5") (defun perspsw5() (interactive) (persp-switch "5")))
-(define-key term-mode-map (kbd "M-6") (defun perspsw6() (interactive) (persp-switch "6")))
-(define-key term-mode-map (kbd "M-7") (defun perspsw7() (interactive) (persp-switch "7")))
-(define-key term-mode-map (kbd "M-8") (defun perspsw8() (interactive) (persp-switch "8")))
-(define-key term-mode-map (kbd "M-9") (defun perspsw9() (interactive) (persp-switch "9")))
-(define-key term-mode-map (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
+  (define-key term-mode-map (kbd "M-1") 'perspsw1)
+  (define-key term-mode-map (kbd "M-2") 'perspsw2)
+  (define-key term-mode-map (kbd "M-3") 'perspsw3)
+  (define-key term-mode-map (kbd "M-4") 'perspsw4)
+  (define-key term-mode-map (kbd "M-5") 'perspsw5)
+  (define-key term-mode-map (kbd "M-6") 'perspsw6)
+  (define-key term-mode-map (kbd "M-7") 'perspsw7)
+  (define-key term-mode-map (kbd "M-8") 'perspsw8)
+  (define-key term-mode-map (kbd "M-9") 'perspsw9)
+  (define-key term-mode-map (kbd "M-0") 'perspsw0)
 
-(require 'winstack)
-(global-set-key pop-key 'winstack-pop)
-(global-set-key next-key 'winstack-next)
+  (require 'winstack) ; needs to sort out when having and not having persp-mode.
+  (global-set-key pop-key 'winstack-pop)
+  (global-set-key next-key 'winstack-next)
 
-(require 'persp-mode-ext)
-(auto-complete-mode 0)
+  (require 'persp-mode-ext))
+
+(with-eval-after-load 'auto-complete
+  (auto-complete-mode 0))
