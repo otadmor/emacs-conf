@@ -882,6 +882,7 @@ candidates in the minibuffer asynchrounouosly."
         (save-excursion
           (deactivate-mark)
           (let* (
+                 (which-func-mode nil)
                  (should-sleep-more nil)
                  (yield-isearch nil)
                  (finished-wndcands (not swiper-include-line-number-in-search))
