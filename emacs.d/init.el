@@ -196,6 +196,15 @@
 (unless server-inside-emacs-client
   (lockstep))
 
+(require 'term)
+(define-key term-mode-map [(control tab)] 'next-buff)
+(define-key term-mode-map (kbd "C-S-<iso-lefttab>") 'prev-buffer)
+
+(define-key term-mode-map (kbd "C-x 0") 'delete-window)
+(define-key term-mode-map (kbd "C-x 1") 'delete-other-windows)
+(define-key term-mode-map (kbd "C-x 2") 'split-window-below)
+(define-key term-mode-map (kbd "C-x 3") 'split-window-right)
+
 (require 'simple)
 ; ess-smart-underscore ess-smart-equals  exwm xelb perspective fuzzy
 (custom-set-variables
@@ -433,6 +442,17 @@
 (global-set-key (kbd "M-8") (defun perspsw8() (interactive) (persp-switch "8")))
 (global-set-key (kbd "M-9") (defun perspsw9() (interactive) (persp-switch "9")))
 (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
+
+(define-key term-mode-map (kbd "M-1") (defun perspsw1() (interactive) (persp-switch "1")))
+(define-key term-mode-map (kbd "M-2") (defun perspsw2() (interactive) (persp-switch "2")))
+(define-key term-mode-map (kbd "M-3") (defun perspsw3() (interactive) (persp-switch "3")))
+(define-key term-mode-map (kbd "M-4") (defun perspsw4() (interactive) (persp-switch "4")))
+(define-key term-mode-map (kbd "M-5") (defun perspsw5() (interactive) (persp-switch "5")))
+(define-key term-mode-map (kbd "M-6") (defun perspsw6() (interactive) (persp-switch "6")))
+(define-key term-mode-map (kbd "M-7") (defun perspsw7() (interactive) (persp-switch "7")))
+(define-key term-mode-map (kbd "M-8") (defun perspsw8() (interactive) (persp-switch "8")))
+(define-key term-mode-map (kbd "M-9") (defun perspsw9() (interactive) (persp-switch "9")))
+(define-key term-mode-map (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
 
 (require 'winstack)
 (global-set-key pop-key 'winstack-pop)
