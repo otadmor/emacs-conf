@@ -435,26 +435,25 @@
 ;; (require 'ess)
 
 (with-eval-after-load 'epc
-  (with-eval-after-load 'epcs
-    (with-eval-after-load 'company
-      (require 'completion-epc)
+  (with-eval-after-load 'company
+    (require 'completion-epc)
 
-      (defun shell-completion-prefix ()
-        ;; Note that the input string does not include its terminal newline.
-        (let (
-              (proc (get-buffer-process (current-buffer)))
-              )
-          (when proc
-            (widen)
-            (let (
-                  (pmark (process-mark proc))
-                  )
-              (when (>= (point) (marker-position pmark))
-                (buffer-substring-no-properties pmark (point)))))))
-      (epc-completion-add 'shell-mode 'comint-mode-hook 'shell-completion-prefix)
+    (defun shell-completion-prefix ()
+      ;; Note that the input string does not include its terminal newline.
+      (let (
+            (proc (get-buffer-process (current-buffer)))
+            )
+        (when proc
+          (widen)
+          (let (
+                (pmark (process-mark proc))
+                )
+            (when (>= (point) (marker-position pmark))
+              (buffer-substring-no-properties pmark (point)))))))
+    (epc-completion-add 'shell-mode 'comint-mode-hook 'shell-completion-prefix)
 
-      (with-eval-after-load 'python-mode
-        (require 'company-py-shell))))) ; required for frida completion
+    (with-eval-after-load 'python-mode
+      (require 'company-py-shell)))) ; required for frida completion
 
 ;; (require 'persp-mode)
 (with-eval-after-load 'persp-mode
