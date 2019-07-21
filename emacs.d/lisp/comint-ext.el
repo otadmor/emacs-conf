@@ -14,7 +14,8 @@
               "\\|^.*\\\\' password:\\s *\\'"))
 
 (defun comint-delete-backward-char(fun &rest args)
-  (when (or (not (consp comint-last-prompt))
+  (when (or (region-active-p)
+            (not (consp comint-last-prompt))
             (/= (cdr comint-last-prompt) (point)))
     (apply fun args)))
 (advice-add 'delete-backward-char :around #'comint-delete-backward-char)
