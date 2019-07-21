@@ -130,7 +130,7 @@
   )
 
 
-(setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*" " *server*"))
+(setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*" " *server*" "server.log"))
 (defun persp-mode-add-shared-buffers (orig-fun &rest args)
   (let (
         (res (apply orig-fun args))
@@ -216,15 +216,10 @@ of the perspective %s can't be saved."
                   )))
   )
 
-(add-to-list 'speedbar-frame-parameters (cons 'persp-ignore-wconf t))
-
 (add-hook 'persp-common-buffer-filter-functions
           #'(lambda (b) (string-prefix-p "epc con" (buffer-name b))))
 (add-hook 'persp-common-buffer-filter-functions
           #'(lambda (b) (string-prefix-p "epc server" (buffer-name b))))
-(add-hook 'persp-common-buffer-filter-functions
-          #'(lambda (b) (string-prefix-p "*SPEEDBAR*" (buffer-name b))))
-
 
 (defun buffer-list-persp-mode ()
   (let (
@@ -238,7 +233,7 @@ of the perspective %s can't be saved."
               (buffer-list)))
         )
     (if (null res)
-        (list (get-buffer "*Messages*"))
+        (list (get-buffer "*Messages*")) ; TODO: use persp-shared-buffers
       res)))
 
 ;; copied from https://github.com/emacs-mirror/emacs/blob/master/lisp/mouse.el

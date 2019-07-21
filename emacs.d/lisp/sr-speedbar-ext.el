@@ -121,4 +121,10 @@
   (buffer-close-in-dir (speedbar-line-file)))
 
 
+(with-eval-after-load 'persp-mode
+  (add-to-list 'speedbar-frame-parameters (cons 'persp-ignore-wconf t))
+  (add-hook 'persp-common-buffer-filter-functions
+            #'(lambda (b) (string-prefix-p "*SPEEDBAR*" (buffer-name b)))))
+
+
 (provide 'sr-speedbar-ext)

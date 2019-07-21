@@ -7,7 +7,7 @@
 (add-to-list 'package-archives
              '("melpa-stable" . "http://stable.melpa.org/packages/") t)
 
-(toggle-debug-on-error)
+;; (toggle-debug-on-error)
 (setq enable-local-eval nil)
 (setq enable-local-variables nil)
 
@@ -209,25 +209,6 @@
 
 (require 'simple)
 ; ess-smart-underscore ess-smart-equals  exwm xelb perspective fuzzy
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   (quote
-    (r-autoyas company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra))))
-
-(let (
-      (need-install nil)
-      )
-  (dolist (package package-selected-packages)
-    (condition-case nil
-        (require package)
-      (error (setq need-install t))))
-  (when need-install
-    (package-refresh-contents)
-    (package-install-selected-packages)))
 
 (with-eval-after-load 'ivy
   (ido-mode nil)
@@ -236,8 +217,9 @@
   (ivy-mode t)
   (require 'ivy-utils))
 
-(define-key compilation-mode-map (kbd "n") 'next-error-no-select)
-(define-key compilation-mode-map (kbd "p") 'previous-error-no-select)
+(with-eval-after-load 'compile
+  (define-key compilation-mode-map (kbd "n") 'next-error-no-select)
+  (define-key compilation-mode-map (kbd "p") 'previous-error-no-select))
 
 (require 'ivy-rich-ext)
 
@@ -297,7 +279,6 @@
     (define-key swiper-map (kbd "C-/") 'swiper-comment-or-uncomment-line)
     (define-key swiper-map (kbd "C-k") 'swiper-kill-line)
     (define-key swiper-map (kbd "M-f") 'swiper-convert-to-ag)
-    (define-key swiper-map (kbd "C-g") 'mcs-minibuffer-keyboard-quit)
     (define-key swiper-map (kbd "C-SPC") 'mcs-toggle-cursor-at-point)
     (define-key swiper-map (kbd "C->") 'mcs-mark-next-like-this)
     (define-key swiper-map (kbd "C-<") 'mcs-mark-previous-like-this)
@@ -335,6 +316,7 @@
 (with-eval-after-load 'multiple-cursors
   (with-eval-after-load 'swiper
     (require 'multiple-cursors-swiper)
+    (define-key swiper-map (kbd "C-g") 'mcs-minibuffer-keyboard-quit)
     (global-set-key (kbd "C-c C-a") 'mcs-swiper))
 
   (require 'multiple-cursors-yank)
@@ -406,24 +388,25 @@
   (bash-completion-setup))
 ;; (require 'bash-completion)
 
-(with-eval-after-load 'sr-speedbar
-  (require 'sr-speedbar-ext)
-  ;; (global-set-key (kbd "C-e") 'sr-speedbar-toggle-keep-window)
-  (add-hook 'speedbar-reconfigure-keymaps-hook
-            '(lambda ()
-               (define-key speedbar-mode-map (kbd "<backspace>") 'speedbar-up-directory)
-               (define-key speedbar-mode-map [right] 'speedbar-flush-expand-line)
-               (define-key speedbar-mode-map [left] 'speedbar-contract-line-or-go-up)
-               (define-key speedbar-mode-map [M-up] 'speedbar-restricted-prev)
-               (define-key speedbar-mode-map [M-down] 'speedbar-restricted-next)
-               (define-key speedbar-mode-map [up] 'speedbar-prev)
-               (define-key speedbar-mode-map [down] 'speedbar-next)
-               (define-key speedbar-mode-map (kbd "M-g") 'sr-speedbar-navigate)
-               (define-key speedbar-mode-map [(control meta p)] 'winstack-pop)
-               (define-key speedbar-mode-map [(control meta n)] 'winstack-next)
-               ))
+(with-eval-after-load 'speedbar
+  (with-eval-after-load 'sr-speedbar
+    (require 'sr-speedbar-ext)
+    ;; (global-set-key (kbd "C-e") 'sr-speedbar-toggle-keep-window)
+    (add-hook 'speedbar-reconfigure-keymaps-hook
+              '(lambda ()
+                 (define-key speedbar-mode-map (kbd "<backspace>") 'speedbar-up-directory)
+                 (define-key speedbar-mode-map [right] 'speedbar-flush-expand-line)
+                 (define-key speedbar-mode-map [left] 'speedbar-contract-line-or-go-up)
+                 (define-key speedbar-mode-map [M-up] 'speedbar-restricted-prev)
+                 (define-key speedbar-mode-map [M-down] 'speedbar-restricted-next)
+                 (define-key speedbar-mode-map [up] 'speedbar-prev)
+                 (define-key speedbar-mode-map [down] 'speedbar-next)
+                 (define-key speedbar-mode-map (kbd "M-g") 'sr-speedbar-navigate)
+                 (define-key speedbar-mode-map [(control meta p)] 'winstack-pop)
+                 (define-key speedbar-mode-map [(control meta n)] 'winstack-next)
+                 ))
 
-  (global-set-key (kbd "C-e") 'sr-speedbar-toggle))
+    (global-set-key (kbd "C-e") 'sr-speedbar-toggle)))
 
 (with-eval-after-load 'dump-jump
   (with-eval-after-load 'ivy
@@ -487,3 +470,23 @@
 
 (with-eval-after-load 'auto-complete
   (auto-complete-mode 0))
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (r-autoyas company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra))))
+
+(let (
+      (need-install nil)
+      )
+  (dolist (package package-selected-packages)
+    (condition-case nil
+        (require package)
+      (error (setq need-install t))))
+  (when need-install
+    (package-refresh-contents)
+    (package-install-selected-packages)))

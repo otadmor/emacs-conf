@@ -69,22 +69,23 @@
 
 (require 'lockstep)
 (defun lockstep-and-prepare-persp () ;;persp-file phash persp-names)
-  (let* (
-         (this-frame (selected-frame))
-         (x-frame-list (remove-if
-                        (lambda (frame) (or (not (eq (framep frame) 'x))
-                                            (equal this-frame frame)))
-                        (frame-list)))
-         )
-    (if (null x-frame-list)
-        (perspsw1)
-      (let* (
-             (first-frame (car x-frame-list))
-             (persp (get-frame-persp first-frame))
-             (persp-name (safe-persp-name persp))
-             )
-        (persp-switch persp-name)))
-    (lockstep)))
+  (with-eval-after-load 'persp-mode
+    (let* (
+           (this-frame (selected-frame))
+           (x-frame-list (remove-if
+                          (lambda (frame) (or (not (eq (framep frame) 'x))
+                                              (equal this-frame frame)))
+                          (frame-list)))
+           )
+      (if (null x-frame-list)
+          (perspsw1)
+        (let* (
+               (first-frame (car x-frame-list))
+               (persp (get-frame-persp first-frame))
+               (persp-name (safe-persp-name persp))
+               )
+          (persp-switch persp-name)))))
+  (lockstep))
 
 (setq initial-buffer-choice (lambda () (current-buffer)))
 
