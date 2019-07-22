@@ -95,6 +95,8 @@
 
 (find-file (expand-file-name "~/.emacs.d/server.log"))
 (setq server-buffer (get-file-buffer "~/.emacs.d/server.log"))
+(with-current-buffer server-buffer
+  (set-buffer-auto-saved))
 (setq server-log t)
 
 (require 'scratch-util)
