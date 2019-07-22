@@ -48,7 +48,6 @@
                   (eq this-command 'ivy-done))
           (apply orig-fun args)))
       (apply orig-fun args))))
-(advice-add 'counsel-git-grep-action :around #'counsel-git-grep-action-hook)
 
 (defun counsel-ag-preselect (&optional initial-input initial-directory extra-ag-args ag-prompt)
   "Grep for a string in the current directory using ag.
@@ -94,6 +93,10 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 
 (defun counselag-which-func-update (x)
   (swiper--async-which-func-update))
-(advice-add 'counsel-git-grep-action :after #'counselag-which-func-update)
+
+
+(with-eval-after-load 'counsel
+  (advice-add 'counsel-git-grep-action :around #'counsel-git-grep-action-hook)
+  (advice-add 'counsel-git-grep-action :after #'counselag-which-func-update))
 
 (provide 'counsel-ag-ext)

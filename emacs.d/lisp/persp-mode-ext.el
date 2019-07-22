@@ -1,20 +1,11 @@
 ;; -*- lexical-binding: t; -*-
 (require 'persp-mode)
 
-;(setq persp-autokill-buffer-on-remove nil)
-(setq persp-auto-resume-time 0.01)
-(setq persp-auto-save-fname "autosave")
-(setq persp-auto-save-opt 2)
-(setq persp-nil-hidden t)
-(setq persp-nil-name "nil")
-(setq persp-add-buffer-on-after-change-major-mode 'free)
-
 (defun persp-delete-frame-hook(fun &rest args)
   (let (
         (debug-on-error nil)
         )
     (apply fun args)))
-(advice-add 'persp-delete-frame :around #'persp-delete-frame-hook)
 
 (defun persp-buffer-name-from-savelist (savelist)
   (destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
@@ -39,97 +30,6 @@
     (let ((buf-mmode (alist-get 'major-mode vars-list)))
       (eq buf-mmode mode))))
 
-(def-persp-buffer-save/load
- :mode 'py-python-shell-mode
- :load-function #'(lambda (savelist default-load-function after-load-function)
-                    (when (persp-is-same-major-mode-from-savelist
-                           savelist 'py-python-shell-mode)
-                      (let (
-                            (buffer-name (persp-buffer-name-from-savelist savelist))
-                            )
-                        (let (
-                              (buffer (get-buffer-create buffer-name))
-                              )
-                          (with-current-buffer buffer
-                            (persp-load-variables-from-savelist savelist))
-                          (new-python-in-buffer buffer)
-                          buffer))))
- :save-vars '(default-directory))
-
-
-(def-persp-buffer-save/load
- :mode 'shell-mode
- :load-function #'(lambda (savelist default-load-function after-load-function)
-                    (when (persp-is-same-major-mode-from-savelist
-                           savelist 'shell-mode)
-                      (let (
-                            (buffer-name (persp-buffer-name-from-savelist savelist))
-                            )
-                        (let (
-                              (buffer (get-buffer-create buffer-name))
-                              )
-                          (with-current-buffer buffer
-                            (persp-load-variables-from-savelist savelist)
-                            (shell buffer))
-                          buffer))))
- :save-vars '(default-directory))
-
-(def-persp-buffer-save/load
- :mode 'dired-mode
- :load-function #'(lambda (savelist default-load-function after-load-function)
-                    (when (persp-is-same-major-mode-from-savelist
-                           savelist 'dired-mode)
-                      (let (
-                            (buffer
-                             (dired
-                              (persp-load-get-default-directory-from-savelist
-                               savelist)))
-                            )
-                        (let (
-                              (buffer-name
-                               (persp-buffer-name-from-savelist savelist))
-                              )
-                          (with-current-buffer buffer
-                            (rename-buffer buffer-name)
-                            (persp-load-variables-from-savelist savelist))))))
- :save-vars '(default-directory))
-
-;; magit-status
-(with-eval-after-load "magit-autoloads"
-  (autoload 'magit-status-mode "magit")
-  (autoload 'magit-refresh "magit")
-  (def-persp-buffer-save/load
-   :mode 'magit-status-mode
-   :load-function #'(lambda (savelist default-load-function after-load-function)
-                      (when (persp-is-same-major-mode-from-savelist
-                             savelist 'magit-status-mode)
-                        (let (
-                              (magit-directory
-                               (persp-load-get-default-directory-from-savelist
-                                savelist))
-                              )
-                          (let (
-                                (magit-buffer)
-                                )
-                            (let (
-                                  (refresh-buffer-hook
-                                   #'(lambda ()
-                                       (setq magit-buffer (current-buffer))))
-                                  )
-                              (add-hook 'magit-refresh-buffer-hook
-                                        refresh-buffer-hook)
-                              (magit-status magit-directory)
-                              (remove-hook 'magit-refresh-buffer-hook
-                                           refresh-buffer-hook))))))
-   :save-vars '(default-directory))
-
-  (add-hook 'persp-common-buffer-filter-functions
-            #'(lambda (b) (string-prefix-p "magit-diff" (buffer-name b))))
-  (add-hook 'persp-common-buffer-filter-functions
-            #'(lambda (b) (string-prefix-p "magit-process" (buffer-name b))))
-  )
-
-
 (setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*" " *server*" "server.log"))
 (defun persp-mode-add-shared-buffers (orig-fun &rest args)
   (let (
@@ -142,7 +42,6 @@
         (error nil))
       (persp-switch-to-buffer buffer))
     res))
-(advice-add 'set-frame-persp :around #'persp-mode-add-shared-buffers)
 
 (defun persp-parameters-to-savelist-hide-message (persp)
   `(def-params ,(remove-if
@@ -156,7 +55,6 @@ of the perspective %s can't be saved."
                             t)
                           t))
                  (safe-persp-parameters persp))))
-(defalias 'persp-parameters-to-savelist 'persp-parameters-to-savelist-hide-message)
 
 (defun switch-to-persp1-after-load-state (persp-file phash persp-names)
   (remove-hook 'persp-after-load-state-functions
@@ -165,61 +63,6 @@ of the perspective %s can't be saved."
     (perspsw1)))
 
 (setq persp-mode-hide-autosave-errors t)
-(with-eval-after-load "persp-mode-autoloads"
-  (setq wg-morph-on nil)
-  (set-persp-parameter 'dont-save-to-file t nil)
-  (with-eval-after-load "ivy"
-    (add-hook 'ivy-ignore-buffers
-              #'(lambda (b)
-                  (when persp-mode
-                    (let ((persp (get-current-persp)))
-                      (if persp
-                          (if (not (persp-contain-buffer-p b persp))
-                              (if (not ivy-use-virtual-buffers)
-                                  t
-                                (let ((is-virtual-buffer
-                                       (eq (get-text-property 0 'face b)
-                                           'ivy-virtual)))
-                                      (not is-virtual-buffer)))
-                            nil)
-                        nil)))))
-
-    (setq ivy-sort-functions-alist
-          (append ivy-sort-functions-alist
-                  '((persp-kill-buffer   . nil)
-                    (persp-remove-buffer . nil)
-                    (persp-add-buffer    . nil)
-                    (persp-switch        . nil)
-                    (persp-window-switch . nil)
-                    (persp-frame-switch  . nil)))))
-
-  (run-with-idle-timer 5 t (lambda ()
-                             (let (
-                                   (inhibit-message persp-mode-hide-autosave-errors)
-                                   (save-silently t)
-                                   )
-                               (condition-case err
-                                   (persp-save-state-to-file)
-                                 (error
-                                  (remove-hook 'persp-after-load-state-functions
-                                               'switch-to-persp1-after-load-state)
-                                  (message "failed to save persp %S" err) nil)))))
-
-  ;; switch off the animation of restoring window configuration
-  (add-hook 'after-init-hook
-            #'(lambda ()
-                (progn
-                  (add-hook 'persp-after-load-state-functions
-                            'switch-to-persp1-after-load-state)
-                  (persp-mode 1)
-
-                  )))
-  )
-
-(add-hook 'persp-common-buffer-filter-functions
-          #'(lambda (b) (string-prefix-p "epc con" (buffer-name b))))
-(add-hook 'persp-common-buffer-filter-functions
-          #'(lambda (b) (string-prefix-p "epc server" (buffer-name b))))
 
 (defun buffer-list-persp-mode ()
   (let (
@@ -307,11 +150,166 @@ of the perspective %s can't be saved."
       (cons "Buffer Menu"
             (mouse-buffer-menu-split "Select Buffer"
                                      (mouse-buffer-menu-alist buffers))))))
-(defalias 'mouse-buffer-menu-map 'mouse-buffer-menu-map-hook)
+
 
 
 (defun persp-switch-set-this-command (&rest args)
   (setq this-command 'persp-switch))
-(advice-add 'persp-switch :before #'persp-switch-set-this-command)
+
+(defun persp-mode-try-save ()
+  (let (
+        (inhibit-message persp-mode-hide-autosave-errors)
+        (save-silently t)
+        )
+    (condition-case err
+        (persp-save-state-to-file)
+      (error
+       (remove-hook 'persp-after-load-state-functions
+                    'switch-to-persp1-after-load-state)
+       (message "failed to save persp %S" err) nil))))
+
+(with-eval-after-load "persp-mode-autoloads"
+  (advice-add 'set-frame-persp :around #'persp-mode-add-shared-buffers)
+  (defalias 'persp-parameters-to-savelist 'persp-parameters-to-savelist-hide-message)
+  (defalias 'mouse-buffer-menu-map 'mouse-buffer-menu-map-hook)
+  (advice-add 'persp-switch :before #'persp-switch-set-this-command)
+
+  (setq wg-morph-on nil)
+  (set-persp-parameter 'dont-save-to-file t nil)
+
+  (with-eval-after-load 'ivy
+    (add-hook 'ivy-ignore-buffers
+              #'(lambda (b)
+                  (when persp-mode
+                    (let ((persp (get-current-persp)))
+                      (if persp
+                          (if (not (persp-contain-buffer-p b persp))
+                              (if (not ivy-use-virtual-buffers)
+                                  t
+                                (let ((is-virtual-buffer
+                                       (eq (get-text-property 0 'face b)
+                                           'ivy-virtual)))
+                                      (not is-virtual-buffer)))
+                            nil)
+                        nil)))))
+
+    (setq ivy-sort-functions-alist
+          (append ivy-sort-functions-alist
+                  '((persp-kill-buffer   . nil)
+                    (persp-remove-buffer . nil)
+                    (persp-add-buffer    . nil)
+                    (persp-switch        . nil)
+                    (persp-window-switch . nil)
+                    (persp-frame-switch  . nil)))))
+
+  ;; switch off the animation of restoring window configuration
+  (add-hook 'after-init-hook
+            (lambda ()
+              (add-hook 'persp-after-load-state-functions
+                        'switch-to-persp1-after-load-state)
+              (persp-mode 1)
+              (run-with-idle-timer 5 t 'persp-mode-try-save)))
+
+  ;; (setq persp-autokill-buffer-on-remove nil)
+  (setq persp-auto-resume-time 0.01)
+  (setq persp-auto-save-fname "autosave")
+  (setq persp-auto-save-opt 2)
+  (setq persp-nil-hidden t)
+  (setq persp-nil-name "nil")
+  (setq persp-add-buffer-on-after-change-major-mode 'free)
+  (advice-add 'persp-delete-frame :around #'persp-delete-frame-hook)
+
+  (def-persp-buffer-save/load
+    :mode 'py-python-shell-mode
+    :load-function #'(lambda (savelist default-load-function after-load-function)
+                       (when (persp-is-same-major-mode-from-savelist
+                              savelist 'py-python-shell-mode)
+                         (let (
+                               (buffer-name (persp-buffer-name-from-savelist savelist))
+                               )
+                           (let (
+                                 (buffer (get-buffer-create buffer-name))
+                                 )
+                             (with-current-buffer buffer
+                               (persp-load-variables-from-savelist savelist))
+                             (new-python-in-buffer buffer)
+                             buffer))))
+    :save-vars '(default-directory))
+
+  (def-persp-buffer-save/load
+    :mode 'shell-mode
+    :load-function #'(lambda (savelist default-load-function after-load-function)
+                       (when (persp-is-same-major-mode-from-savelist
+                              savelist 'shell-mode)
+                         (let (
+                               (buffer-name (persp-buffer-name-from-savelist savelist))
+                               )
+                           (let (
+                                 (buffer (get-buffer-create buffer-name))
+                                 )
+                             (with-current-buffer buffer
+                               (persp-load-variables-from-savelist savelist)
+                               (shell buffer))
+                             buffer))))
+    :save-vars '(default-directory))
+
+  (def-persp-buffer-save/load
+    :mode 'dired-mode
+    :load-function #'(lambda (savelist default-load-function after-load-function)
+                       (when (persp-is-same-major-mode-from-savelist
+                              savelist 'dired-mode)
+                         (let (
+                               (buffer
+                                (dired
+                                 (persp-load-get-default-directory-from-savelist
+                                  savelist)))
+                               )
+                           (let (
+                                 (buffer-name
+                                  (persp-buffer-name-from-savelist savelist))
+                                 )
+                             (with-current-buffer buffer
+                               (rename-buffer buffer-name)
+                               (persp-load-variables-from-savelist savelist))))))
+    :save-vars '(default-directory))
+
+  (def-persp-buffer-save/load
+    :mode 'magit-status-mode
+    :load-function #'(lambda (savelist default-load-function after-load-function)
+                       (when (persp-is-same-major-mode-from-savelist
+                              savelist 'magit-status-mode)
+                         (let (
+                               (magit-directory
+                                (persp-load-get-default-directory-from-savelist
+                                 savelist))
+                               )
+                           (let (
+                                 (magit-buffer)
+                                 )
+                             (let (
+                                   (refresh-buffer-hook
+                                    #'(lambda ()
+                                        (setq magit-buffer (current-buffer))))
+                                   )
+                               (add-hook 'magit-refresh-buffer-hook
+                                         refresh-buffer-hook)
+                               (magit-status magit-directory)
+                               (remove-hook 'magit-refresh-buffer-hook
+                                            refresh-buffer-hook))))))
+    :save-vars '(default-directory))
+
+
+  (add-hook 'persp-common-buffer-filter-functions
+            #'(lambda (b) (string-prefix-p "magit-diff" (buffer-name b))))
+  (add-hook 'persp-common-buffer-filter-functions
+            #'(lambda (b) (string-prefix-p "magit-process" (buffer-name b))))
+
+  (add-hook 'persp-common-buffer-filter-functions
+            #'(lambda (b) (string-prefix-p "epc con" (buffer-name b))))
+  (add-hook 'persp-common-buffer-filter-functions
+            #'(lambda (b) (string-prefix-p "epc server" (buffer-name b))))
+  )
+
+
 
 (provide 'persp-mode-ext)

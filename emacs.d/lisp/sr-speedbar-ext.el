@@ -1,23 +1,7 @@
 (require 'speedbar)
 (require 'sr-speedbar)
-;; Speedbar settings
-(setq speedbar-default-position 'left)
-(setq speedbar-frame-parameters '((minibuffer . nil)
-                                  (width . 20)
-                                  (border-width . 0)
-                                  (menu-bar-lines . 0)
-                                  (tool-bar-lines . 0)
-                                  (unsplittable . t)
-                                  (left-fringe . 0)
-                                  (left . 0)
-                                  ))
-
-(sr-speedbar-refresh-turn-off)
 
 (setq sr-speedbar-buffer-name-orig sr-speedbar-buffer-name)
-
-(push 'speedbar-shown-directories pmv/specific-vars)
-(push 'speedbar-directory-contents-alist pmv/specific-vars)
 (defun sr-speedbar-refresh-perspective ()
   (setq sr-speedbar-buffer-name (concat sr-speedbar-buffer-name-orig
                                         (if (null (get-current-persp))
@@ -28,9 +12,6 @@
       (setq speedbar-buffer nil)
     (setq speedbar-buffer (window-buffer sr-speedbar-window))
     (sr-speedbar-navigate-dir (car (last speedbar-shown-directories)))))
-(add-hook 'persp-variables-restored #'sr-speedbar-refresh-perspective)
-
-(setq sr-speedbar-right-side t)
 
 (defun sr-speedbar-get-window ()
   "Get `sr-speedbar' window."
@@ -121,10 +102,30 @@
   (buffer-close-in-dir (speedbar-line-file)))
 
 
-(with-eval-after-load 'persp-mode
-  (add-to-list 'speedbar-frame-parameters (cons 'persp-ignore-wconf t))
-  (add-hook 'persp-common-buffer-filter-functions
-            #'(lambda (b) (string-prefix-p "*SPEEDBAR*" (buffer-name b)))))
+;; Speedbar settings
+(with-eval-after-load 'speedbar
+  (setq speedbar-default-position 'left)
+  (setq speedbar-frame-parameters '((minibuffer . nil)
+                                    (width . 20)
+                                    (border-width . 0)
+                                    (menu-bar-lines . 0)
+                                    (tool-bar-lines . 0)
+                                    (unsplittable . t)
+                                    (left-fringe . 0)
+                                    (left . 0)
+                                    ))
+  (with-eval-after-load 'persp-mode
+    (add-to-list 'speedbar-frame-parameters (cons 'persp-ignore-wconf t))
+    (add-hook 'persp-common-buffer-filter-functions
+              #'(lambda (b) (string-prefix-p "*SPEEDBAR*" (buffer-name b))))))
+
+(with-eval-after-load 'sr-speedbar
+  (sr-speedbar-refresh-turn-off)
+  (setq sr-speedbar-right-side t)
+  (with-eval-after-load 'persp-mode-variables
+    (push 'speedbar-shown-directories pmv/specific-vars)
+    (push 'speedbar-directory-contents-alist pmv/specific-vars)
+    (add-hook 'persp-variables-restored #'sr-speedbar-refresh-perspective)))
 
 
 (provide 'sr-speedbar-ext)

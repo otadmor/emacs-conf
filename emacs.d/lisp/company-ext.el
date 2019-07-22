@@ -1,12 +1,6 @@
 ;;;  -*- lexical-binding: t -*-
 
 (require 'company)
-(add-hook 'after-init-hook 'global-company-mode)
-(setq company-minimum-prefix-length 0)
-
-(require 'company-quickhelp)
-(company-quickhelp-mode)
-(setq company-quickhelp-delay 0.1)
 
 (defun company-completion-in-region (start end collection &optional predicate)
   (let* (
@@ -42,14 +36,21 @@
          )
     (company-begin-backend fixed-candidate-source)))
 
-(defun completion-in-region-company-or-ivy (start end collection &optional predicate)
-  (if (eq (selected-window) (active-minibuffer-window))
-    (ivy-completion-in-region start end collection predicate)
-  (company-completion-in-region start end collection predicate)))
+(with-eval-after-load 'company
+  (add-hook 'after-init-hook 'global-company-mode)
+  (setq company-minimum-prefix-length 0)
+  (setq company-require-match nil)
 
-(eval-after-load 'company
-  '(define-key company-active-map (kbd "C-c h") #'company-quickhelp-manual-begin))
+  (with-eval-after-load 'ivy
+    (defun completion-in-region-company-or-ivy (start end collection &optional predicate)
+      (if (eq (selected-window) (active-minibuffer-window))
+          (ivy-completion-in-region start end collection predicate)
+        (company-completion-in-region start end collection predicate))))
 
-(setq company-require-match nil)
+  (require 'company-quickhelp)
+  (with-eval-after-load 'company-quickhelp
+    (define-key company-active-map (kbd "C-c h") #'company-quickhelp-manual-begin)
+    (setq company-quickhelp-delay 0.1)
+    (company-quickhelp-mode)))
 
 (provide 'company-ext)

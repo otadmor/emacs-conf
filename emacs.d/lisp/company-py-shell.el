@@ -5,11 +5,6 @@
 
 (require 'python-mode)
 
-(setq py-shell-completion-setup-code "")
-(setq py-shell-module-completion-code "")
-(setq py-ipython-module-completion-code "")
-(setq py-ipython-module-completion-string "")
-
 (defun py-shell-prefix()
   (and (or (eq major-mode 'py-python-shell-mode)
            (eq major-mode 'py-ipython-shell-mode)
@@ -35,12 +30,20 @@
               (word (buffer-substring-no-properties beg end)))
          word)))
 
-(epc-completion-add 'py-python-shell-mode 'py-python-shell-mode-hook 'py-shell-prefix)
-(epc-completion-add 'py-ipython-shell-mode 'py-python-shell-mode-hook 'py-shell-prefix)
+(with-eval-after-load 'python-mode
+  (setq py-ipython-command-args "--simple-prompt --nosep")
 
-(defalias 'py-shell-complete (lambda(&optional shell beg end word)
+  (defalias 'py-shell-complete (lambda(&optional shell beg end word)
                                (completion-at-point)))
 
-(setenv "PYTHONSTARTUP" (expand-file-name (concat CONFIGURATION-PATH "/py_epc_completion.py")))
-(setq py-ipython-command-args "--simple-prompt --nosep")
+  (with-eval-after-load 'completion-epc
+    (setenv "PYTHONSTARTUP" (expand-file-name (concat CONFIGURATION-PATH "/py_epc_completion.py")))
+    (setq py-shell-completion-setup-code "")
+    (setq py-shell-module-completion-code "")
+    (setq py-ipython-module-completion-code "")
+    (setq py-ipython-module-completion-string "")
+
+    (epc-completion-add 'py-python-shell-mode 'py-python-shell-mode-hook 'py-shell-prefix)
+    (epc-completion-add 'py-ipython-shell-mode 'py-python-shell-mode-hook 'py-shell-prefix)))
+
 (provide 'company-py-shell)

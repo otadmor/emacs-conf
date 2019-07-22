@@ -80,6 +80,7 @@
                                                 (current-buffer)))))))))
             nil t))
 
-(add-hook 'shell-mode-hook 'track-shell-directory/procfs)
+(with-eval-after-load 'shell
+  (add-hook 'shell-mode-hook 'track-shell-directory/procfs))
 
 (provide 'shell-ext)

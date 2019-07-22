@@ -410,17 +410,23 @@ Use `winstack-push' and
 (advice-add 'goto-line :around #'wrap-winstack-hook)
 ; (advice-add 'goto-char :around #'wrap-winstack-hook)
 
-(advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook)
-(advice-add 'jedi:goto-definition--nth :around #'wrap-winstack-hook)
-(advice-add 'swiper-async :around #'wrap-winstack-hook)
-(advice-add 'swiper :around #'wrap-winstack-hook)
-(advice-add 'mcs-swiper :around #'wrap-winstack-hook)
-(advice-add 'counsel-ag :around #'wrap-winstack-hook)
-(advice-add 'counsel-ag-preselect :around #'wrap-winstack-hook)
+(with-eval-after-load 'dumb-jump
+  (advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook))
+(with-eval-after-load 'jedi
+  (advice-add 'jedi:goto-definition--nth :around #'wrap-winstack-hook))
+(with-eval-after-load 'swiper-async
+  (advice-add 'swiper-async :around #'wrap-winstack-hook))
+(with-eval-after-load 'swiper
+  (advice-add 'swiper :around #'wrap-winstack-hook))
+(with-eval-after-load 'multiple-cursors-swiper
+  (advice-add 'mcs-swiper :around #'wrap-winstack-hook))
+(with-eval-after-load 'counsel
+  (advice-add 'counsel-ag :around #'wrap-winstack-hook)
+  (advice-add 'counsel-ag-preselect :around #'wrap-winstack-hook))
 (advice-add 'find-file :around #'wrap-winstack-hook)
 ; (advice-add 'kill-buffer :around #'wrap-winstack-hook)
-
-(advice-add 'persp-asave-on-exit :around #'disable-winstack-hook)
+(with-eval-after-load 'persp-mode
+  (advice-add 'persp-asave-on-exit :around #'disable-winstack-hook))
 ;(advice-add 'persp-mode :around #'disable-winstack-hook)
 
 (provide 'winstack)

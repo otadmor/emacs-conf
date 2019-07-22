@@ -89,8 +89,6 @@
       (setq mcy--ignore-first-store t)
       (mcy--insert-killed-rectangle-to-kill-ring mcy--last-cursors-amount)
       (setq mcy--was-in-mc nil))))
-(add-hook 'post-command-hook 'mcy/post-command-hook)
-
 
 (defun mcy/mode-enabled()
   ;; the post command runs after entering the multiple-cursors-mode
@@ -99,21 +97,21 @@
   ;; this variable disable this behaiviour on post command execution.
   (add-hook 'pre-command-hook 'mcy/pre-command-hook t t)
   (setq mcy--ignore-first-store t))
-(add-hook 'multiple-cursors-mode-enabled-hook 'mcy/mode-enabled)
-
 
 (defun mcy/mode-disabled()
   (remove-hook 'pre-command-hook 'mcy/pre-command-hook t))
-(add-hook 'multiple-cursors-mode-disabled-hook 'mcy/mode-disabled)
 
+(with-eval-after-load 'multiple-cursors
+  (add-hook 'post-command-hook 'mcy/post-command-hook)
+  (add-hook 'multiple-cursors-mode-enabled-hook 'mcy/mode-enabled)
+  (add-hook 'multiple-cursors-mode-disabled-hook 'mcy/mode-disabled)
 
-;; we dont want to change the killed-rectangle when
-;; exiting multiple-cursor-mode. the killed-rectangle
-;; is updated on each command. updating it when
-;; exiting the multiple-cursors-mode will confuse
-;; users when using two different buffers.
-(defalias 'mc--maybe-set-killed-rectangle (lambda() ))
-
-(define-key mc/keymap (kbd "<return>") nil)
+  ;; we dont want to change the killed-rectangle when
+  ;; exiting multiple-cursor-mode. the killed-rectangle
+  ;; is updated on each command. updating it when
+  ;; exiting the multiple-cursors-mode will confuse
+  ;; users when using two different buffers.
+  (defalias 'mc--maybe-set-killed-rectangle (lambda() ))
+  (define-key mc/keymap (kbd "<return>") nil))
 
 (provide 'multiple-cursors-yank)

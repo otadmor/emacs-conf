@@ -3,7 +3,6 @@
 
 (defun update-next-error-which-function ()
   (which-func-update-1 (selected-window)))
-(add-hook 'next-error-hook 'update-next-error-which-function)
 
 (defun which-func-ff-hook ()
   "File find hook for Which Function mode.
@@ -128,5 +127,8 @@ end-of-buffer signals; pass the rest to the default handler."
                                  )
                              (message "%S: %S returned %S" callid fn res)
                              res))))
+
+(with-eval-after-load 'which-func
+  (add-hook 'next-error-hook 'update-next-error-which-function))
 
 (provide 'utils)

@@ -1,6 +1,5 @@
 ;;;  -*- lexical-binding: t -*-
 (require 'epc)
-(require 'shell)
 (require 'comint)
 (require 'epcs)
 
@@ -27,7 +26,6 @@
         )
     (completion-epc-kill-mngr mngr)
     (apply orig-fun args)))
-(advice-add 'epc:stop-epc :around #'completion-epc-clear-completion-epc-hook)
 
 (defun epc:with-manager-for-connection (connection func)
   (loop
@@ -67,8 +65,6 @@
 
 (defun epc:net-read-or-lose-fix (process)
   (epc:net-read))
-(defalias 'epc:net-read-or-lose 'epc:net-read-or-lose-fix)
-
 
 (defun epc:net-read-fix ()
   "Read a message from the network buffer."
@@ -174,9 +170,6 @@
            (substring-no-properties string 0 (match-beginning 0))
            (substring-no-properties string (match-end 0) nil)))))))
 
-(add-hook 'comint-output-filter-functions 'completion--comint-output-filter nil nil)
-(add-hook 'comint-mode-hook 'epc:start-server-and-set-env)
-
 (defun epc-complete-deferred-mngr (mngr to-complete)
   (when mngr
     (condition-case nil
@@ -213,28 +206,13 @@
                        (mapcar 'completion-epc-collect-candidates reply)))
                     (funcall callback candidates))))))))
 
-; (defun epc-completion-at-point ()
-;   (when (comint--match-partial-filename)
-;     (let (
-;           (start (nth 0 (match-data)))
-;           (end (nth 1 (match-data)))
-;           )
-;       (when (and start end (< start end))
-;         (let (
-;               (to-complete (buffer-substring-no-properties start end))
-;               )
-;           (let (
-;                 ;;; TODO - for some reason epc-complete runs twice,
-;                 ;; which is very expensive.
-;                 (completions (epc-complete to-complete))
-;                 )
-;             (when completions
-;               (list start end completions ())
-;               )))))))
+(with-eval-after-load 'comint
+  (add-hook 'comint-output-filter-functions 'completion--comint-output-filter nil nil)
+  (add-hook 'comint-mode-hook 'epc:start-server-and-set-env))
 
-; hook both, just in case it runs without or with shell
-; (add-hook 'shell-dynamic-complete-functions 'epc-completion-at-point nil nil)
-; (add-hook 'comint-dynamic-complete-functions 'epc-completion-at-point nil nil)
+(with-eval-after-load 'epc
+  (defalias 'epc:net-read-or-lose 'epc:net-read-or-lose-fix)
+  (advice-add 'epc:stop-epc :around #'completion-epc-clear-completion-epc-hook))
 
 (require 'cl-lib)
 (require 'company)

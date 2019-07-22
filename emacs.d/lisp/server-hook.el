@@ -25,7 +25,6 @@
 
 (defun server-sentinel-hook (&rest _)
   (safe-check-frames-connection))
-(advice-add 'server-sentinel :before #'server-sentinel-hook)
 
 (setq server-inside-emacs-client nil)
 (defun server-create-window-system-frame-hook(orig-fun &rest args)
@@ -58,13 +57,12 @@
                            (with-selected-frame frame
                              (lockstep-and-prepare-persp))))
       frame)))
-(advice-add 'server-create-window-system-frame :around #'server-create-window-system-frame-hook)
 
 (defun save-persp-on-delete-frame (frame)
   (condition-case nil
       (persp-save-state-to-file)
     (error nil)))
-(add-hook 'delete-frame-functions #'save-persp-on-delete-frame)
+
 
 
 (require 'lockstep)
@@ -85,11 +83,18 @@
                (persp-name (safe-persp-name persp))
                )
           (persp-switch persp-name)))))
-  (lockstep))
-
-(setq initial-buffer-choice (lambda () (current-buffer)))
+  (with-eval-after-load 'lockstep
+    (lockstep)))
 
 (defun exit-emacs-or-close-frame() (interactive)
        (if server-inside-emacs-client (delete-frame) (save-buffers-kill-emacs)))
+
+(with-eval-after-load 'server
+  (advice-add 'server-sentinel :before #'server-sentinel-hook)
+  (advice-add 'server-create-window-system-frame :around #'server-create-window-system-frame-hook)
+  (setq initial-buffer-choice (lambda () (current-buffer)))
+
+  (with-eval-after-load 'persp-mode
+    (add-hook 'delete-frame-functions #'save-persp-on-delete-frame)))
 
 (provide 'server-hook)

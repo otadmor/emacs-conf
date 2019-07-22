@@ -3,17 +3,6 @@
 (require 'python-ext)
 (require 'utils)
 
-(setq ivy-format-function #'ivy-format-function-line)
-(setq ivy-magic-tilde nil)
-;(icomplete-mode t)
-(setq ivy-use-virtual-buffers t)
-(setq ivy-count-format "%d/%d ")
-
-(setq ivy-wrap t)
-(setq ivy-auto-select-single-candidate t)
-(setq ivy-on-del-error-function 'ignore)
-;(setq ivy-magic-slash-non-match-action nil)
-
 ; (with-current-buffer buffer
 ;   )
 ; (ivy-exit-with-action
@@ -104,7 +93,6 @@ If the input is empty, select the previous history element instead."
              ivy-text
              ivy--directory)
      t)))
-(advice-add 'counsel-find-file-occur :after #'counsel-find-file-occur-hook)
 
 (defun ivy--mouse-hook (orig-fun &rest args)
   (let* (
@@ -128,11 +116,6 @@ If the input is empty, select the previous history element instead."
             (apply orig-fun args)
           (select-window (active-minibuffer-window))
           nil)))))
-(advice-add 'ivy-mouse-offset :around #'ivy--mouse-hook)
-
-(advice-add 'ivy-next-history-element :around #'ignore-errors-hook)
-(advice-add 'ivy-previous-history-element :around #'ignore-errors-hook)
-
 
 (defun ivy--parent-dir (filename)
   "Return parent directory of absolute FILENAME."
@@ -269,10 +252,9 @@ Should be run via minibuffer `post-command-hook'."
       (setq ivy--old-text ivy-text))))
 
 (defcustom ivy-magic-root t
-  "When non-nil, / will move to root when selecting files.
+    "When non-nil, / will move to root when selecting files.
 Otherwise, // will move to root."
-  :type 'boolean)
-
+    :type 'boolean)
 (defun ivy--magic-file-slash-hook (orig-fun &rest args)
   (when (and (string= "/" ivy-text) ivy-magic-root)
     (setq ivy-text "//"))
@@ -281,9 +263,6 @@ Otherwise, // will move to root."
     (when (string-match "\\`/[^\:]+:[^\:]+:\\'" (concat ivy--directory ivy-text))
       (setq ivy-text (concat ivy--directory ivy-text))))
   (apply orig-fun args))
-(advice-add 'ivy--magic-file-slash :around #'ivy--magic-file-slash-hook)
-
-
 
 
 (defun ivy-backward-delete-char ()
@@ -364,5 +343,25 @@ Directories come first."
                       'ivy-magic-slash-non-match-create)
                   magic)
              (ivy--create-and-cd canonical))))))
+
+
+(with-eval-after-load 'ivy
+  (setq ivy-format-function #'ivy-format-function-line)
+  (setq ivy-magic-tilde nil)
+  ;; (icomplete-mode t)
+  (setq ivy-use-virtual-buffers t)
+  (setq ivy-count-format "%d/%d ")
+  (setq ivy-wrap t)
+  (setq ivy-auto-select-single-candidate t)
+  (setq ivy-on-del-error-function 'ignore)
+  (setq ivy-magic-slash-non-match-action nil)
+
+  (advice-add 'counsel-find-file-occur :after #'counsel-find-file-occur-hook)
+  (advice-add 'ivy--magic-file-slash :around #'ivy--magic-file-slash-hook)
+
+  (advice-add 'ivy-mouse-offset :around #'ivy--mouse-hook)
+
+  (advice-add 'ivy-next-history-element :around #'ignore-errors-hook)
+  (advice-add 'ivy-previous-history-element :around #'ignore-errors-hook))
 
 (provide 'ivy-utils)

@@ -6,9 +6,6 @@
     (ansi-color-process-output res)
     )
 )
-(advice-add 'gud-gdb-marker-filter :around #'gud-gdb-marker-filter-hook)
-
-;(setq gdb-command-name "lispgdb")
 
 
 (defun* mystoppedfun(res)
@@ -54,7 +51,10 @@
 
     )
 
-(setq gdb-stopped-functions '(mystoppedfun))
+(with-eval-after-load 'gdb
+  (advice-add 'gud-gdb-marker-filter :around #'gud-gdb-marker-filter-hook)
+  ;; (setq gdb-command-name "lispgdb")
+  (setq gdb-stopped-functions '(mystoppedfun)))
 
 ;(let (
 ;      (gpob (gdb-get-buffer-create 'gdb-partial-output-buffer))

@@ -9,9 +9,7 @@
     (newline)
     (insert ";;")
     (newline)))
-(init-scratch)
 
-(add-hook 'kill-buffer-query-functions #'dont-kill-scratch)
 (defun dont-kill-scratch ()
   (if (not (equal (buffer-name) "*scratch*"))
       t
@@ -19,5 +17,10 @@
     (init-scratch)
     (bury-buffer)
     nil))
+
+(add-hook 'after-init-hook
+          (lambda ()
+            (init-scratch)
+            (add-hook 'kill-buffer-query-functions #'dont-kill-scratch)))
 
 (provide 'scratch-util)

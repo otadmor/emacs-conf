@@ -1,14 +1,5 @@
 (require 'python-mode)
 
-;; switch to the interpreter after executing code
-(setq py-split-window-on-execute nil)
-(setq py-switch-buffers-on-execute-p nil)
-(setq py-shell-prompt-read-only nil)
-;; don't split windows
-(py-split-window-on-execute-off)
-;; try to automagically figure out indentation
-;;(setq py-smart-indentation t)
-
 
 (defun py--send-string-return-output (strg &optional process msg)
   "Send STRING to PROCESS and return output.
@@ -70,9 +61,19 @@ the output."
    ;; (lambda () (new-python))
    (lambda () )))
 
-(add-to-list 'exec-path "/home/ubuntu/.pyenv/bin")
-(add-to-list 'exec-path "/home/ubuntu/.pyenv/shims")
+(with-eval-after-load 'python-mode
+  ;; switch to the interpreter after executing code
+  (setq py-split-window-on-execute nil)
+  (setq py-switch-buffers-on-execute-p nil)
+  (setq py-shell-prompt-read-only nil)
+  ;; don't split windows
+  (py-split-window-on-execute-off)
+  ;; try to automagically figure out indentation
+  ;;(setq py-smart-indentation t)
 
-;; (add-hook py-python-shell-mode-hook (lambda () (electric-indent-mode nil)))
+  (add-to-list 'exec-path "/home/ubuntu/.pyenv/bin")
+  (add-to-list 'exec-path "/home/ubuntu/.pyenv/shims")
 
+  ;; (add-hook py-python-shell-mode-hook (lambda () (electric-indent-mode nil)))
+  )
 (provide 'python-ext)

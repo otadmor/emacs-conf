@@ -90,7 +90,9 @@
               :action #'winstack-list-action
               )
     ))
-(advice-add 'ivy-winstack-list :around #'disable-winstack-hook)
+
+(with-eval-after-load 'winstack
+  (advice-add 'ivy-winstack-list :around #'disable-winstack-hook))
 
 
 (provide 'winstack-list)

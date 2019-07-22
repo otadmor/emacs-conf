@@ -40,9 +40,6 @@
     (define-key map (kbd "C-g") 'dumb-jump-ivy-minibuffer-keyboard-quit)
     map))
 
-(ivy-set-display-transformer 'dumb-jump-ivy-jump-to-selected 'counsel-git-grep-transformer)
-
-(add-hook 'dumb-jump-after-jump-hook 'swiper--async-which-func-update)
 (defun dumb-jump-ivy-jump-to-selected-with-call (results choices proj)
   "Offer CHOICES as canidates through ivy-read then execute
 dumb-jump-to-selected on RESULTS CHOICES and selected choice.
@@ -73,7 +70,19 @@ Ignore PROJ"
                                         ; (when swiper--reveal-mode
                                         ; (reveal-mode 1))
             ))))
-(defalias 'dumb-jump-ivy-jump-to-selected 'dumb-jump-ivy-jump-to-selected-with-call)
-(setq dumb-jump-selector 'ivy)
+
+
+(defun dumb-jump--which-func-update ()
+  "Update the function name on which-function when swiper-async
+is switching between candidates."
+  (with-ivy-window
+    (which-func-update-1 (selected-window))))
+
+(with-eval-after-load 'ivy
+  (ivy-set-display-transformer 'dumb-jump-ivy-jump-to-selected 'counsel-git-grep-transformer)
+  (with-eval-after-load 'which-func
+    (add-hook 'dumb-jump-after-jump-hook 'dumb-jump--which-func-update))
+  (defalias 'dumb-jump-ivy-jump-to-selected 'dumb-jump-ivy-jump-to-selected-with-call)
+  (setq dumb-jump-selector 'ivy))
 
 (provide 'ivy-dumb-jump)

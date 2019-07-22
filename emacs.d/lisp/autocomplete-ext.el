@@ -1,20 +1,6 @@
 ;;;  -*- lexical-binding: t -*-
 
 (require 'auto-complete)
-(ac-config-default)
-(setq-default ac-sources '(ac-source-abbrev ac-source-dictionary))
-;; (global-auto-complete-mode t)
-;; (define-globalized-minor-mode real-global-auto-complete-mode
-;;   auto-complete-mode (lambda ()
-;;                        (if (not (minibufferp (current-buffer)))
-;;                          (auto-complete-mode 1))
-;;                        ))
-;; (real-global-auto-complete-mode t)
-(setq tab-always-indent 'complete)
-(setq ac-max-width 0.5)
-;; (setq ac-use-fuzzy nil)
-(setq ac-use-fuzzy t)
-(setq ac-ignore-case (quote smart))
 
 (defun ac-page-next ()
   "Select next candidate."
@@ -116,17 +102,10 @@
       (setq ac-point (+ ac-original-point start-pos))
       (setq ac-prefix (buffer-substring-no-properties ac-point (point))))
     cands))
-(advice-add 'ac-candidates-1 :around #'ac-candidates-1-reposition-hook)
-
-(defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
-  (if (eq (selected-window) (active-minibuffer-window))
-    (ivy-completion-in-region start end collection predicate)
-  (auto-complete-completion-in-region start end collection predicate)))
-
 
 (defvar ac-default-min-prefix-length 0
   "The minimum prefix requirement for completing using auto-complete. Can be determined per-source by setting requires.")
-(defun ac-prefix (requires ignore-list)
+(defun ac-prefix-with-min-prefix (requires ignore-list)
   (cl-loop with current = (point)
            with point
            with point-def
@@ -176,5 +155,31 @@
       (ac-complete)
     (ac-abort)
     (ac-fallback-command)))
+
+
+(with-eval-after-load 'auto-complete
+  (ac-config-default)
+  (setq-default ac-sources '(ac-source-abbrev ac-source-dictionary))
+  ;; (global-auto-complete-mode t)
+  ;; (define-globalized-minor-mode real-global-auto-complete-mode
+  ;;   auto-complete-mode (lambda ()
+  ;;                        (if (not (minibufferp (current-buffer)))
+  ;;                          (auto-complete-mode 1))
+  ;;                        ))
+  ;; (real-global-auto-complete-mode t)
+  (setq tab-always-indent 'complete)
+  (setq ac-max-width 0.5)
+  ;; (setq ac-use-fuzzy nil)
+  (setq ac-use-fuzzy t)
+  (setq ac-ignore-case (quote smart))
+
+  (with-eval-after-load 'ivy
+    (defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
+      (if (eq (selected-window) (active-minibuffer-window))
+          (ivy-completion-in-region start end collection predicate)
+        (auto-complete-completion-in-region start end collection predicate))))
+
+  (defalias 'ac-prefix 'ac-prefix-with-min-prefix)
+  (advice-add 'ac-candidates-1 :around #'ac-candidates-1-reposition-hook))
 
 (provide 'autocomplete-ext)

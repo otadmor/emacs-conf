@@ -151,8 +151,6 @@ numbers; replaces calculating the width from buffer line count."
                     candidates)))))
         (nreverse candidates)))))
 
-(defalias 'swiper--candidates 'swiper--mcs-candidates)
-
 (defun mcs-get-end-points()
   (let (
         (cursors '())
@@ -248,9 +246,6 @@ numbers; replaces calculating the width from buffer line count."
                 (line-end-position (window-height)))
               swiper--point-max))))))))
 
-
-(defalias 'swiper--update-input-ivy 'swiper--mcs-update-input-ivy)
-
 (setq mc-swiper--backedup-cursors nil)
 (make-local-variable 'mc-swiper--backedup-cursors)
 
@@ -331,18 +326,22 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 ; (add-hook 'minibuffer-exit-hook (lambda () (message "exit")))
 
+(with-eval-after-load 'swiper
+  (defalias 'swiper--candidates 'swiper--mcs-candidates)
+  (defalias 'swiper--update-input-ivy 'swiper--mcs-update-input-ivy)
 
-(advice-add 'swiper--ivy :around
-  (lambda(orig-fun &rest args)
-    (setq mc-swiper--backedup-cursors (mc/store-all-cursors-states))
-    (let (
-          (res (apply orig-fun args))
-          )
-      (with-ivy-window
-        (setq mc-swiper--backedup-cursors nil)
-        (unless (= (mc/num-cursors) 1) ; 1 = current cursor
-          (mc/pop-state-from-overlay (car (last (mc/all-fake-cursors)))))
-        (mc/maybe-multiple-cursors-mode))
-      res)))
+  (advice-add 'swiper--ivy :around
+              (lambda(orig-fun &rest args)
+                (setq mc-swiper--backedup-cursors (mc/store-all-cursors-states))
+                (let (
+                      (res (apply orig-fun args))
+                      )
+                  (with-ivy-window
+                    (setq mc-swiper--backedup-cursors nil)
+                    (unless (= (mc/num-cursors) 1) ; 1 = current cursor
+                      (mc/pop-state-from-overlay (car
+                                                  (last (mc/all-fake-cursors)))))
+                    (mc/maybe-multiple-cursors-mode))
+                  res))))
 
 (provide 'multiple-cursors-swiper)
