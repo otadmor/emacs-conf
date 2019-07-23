@@ -237,202 +237,202 @@
                (sorted t))
              ))
           )
-      (eval-after-load 'company
-        (lambda ()
-          (add-hook hook
-                    (lambda ()
-                      (add-to-list 'company-backends completion-func))))))))
+      (with-eval-after-load 'company
+        (add-hook hook (lambda ()
+                         (add-to-list 'company-backends completion-func)))))))
 
 (defun epc-completion-add-auto-complete (completion-mode hook prefix-cb)
   (unless (null completion-mode)
-    (add-to-list 'ac-modes completion-mode))
+    (with-eval-after-load 'auto-complete
+      (add-to-list 'ac-modes completion-mode)))
   (unless (null hook)
-    (add-hook
-     hook
-     (lambda ()
-       (let (
-             (ac-epc-complete-reply nil)
-             (ac-epc-complete-deferred nil)
-             (ac-epc-received-response nil)
-             (working-buffer (current-buffer))
-             )
-         (let* (
+    (with-eval-after-load 'auto-complete
+      (add-hook
+       hook
+       (lambda ()
+         (let (
+               (ac-epc-complete-reply nil)
+               (ac-epc-complete-deferred nil)
+               (ac-epc-received-response nil)
+               (working-buffer (current-buffer))
+               )
+           (let* (
 
-                (ac-epc-matches
-                 (lambda ()
-                   (with-current-buffer working-buffer
-                     (unless ac-epc-received-response
-                       (deferred:sync! ac-epc-complete-deferred))
-                     (setq ac-epc-complete-deferred nil)
-                     (unless (null ac-epc-complete-reply)
-                       ;; should we creat ea timer and wait for responses
-                       (cl-remove-if
-                        'null
-                        (mapcar
-                         (lambda (x)
-                           (unless (null x)
-                             (if (stringp x)
-                                 (popup-make-item x)
-                               (condition-case nil
-                                   (let (
-                                         (word (plist-get x :word))
-                                         (doc (plist-get x :doc))
-                                         (description (plist-get x :description))
-                                         (symbol (plist-get x :symbol))
-                                         (pos (plist-get x :pos))
-                                         )
+                  (ac-epc-matches
+                   (lambda ()
+                     (with-current-buffer working-buffer
+                       (unless ac-epc-received-response
+                         (deferred:sync! ac-epc-complete-deferred))
+                       (setq ac-epc-complete-deferred nil)
+                       (unless (null ac-epc-complete-reply)
+                         ;; should we creat ea timer and wait for responses
+                         (cl-remove-if
+                          'null
+                          (mapcar
+                           (lambda (x)
+                             (unless (null x)
+                               (if (stringp x)
+                                   (popup-make-item x)
+                                 (condition-case nil
                                      (let (
-                                           (i (popup-make-item
-                                               word
-                                               :symbol symbol
-                                               :document
-                                               (unless (equal doc "") doc)
-                                               :summary description))
+                                           (word (plist-get x :word))
+                                           (doc (plist-get x :doc))
+                                           (description (plist-get x :description))
+                                           (symbol (plist-get x :symbol))
+                                           (pos (plist-get x :pos))
                                            )
-                                       (put-text-property 0 1 :pos pos i)
-                                       i))
-                                 (error nil)))))
-                         ac-epc-complete-reply))))))
+                                       (let (
+                                             (i (popup-make-item
+                                                 word
+                                                 :symbol symbol
+                                                 :document
+                                                 (unless (equal doc "") doc)
+                                                 :summary description))
+                                             )
+                                         (put-text-property 0 1 :pos pos i)
+                                         i))
+                                   (error nil)))))
+                           ac-epc-complete-reply))))))
 
-                (ac-epc-complete-request
-                 (lambda (&optional prefix)
-                   (with-current-buffer working-buffer
-                     (let (
-                           (prefix (or prefix (funcall prefix-cb)))
-                           )
-                       (unless (null ac-epc-complete-deferred)
-                         (deferred:cancel ac-epc-complete-deferred))
-                       (setq ac-epc-complete-reply nil)
-                       (setq ac-epc-received-response nil)
-                       (setq ac-epc-complete-deferred
-                             (deferred:$
-                               (deferred:next
-                                 (lambda ()
-                                   (with-current-buffer working-buffer
-                                     (epc-complete-deferred prefix))))
-                               (deferred:nextc it
-                                 (lambda (reply)
-                                   (with-current-buffer working-buffer
-                                     (setq ac-epc-complete-reply reply)
-                                     (setq ac-epc-received-response t))))
-                               (deferred:error it
-                                 (lambda (err)
-                                   (cond
-                                    ((stringp err)
-                                     ;; application error
-                                     ;; err: error message
-                                     (message "error completion epc %S" err)
-                                     )
-                                    ((eq 'epc-error (car err))
-                                     ;; epc error
-                                     ;; err: (cadr err) -> error information
-                                     (message "error completion epc2 %S" (cadr err))))))))))))
+                  (ac-epc-complete-request
+                   (lambda (&optional prefix)
+                     (with-current-buffer working-buffer
+                       (let (
+                             (prefix (or prefix (funcall prefix-cb)))
+                             )
+                         (unless (null ac-epc-complete-deferred)
+                           (deferred:cancel ac-epc-complete-deferred))
+                         (setq ac-epc-complete-reply nil)
+                         (setq ac-epc-received-response nil)
+                         (setq ac-epc-complete-deferred
+                               (deferred:$
+                                 (deferred:next
+                                   (lambda ()
+                                     (with-current-buffer working-buffer
+                                       (epc-complete-deferred prefix))))
+                                 (deferred:nextc it
+                                   (lambda (reply)
+                                     (with-current-buffer working-buffer
+                                       (setq ac-epc-complete-reply reply)
+                                       (setq ac-epc-received-response t))))
+                                 (deferred:error it
+                                   (lambda (err)
+                                     (cond
+                                      ((stringp err)
+                                       ;; application error
+                                       ;; err: error message
+                                       (message "error completion epc %S" err)
+                                       )
+                                      ((eq 'epc-error (car err))
+                                       ;; epc error
+                                       ;; err: (cadr err) -> error information
+                                       (message "error completion epc2 %S" (cadr err))))))))))))
 
-                (ac-completion-prefix
-                 (lambda ()
-                   (with-current-buffer working-buffer
-                     (let (
-                           (prefix (funcall prefix-cb))
-                           )
-                       (when (stringp prefix)
-                         (- (point) (length prefix)))))))
-
-                (ac-epc-source
-                 (list
-                  (list 'requires -1)
-                  (list 'init ac-epc-complete-request)
-                  (list 'candidates ac-epc-matches)
-                  (list 'prefix ac-completion-prefix)))
-
-                (ac-completion-func
-                 (cl-defun acf (&key (expend ac-expand-on-auto-complete))
-                   (interactive)
-                   (let (
-                         (prefix (funcall prefix-cb))
-                         )
-                     (when (and (stringp prefix) (> (length prefix) 0))
-                       (deferred:nextc (funcall ac-epc-complete-request)
-                         (lambda ()
-                           (let ((ac-expand-on-auto-complete expand))
-                             (ac-start :triggered 'command))))))))
-
-                (old-completion-at-point-functions
-                 (copy-sequence completion-at-point-functions))
-
-                ;; see https://github.com/jwiegley/emacs-release/blob/master/lisp/minibuffer.el
-                ;; completion-at-point
-                ;;     - runs each of the completion-at-point-functions
-                ;;         - if a result was found, then call completion-at-region
-                ;;             - completion-at-region will call completion-all-completions to get
-                ;;               the final completion list (the completion-at-point-function might
-                ;;               return a function and not a list) and filter them according to the
-                ;;               start and end.
-                ;;             - then completion-at-region will show the result of
-                ;;               completion-all-completions to the screen.
-                ;;     - this infers the completion-at-point will show the completion results to
-                ;;       the screen because of the call the completion-at-region.
-                ;;
-                ;; Here we force the completion-at-region to aggregate the results of the
-                ;; completion-all-completions and cause exec-old-completion-at-point to return
-                ;; the results instead of showing them. These results are appended to the
-                ;; completion-epc result and returned from the ac-completion-at-point function.
-                ;; The ac-completion-at-point is registered as completion-in-point-functions,
-                ;; so the real completion-in-point will get the results from ac-completion-at-point
-                ;; and then will send them to the real completion-at-region.
-                ;; the real completion-at-region shows the nice and colored auto-complete menu for
-                ;; a final touch.
-                (exec-old-completion-at-point
-                 (lambda ()
-                   (let (
-                         (res)
-                         )
-                     (let (
-                           (completion-at-point-functions
-                            old-completion-at-point-functions)
-                           (result-aggregator
-                            (lambda (start end collection &optional predicate)
-                              (let (
-                                    (cands
-                                     (completion-all-completions
-                                      (buffer-substring-no-properties start end)
-                                      collection predicate
-                                      (- end start))
-                                     )
-                                    )
-                                (unless (null cands)
-                                  (setcdr (last cands) nil))
-                                (setq res (append res cands)))
-                              nil))
-                           )
-                       (letf (
-                              ((symbol-function 'completion-in-region)
-                               result-aggregator)
-                              )
-                         (completion-at-point)))
-                     res)))
-
-                (ac-completion-at-point
-                 (lambda ()
-                   (with-current-buffer working-buffer
-                     (unless (null mngr-complete-epc)
+                  (ac-completion-prefix
+                   (lambda ()
+                     (with-current-buffer working-buffer
                        (let (
                              (prefix (funcall prefix-cb))
                              )
                          (when (stringp prefix)
-                           (funcall ac-epc-complete-request prefix)
-                           (let (
-                                 (beg (- (point) (length prefix)))
-                                 (end (point))
-                                 )
-                             (list beg
-                                   end
-                                   (completion-table-dynamic
-                                    (lambda (_)
-                                      (funcall ac-epc-matches)))))))))))
-                )
-           (add-to-list 'ac-sources ac-epc-source)
-           (add-hook 'completion-at-point-functions
-                     ac-completion-at-point nil t)))))))
+                           (- (point) (length prefix)))))))
+
+                  (ac-epc-source
+                   (list
+                    (list 'requires -1)
+                    (list 'init ac-epc-complete-request)
+                    (list 'candidates ac-epc-matches)
+                    (list 'prefix ac-completion-prefix)))
+
+                  (ac-completion-func
+                   (cl-defun acf (&key (expend ac-expand-on-auto-complete))
+                     (interactive)
+                     (let (
+                           (prefix (funcall prefix-cb))
+                           )
+                       (when (and (stringp prefix) (> (length prefix) 0))
+                         (deferred:nextc (funcall ac-epc-complete-request)
+                           (lambda ()
+                             (let ((ac-expand-on-auto-complete expand))
+                               (ac-start :triggered 'command))))))))
+
+                  (old-completion-at-point-functions
+                   (copy-sequence completion-at-point-functions))
+
+                  ;; see https://github.com/jwiegley/emacs-release/blob/master/lisp/minibuffer.el
+                  ;; completion-at-point
+                  ;;     - runs each of the completion-at-point-functions
+                  ;;         - if a result was found, then call completion-at-region
+                  ;;             - completion-at-region will call completion-all-completions to get
+                  ;;               the final completion list (the completion-at-point-function might
+                  ;;               return a function and not a list) and filter them according to the
+                  ;;               start and end.
+                  ;;             - then completion-at-region will show the result of
+                  ;;               completion-all-completions to the screen.
+                  ;;     - this infers the completion-at-point will show the completion results to
+                  ;;       the screen because of the call the completion-at-region.
+                  ;;
+                  ;; Here we force the completion-at-region to aggregate the results of the
+                  ;; completion-all-completions and cause exec-old-completion-at-point to return
+                  ;; the results instead of showing them. These results are appended to the
+                  ;; completion-epc result and returned from the ac-completion-at-point function.
+                  ;; The ac-completion-at-point is registered as completion-in-point-functions,
+                  ;; so the real completion-in-point will get the results from ac-completion-at-point
+                  ;; and then will send them to the real completion-at-region.
+                  ;; the real completion-at-region shows the nice and colored auto-complete menu for
+                  ;; a final touch.
+                  (exec-old-completion-at-point
+                   (lambda ()
+                     (let (
+                           (res)
+                           )
+                       (let (
+                             (completion-at-point-functions
+                              old-completion-at-point-functions)
+                             (result-aggregator
+                              (lambda (start end collection &optional predicate)
+                                (let (
+                                      (cands
+                                       (completion-all-completions
+                                        (buffer-substring-no-properties start end)
+                                        collection predicate
+                                        (- end start))
+                                       )
+                                      )
+                                  (unless (null cands)
+                                    (setcdr (last cands) nil))
+                                  (setq res (append res cands)))
+                                nil))
+                             )
+                         (letf (
+                                ((symbol-function 'completion-in-region)
+                                 result-aggregator)
+                                )
+                           (completion-at-point)))
+                       res)))
+
+                  (ac-completion-at-point
+                   (lambda ()
+                     (with-current-buffer working-buffer
+                       (unless (null mngr-complete-epc)
+                         (let (
+                               (prefix (funcall prefix-cb))
+                               )
+                           (when (stringp prefix)
+                             (funcall ac-epc-complete-request prefix)
+                             (let (
+                                   (beg (- (point) (length prefix)))
+                                   (end (point))
+                                   )
+                               (list beg
+                                     end
+                                     (completion-table-dynamic
+                                      (lambda (_)
+                                        (funcall ac-epc-matches)))))))))))
+                  )
+             (add-to-list 'ac-sources ac-epc-source)
+             (add-hook 'completion-at-point-functions
+                       ac-completion-at-point nil t))))))))
 
 (defun epc-completion-add(completion-mode hook prefix-cb)
   (epc-completion-add-company completion-mode hook prefix-cb)

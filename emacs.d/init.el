@@ -281,9 +281,6 @@
     (define-key swiper-map (kbd "C-/") 'swiper-comment-or-uncomment-line)
     (define-key swiper-map (kbd "C-k") 'swiper-kill-line)
     (define-key swiper-map (kbd "M-f") 'swiper-convert-to-ag)
-    (define-key swiper-map (kbd "C-SPC") 'mcs-toggle-cursor-at-point)
-    (define-key swiper-map (kbd "C->") 'mcs-mark-next-like-this)
-    (define-key swiper-map (kbd "C-<") 'mcs-mark-previous-like-this)
     (define-key swiper-map (kbd "<down>") 'ivy-next-line-and-call)
     (define-key swiper-map (kbd "<up>") 'ivy-previous-line-and-call)
     (define-key swiper-map (kbd "C-<up>") 'ivy-previous-line)
@@ -315,11 +312,14 @@
     )
   )
 
-(with-eval-after-load 'multiple-cursors
+(with-eval-after-load "multiple-cursors-autoloads"
   (with-eval-after-load 'swiper
-    (require 'multiple-cursors-swiper)
-    (define-key swiper-map (kbd "C-g") 'mcs-minibuffer-keyboard-quit)
-    (global-set-key (kbd "C-c C-a") 'mcs-swiper))
+    (with-eval-after-load 'multiple-cursors-swiper
+      (define-key swiper-map (kbd "C-g") 'mcs-minibuffer-keyboard-quit)
+      (global-set-key (kbd "C-c C-a") 'mcs-swiper)
+      (define-key swiper-map (kbd "C-SPC") 'mcs-toggle-cursor-at-point)
+      (define-key swiper-map (kbd "C->") 'mcs-mark-next-like-this)
+      (define-key swiper-map (kbd "C-<") 'mcs-mark-previous-like-this)))
 
   (require 'multiple-cursors-yank)
   (require 'multiple-cursors-sync-window)

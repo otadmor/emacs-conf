@@ -10,6 +10,6 @@
 (with-eval-after-load 'sync-window
   (with-eval-after-load 'multiple-cursors
     (add-hook 'multiple-cursors-mode-enabled-hook 'mcsw/mode-enabled)
-    (add-hook 'multiple-cursors-mode-disabled-hook 'mcsw/mode-disabled))
+    (add-hook 'multiple-cursors-mode-disabled-hook 'mcsw/mode-disabled)))
 
 (provide 'multiple-cursors-sync-window)

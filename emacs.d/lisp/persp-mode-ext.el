@@ -59,8 +59,8 @@ of the perspective %s can't be saved."
 (defun switch-to-persp1-after-load-state (persp-file phash persp-names)
   (remove-hook 'persp-after-load-state-functions
                'switch-to-persp1-after-load-state)
-  (lambda (persp-file phash persp-names)
-    (perspsw1)))
+  (perspsw1)
+  (run-with-idle-timer 5 t 'persp-mode-try-save))
 
 (setq persp-mode-hide-autosave-errors t)
 
@@ -174,6 +174,7 @@ of the perspective %s can't be saved."
   (defalias 'mouse-buffer-menu-map 'mouse-buffer-menu-map-hook)
   (advice-add 'persp-switch :before #'persp-switch-set-this-command)
 
+  ;; switch off the animation of restoring window configuration
   (setq wg-morph-on nil)
   (set-persp-parameter 'dont-save-to-file t nil)
 
@@ -201,16 +202,13 @@ of the perspective %s can't be saved."
                     (persp-switch        . nil)
                     (persp-window-switch . nil)
                     (persp-frame-switch  . nil)))))
-
-  ;; switch off the animation of restoring window configuration
   (add-hook 'after-init-hook
             (lambda ()
               (add-hook 'persp-after-load-state-functions
                         'switch-to-persp1-after-load-state)
-              (persp-mode 1)
-              (run-with-idle-timer 5 t 'persp-mode-try-save)))
+              (persp-mode 1)))
 
-  ;; (setq persp-autokill-buffer-on-remove nil)
+  (setq persp-autokill-buffer-on-remove nil)
   (setq persp-auto-resume-time 0.01)
   (setq persp-auto-save-fname "autosave")
   (setq persp-auto-save-opt 2)
