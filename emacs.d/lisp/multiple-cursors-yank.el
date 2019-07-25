@@ -54,7 +54,6 @@
 (setq mcy--last-cursors-amount 1)
 (make-local-variable 'mcy--ignore-first-store)
 (make-local-variable 'mcy--was-in-mc)
-(push 'mcy--create-order-id mc/cursor-specific-vars)
 
 (defun mcy/create-fake-cursor-at-point-hook(orig-fun &rest args)
   (let (
@@ -102,6 +101,8 @@
   (remove-hook 'pre-command-hook 'mcy/pre-command-hook t))
 
 (with-eval-after-load 'multiple-cursors
+  (push 'mcy--create-order-id mc/cursor-specific-vars)
+
   (add-hook 'post-command-hook 'mcy/post-command-hook)
   (add-hook 'multiple-cursors-mode-enabled-hook 'mcy/mode-enabled)
   (add-hook 'multiple-cursors-mode-disabled-hook 'mcy/mode-disabled)
