@@ -208,7 +208,15 @@
 
 (with-eval-after-load 'comint
   (add-hook 'comint-output-filter-functions 'completion--comint-output-filter nil nil)
-  (add-hook 'comint-mode-hook 'epc:start-server-and-set-env))
+  (add-hook 'comint-mode-hook (lambda ()
+                                ;; epcs must be loaded before comint does
+                                ;; its comint-mode-hook. once the process has
+                                ;; started we will not be able to change its
+                                ;; environment variables and set the correct
+                                ;; completion server port.
+                                (require 'epcs)
+                                (require 'epc)
+                                (epc:start-server-and-set-env))))
 
 (with-eval-after-load 'epc
   (defalias 'epc:net-read-or-lose 'epc:net-read-or-lose-fix)
