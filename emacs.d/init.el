@@ -410,7 +410,7 @@
 
     (global-set-key (kbd "C-e") 'sr-speedbar-toggle)))
 
-(with-eval-after-load 'dump-jump
+(with-eval-after-load 'dumb-jump
   (with-eval-after-load 'ivy
     (require 'ivy-dumb-jump)
     (global-set-key goto-def-key 'dumb-jump-go)))
