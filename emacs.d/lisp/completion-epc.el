@@ -364,7 +364,7 @@
                              (let ((ac-expand-on-auto-complete expand))
                                (ac-start :triggered 'command))))))))
 
-                  (ac-completion-at-point
+                  (epc-completion-at-point
                    (lambda ()
                      (with-current-buffer working-buffer
                        (unless (null mngr-complete-epc)
@@ -385,7 +385,7 @@
                   )
              (add-to-list 'ac-sources ac-epc-source)
              (add-hook 'completion-at-point-functions
-                       ac-completion-at-point nil t))))))))
+                       epc-completion-at-point nil t))))))))
 
 (defun epc-completion-add(completion-mode hook prefix-cb)
   (epc-completion-add-company completion-mode hook prefix-cb)
