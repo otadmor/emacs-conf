@@ -266,7 +266,7 @@
                )
            (let* (
 
-                  (ac-epc-matches
+                  (epc-matches
                    (lambda ()
                      (with-current-buffer working-buffer
                        (unless ac-epc-received-response
@@ -302,7 +302,7 @@
                                    (error nil)))))
                            ac-epc-complete-reply))))))
 
-                  (ac-epc-complete-request
+                  (epc-complete-request
                    (lambda (&optional prefix)
                      (with-current-buffer working-buffer
                        (let (
@@ -336,7 +336,7 @@
                                        ;; err: (cadr err) -> error information
                                        (message "error completion epc2 %S" (cadr err))))))))))))
 
-                  (ac-completion-prefix
+                  (epc-completion-prefix
                    (lambda ()
                      (with-current-buffer working-buffer
                        (let (
@@ -348,9 +348,9 @@
                   (ac-epc-source
                    (list
                     (list 'requires -1)
-                    (list 'init ac-epc-complete-request)
-                    (list 'candidates ac-epc-matches)
-                    (list 'prefix ac-completion-prefix)))
+                    (list 'init epc-complete-request)
+                    (list 'candidates epc-matches)
+                    (list 'prefix epc-completion-prefix)))
 
                   (ac-completion-func
                    (cl-defun acf (&key (expend ac-expand-on-auto-complete))
@@ -359,7 +359,7 @@
                            (prefix (funcall prefix-cb))
                            )
                        (when (and (stringp prefix) (> (length prefix) 0))
-                         (deferred:nextc (funcall ac-epc-complete-request)
+                         (deferred:nextc (funcall epc-complete-request)
                            (lambda ()
                              (let ((ac-expand-on-auto-complete expand))
                                (ac-start :triggered 'command))))))))
@@ -427,7 +427,7 @@
                                (prefix (funcall prefix-cb))
                                )
                            (when (stringp prefix)
-                             (funcall ac-epc-complete-request prefix)
+                             (funcall epc-complete-request prefix)
                              (let (
                                    (beg (- (point) (length prefix)))
                                    (end (point))
@@ -436,7 +436,7 @@
                                      end
                                      (completion-table-dynamic
                                       (lambda (_)
-                                        (funcall ac-epc-matches)))))))))))
+                                        (funcall epc-matches)))))))))))
                   )
              (add-to-list 'ac-sources ac-epc-source)
              (add-hook 'completion-at-point-functions
