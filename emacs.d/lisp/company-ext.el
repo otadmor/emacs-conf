@@ -1,6 +1,6 @@
 ;;;  -*- lexical-binding: t -*-
 
-(require 'company)
+;; (require 'company)
 
 (defun company-completion-in-region (start end collection &optional predicate)
   (let* (

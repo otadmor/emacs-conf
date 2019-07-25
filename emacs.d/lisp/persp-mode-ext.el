@@ -1,5 +1,5 @@
 ;; -*- lexical-binding: t; -*-
-(require 'persp-mode)
+;; (require 'persp-mode)
 
 (defun persp-delete-frame-hook(fun &rest args)
   (let (

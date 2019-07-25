@@ -1,9 +1,9 @@
-(require 'company)
-(require 'auto-complete)
+;; (require 'company)
+;; (require 'auto-complete)
 
-(require 'completion-epc)
+;; (require 'completion-epc)
 
-(require 'python-mode)
+;; (require 'python-mode)
 
 (defun py-shell-prefix()
   (and (or (eq major-mode 'py-python-shell-mode)

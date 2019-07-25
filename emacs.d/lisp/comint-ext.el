@@ -1,4 +1,4 @@
-(require 'comint)
+;; (require 'comint)
 
 (defun comint-delete-backward-char(fun &rest args)
   (when (or (region-active-p)

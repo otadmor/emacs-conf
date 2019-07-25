@@ -1,6 +1,6 @@
 ;; -*- lexical-binding: t; -*-
 
-(require 'server)
+;; (require 'server)
 
 (defun check-frames-connection ()
   (when (functionp 'x-check-frame)
@@ -65,7 +65,7 @@
 
 
 
-(require 'lockstep)
+;; (require 'lockstep)
 (defun lockstep-and-prepare-persp () ;;persp-file phash persp-names)
   (with-eval-after-load 'persp-mode
     (let* (

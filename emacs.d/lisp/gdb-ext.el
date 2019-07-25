@@ -1,4 +1,4 @@
-(require 'gdb)
+;; (require 'gdb)
 (defun gud-gdb-marker-filter-hook(orig-fun &rest args)
   (let (
         (res (apply orig-fun args))

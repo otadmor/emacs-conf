@@ -1,6 +1,6 @@
-(require 'dumb-jump)
-(require 'ivy)
-(require 'swiper-async)
+;; (require 'dumb-jump)
+;; (require 'ivy)
+;; (require 'swiper-async)
 
 (defun dumb-jump-ivy-minibuffer-keyboard-quit ()
   (interactive)

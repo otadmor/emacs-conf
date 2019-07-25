@@ -1,4 +1,4 @@
-(require 'multiple-cursors)
+;; (require 'multiple-cursors)
 
 ;;;;;;;;;;;;;;;
 ;; functions ;;

@@ -1,7 +1,7 @@
 ;;;  -*- lexical-binding: t -*-
-(require 'epc)
-(require 'comint)
-(require 'epcs)
+;; (require 'epc)
+;; (require 'comint)
+;; (require 'epcs)
 
 ; (defvar complete-server-regexp
 ;   (concat "^" (regexp-quote "___EPCCompletionServer_PORT=") "\\([[:xdigit:]]+\\)\n$")
@@ -222,9 +222,9 @@
   (defalias 'epc:net-read-or-lose 'epc:net-read-or-lose-fix)
   (advice-add 'epc:stop-epc :around #'completion-epc-clear-completion-epc-hook))
 
-(require 'cl-lib)
-(require 'company)
-(require 'auto-complete)
+;; (require 'cl-lib)
+;; (require 'company)
+;; (require 'auto-complete)
 
 (defun epc-completion-add-company(completion-mode hook prefix-cb)
   (unless (null hook)

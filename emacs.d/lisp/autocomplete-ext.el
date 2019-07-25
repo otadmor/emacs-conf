@@ -1,6 +1,6 @@
 ;;;  -*- lexical-binding: t -*-
 
-(require 'auto-complete)
+;; (require 'auto-complete)
 
 (defun ac-page-next ()
   "Select next candidate."

@@ -1,6 +1,6 @@
-(require 'ivy)
-(require 'counsel)
-(require 'dumb-jump)
+;; (require 'ivy)
+;; (require 'counsel)
+;; (require 'dumb-jump)
 ; (push '(counsel-ag . ivy-recompute-index-swiper-async) ivy-index-functions-alist)
 
 (defun ag--format-result (proj result)

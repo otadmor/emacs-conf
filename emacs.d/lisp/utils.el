@@ -1,5 +1,5 @@
 ;; -*- lexical-binding: t; -*-
-(require 'which-func)
+;; (require 'which-func)
 
 (defun update-next-error-which-function ()
   (which-func-update-1 (selected-window)))

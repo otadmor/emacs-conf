@@ -1,5 +1,5 @@
-(require 'speedbar)
-(require 'sr-speedbar)
+;; (require 'speedbar)
+;; (require 'sr-speedbar)
 
 (setq sr-speedbar-buffer-name-orig sr-speedbar-buffer-name)
 (defun sr-speedbar-refresh-perspective ()

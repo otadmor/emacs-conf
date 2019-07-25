@@ -1,5 +1,5 @@
 ;; -*- lexical-binding: t; -*-
-(require 'persp-mode)
+;; (require 'persp-mode)
 
 ;; COPIED FROM multiple-cursors-core.el
 (setq persp-variables-has-minibuffer nil)

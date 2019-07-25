@@ -1,4 +1,4 @@
-(require 'sync-window)
+;; (require 'sync-window)
 
 
 (defun mcsw/mode-enabled()

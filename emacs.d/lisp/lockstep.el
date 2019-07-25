@@ -4,7 +4,7 @@
 ; Keep frames in lock step, useful for pair programming with emacsclients
 ; Requires Emacs 24
 
-(require 'cl)
+;; (require 'cl)
 
 (add-hook 'post-command-hook 'lockstep-point)
 (add-hook 'window-configuration-change-hook 'lockstep-frame)

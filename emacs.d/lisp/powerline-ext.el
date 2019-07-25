@@ -1,6 +1,6 @@
 ;;;  -*- lexical-binding: t -*-
 
-(require 'powerline)
+;; (require 'powerline)
 (defvar blacklist-powerline-mode-list '()
   "Hidden minor-modes list in powerline.")
 

@@ -1,7 +1,7 @@
 ;; -*- lexical-binding: t; -*-
-(require 'multiple-cursors)
-(require 'swiper)
-(require 'cl-lib)
+;; (require 'multiple-cursors)
+;; (require 'swiper)
+;; (require 'cl-lib)
 
 (defun mc/find-cursor-at-point(p)
   (let ((result-cursor nil))

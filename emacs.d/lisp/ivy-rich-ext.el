@@ -1,6 +1,6 @@
 ;;;  -*- lexical-binding: t -*-
 
-(require 'ivy-rich)
+;; (require 'ivy-rich)
 (defun popup-item-summary-or-empty(item)
   (if (null item)
       ""

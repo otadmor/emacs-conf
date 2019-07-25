@@ -1,4 +1,4 @@
-(require 'python-mode)
+;; (require 'python-mode)
 
 
 (defun py--send-string-return-output (strg &optional process msg)
