@@ -251,26 +251,25 @@
 
 (defun epc-completion-add-auto-complete (completion-mode working-buffer prefix-cb epc-complete-request epc-matches)
   (with-eval-after-load 'auto-complete
-    (lambda ()
-      (let* (
-             (epc-ac-completion-prefix
-              (lambda ()
-                (with-current-buffer working-buffer
-                  (let (
-                        (prefix (funcall prefix-cb))
-                        )
-                    (when (stringp prefix)
-                      (- (point) (length prefix)))))))
-             (ac-epc-source
-              (list
-               (list 'requires -1)
-               (list 'init epc-complete-request)
-               (list 'candidates epc-matches)
-               (list 'prefix epc-ac-completion-prefix)))
-             )
-        (unless (memq completion-mode ac-modes)
-          (add-to-list 'ac-modes completion-mode))
-        (add-to-list 'ac-sources ac-epc-source)))))
+    (let* (
+           (epc-ac-completion-prefix
+            (lambda ()
+              (with-current-buffer working-buffer
+                (let (
+                      (prefix (funcall prefix-cb))
+                      )
+                  (when (stringp prefix)
+                    (- (point) (length prefix)))))))
+           (ac-epc-source
+            (list
+             (list 'requires -1)
+             (list 'init epc-complete-request)
+             (list 'candidates epc-matches)
+             (list 'prefix epc-ac-completion-prefix)))
+           )
+      (unless (memq completion-mode ac-modes)
+        (add-to-list 'ac-modes completion-mode))
+      (add-to-list 'ac-sources ac-epc-source))))
 
 (defun epc-completion-add-completion-at-point (working-buffer prefix-cb epc-complete-request epc-matches)
   (let (
@@ -322,23 +321,34 @@
                            (if (stringp x)
                                (popup-make-item x)
                              (condition-case nil
-                                 (let (
-                                       (word (plist-get x :word))
-                                       (doc (plist-get x :doc))
-                                       (description (plist-get x :description))
-                                       (symbol (plist-get x :symbol))
-                                       (pos (plist-get x :pos))
+                                 (let* (
+                                        (word (plist-get x :word))
+                                        (doc-or-empty (plist-get x :doc))
+                                        (doc (unless (equal doc-or-empty "")
+                                               doc-or-empty))
+                                        (description (plist-get x :description))
+                                        (symbol (plist-get x :symbol))
+                                        (pos (plist-get x :pos))
                                        )
-                                   (let (
-                                         (i (popup-make-item
-                                             word
-                                             :symbol symbol
-                                             :document
-                                             (unless (equal doc "") doc)
-                                             :summary description))
-                                         )
-                                     (put-text-property 0 1 :pos pos i)
-                                     i))
+                                   (if (functionp 'popup-make-item)
+                                       (let (
+                                             (i (popup-make-item
+                                                 word
+                                                 :symbol symbol
+                                                 :document doc
+                                                 :summary description))
+                                             )
+                                         (put-text-property 0 1 :pos pos i)
+                                         i)
+                                     (let (
+                                           (i (propertize
+                                               word
+                                               'symbol symbol
+                                               'document doc
+                                               'summary description))
+                                           )
+                                       (put-text-property 0 1 :pos pos i)
+                                       i)))
                                (error nil)))))
                        epc-completion--complete-reply))))))
 
@@ -381,7 +391,7 @@
          (epc-completion-add-auto-complete
           completion-mode epc-completion--working-buffer
           prefix-cb epc-complete-request epc-matches)
-         (epc-completion-add-completion-at-point ;
+         (epc-completion-add-completion-at-point
           epc-completion--working-buffer
           prefix-cb epc-complete-request epc-matches))))))
 

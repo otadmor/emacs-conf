@@ -37,7 +37,6 @@
                                (completion-at-point)))
 
   (with-eval-after-load 'completion-epc
-    (setenv "PYTHONSTARTUP" (expand-file-name (concat CONFIGURATION-PATH "/py_epc_completion.py")))
     (setq py-shell-completion-setup-code "")
     (setq py-shell-module-completion-code "")
     (setq py-ipython-module-completion-code "")

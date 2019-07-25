@@ -380,11 +380,14 @@
         (setq py-complete-function 'company-complete)))))
 ;; (require 'python-mode)
 
+
+;; (with-eval-after-load 'auto-complete
+;;   (require 'autocomplete-ext))
+
 (with-eval-after-load 'company
-  (require 'company-ext)
-  (with-eval-after-load 'ivy
-    (setq completion-in-region-function 'completion-in-region-company-or-ivy))
-  (global-set-key complete-key 'completion-at-point))
+  (require 'company-ext))
+
+(global-set-key complete-key 'completion-at-point)
 
 (with-eval-after-load 'bash-completion
   (bash-completion-setup))
@@ -420,25 +423,24 @@
 ;; (require 'ess)
 
 (with-eval-after-load 'epc
-  (with-eval-after-load 'company
-    (require 'completion-epc)
+  (require 'completion-epc) ; required for frida completion
+  (setenv "PYTHONSTARTUP" (expand-file-name (concat CONFIGURATION-PATH "/py_epc_completion.py")))
+  (defun shell-completion-prefix ()
+    ;; Note that the input string does not include its terminal newline.
+    (let (
+          (proc (get-buffer-process (current-buffer)))
+          )
+      (when proc
+        (widen)
+        (let (
+              (pmark (process-mark proc))
+              )
+          (when (>= (point) (marker-position pmark))
+            (buffer-substring-no-properties pmark (point)))))))
+  (epc-completion-add 'shell-mode 'comint-mode-hook 'shell-completion-prefix)
 
-    (defun shell-completion-prefix ()
-      ;; Note that the input string does not include its terminal newline.
-      (let (
-            (proc (get-buffer-process (current-buffer)))
-            )
-        (when proc
-          (widen)
-          (let (
-                (pmark (process-mark proc))
-                )
-            (when (>= (point) (marker-position pmark))
-              (buffer-substring-no-properties pmark (point)))))))
-    (epc-completion-add 'shell-mode 'comint-mode-hook 'shell-completion-prefix)
-
-    (with-eval-after-load 'python-mode
-      (require 'company-py-shell)))) ; required for frida completion
+  (with-eval-after-load 'python-mode
+    (require 'company-py-shell)))
 
 ;; (require 'persp-mode)
 (with-eval-after-load 'persp-mode
@@ -469,9 +471,6 @@
   (global-set-key next-key 'winstack-next)
 
   (require 'persp-mode-ext))
-
-(with-eval-after-load 'auto-complete
-  (auto-complete-mode 0))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.

@@ -47,7 +47,10 @@
     (if (eq this-command 'ac-last)
         (setq ac-dwim-enable t))))
 
-
+(defun auto-complete-ext--remove-props (str &rest props)
+  "Return STR with text PROPS destructively removed."
+  (remove-list-of-text-properties 0 (length str) props str)
+  str)
 (defun auto-complete-completion-in-region (start end collection &optional predicate)
   (let* (
          (fixed-candidate-source
@@ -64,7 +67,7 @@
                                  (unless (null cands)
                                    (setcdr (last cands) nil))
                                  (dolist (s cands)
-                                   (ivy--remove-props s 'face))
+                                   (auto-complete-ext--remove-props s 'face))
                                  cands)))
            (list 'prefix (lambda () start))))
          )
@@ -156,7 +159,6 @@
     (ac-abort)
     (ac-fallback-command)))
 
-
 (with-eval-after-load 'auto-complete
   (ac-config-default)
   (setq-default ac-sources '(ac-source-abbrev ac-source-dictionary))
@@ -167,19 +169,32 @@
   ;;                          (auto-complete-mode 1))
   ;;                        ))
   ;; (real-global-auto-complete-mode t)
-  (setq tab-always-indent 'complete)
   (setq ac-max-width 0.5)
   ;; (setq ac-use-fuzzy nil)
   (setq ac-use-fuzzy t)
   (setq ac-ignore-case (quote smart))
 
-  (with-eval-after-load 'ivy
-    (defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
-      (if (eq (selected-window) (active-minibuffer-window))
-          (ivy-completion-in-region start end collection predicate)
-        (auto-complete-completion-in-region start end collection predicate))))
+  (setq auto-complete-orig--completion-in-region-function
+        'completion--in-region)
+  (defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
+    (if (eq (selected-window) (active-minibuffer-window))
+        (funcall auto-complete-orig--completion-in-region-function
+                 start end collection predicate)
+      (auto-complete-completion-in-region start end collection predicate)))
 
   (defalias 'ac-prefix 'ac-prefix-with-min-prefix)
-  (advice-add 'ac-candidates-1 :around #'ac-candidates-1-reposition-hook))
+  (advice-add 'ac-candidates-1 :around #'ac-candidates-1-reposition-hook)
+
+  (add-hook 'after-init-hook
+            (lambda ()
+              ;; (if (functionp 'company-complete)
+              ;;     (auto-complete-mode 0)
+              (setq tab-always-indent 'complete)
+              (setq auto-complete-orig--completion-in-region-function
+                    completion-in-region-function)
+              (setq completion-in-region-function
+                    'completion-in-region-auto-complete-or-ivy)
+                ;; (auto-complete-mode))
+            )))
 
 (provide 'autocomplete-ext)

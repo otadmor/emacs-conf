@@ -2,6 +2,11 @@
 
 ;; (require 'company)
 
+(defun company-ext--remove-props (str &rest props)
+  "Return STR with text PROPS destructively removed."
+  (remove-list-of-text-properties 0 (length str) props str)
+  str)
+
 (defun company-completion-in-region (start end collection &optional predicate)
   (let* (
          (fixed-candidate-source
@@ -24,11 +29,12 @@
                                    (unless (null cands)
                                      (setcdr (last cands) nil))
                                    (dolist (s cands)
-                                     (ivy--remove-props s 'face))
+                                     (company-ext--remove-props s 'face))
                                    cands)))
-              (meta (popup-item-symbol arg))
-              (doc-buffer (company-doc-buffer (popup-item-documentation arg)))
-              (annotation (popup-item-summary arg))
+              (meta (if (stringp arg) (get-text-property 0 'symbol arg)))
+              (doc-buffer (company-doc-buffer
+                           (if (stringp arg) (get-text-property 0 'document arg))))
+              (annotation (if (stringp arg) (get-text-property 0 'summary arg)))
               (location nil)
               (no-cache t)
               (sorted t))
@@ -41,16 +47,26 @@
   (setq company-minimum-prefix-length 0)
   (setq company-require-match nil)
 
-  (with-eval-after-load 'ivy
-    (defun completion-in-region-company-or-ivy (start end collection &optional predicate)
-      (if (eq (selected-window) (active-minibuffer-window))
-          (ivy-completion-in-region start end collection predicate)
-        (company-completion-in-region start end collection predicate))))
+  (setq company-orig--completion-in-region-function
+        'completion--in-region)
+  (defun completion-in-region-company-or-ivy (start end collection &optional predicate)
+    (if (eq (selected-window) (active-minibuffer-window))
+        (funcall company-orig--completion-in-region-function
+                 start end collection predicate)
+      (message "not in mini")
+      (company-completion-in-region start end collection predicate)))
 
   (require 'company-quickhelp)
   (with-eval-after-load 'company-quickhelp
     (define-key company-active-map (kbd "C-c h") #'company-quickhelp-manual-begin)
     (setq company-quickhelp-delay 0.1)
-    (company-quickhelp-mode)))
+    (company-quickhelp-mode))
+
+  (add-hook 'after-init-hook
+            (lambda ()
+              (setq company-orig--completion-in-region-function
+                    completion-in-region-function)
+              (setq completion-in-region-function
+                    'completion-in-region-company-or-ivy))))
 
 (provide 'company-ext)

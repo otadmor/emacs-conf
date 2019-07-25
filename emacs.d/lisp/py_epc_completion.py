@@ -20,7 +20,7 @@ import rlcompleter
 readline.set_completer(rlcompleter.Completer().complete)
 
 def get_builtin_method_signature(d, without_name=False):
-    ddoc = d.__doc__
+    ddoc = d.__doc__.strip()
     ddoc = ddoc[:ddoc.find('\n')]
     ddoc = ddoc[ddoc.find("(") + 1 if without_name else 0:ddoc.find(")") + 1]
     return ddoc
