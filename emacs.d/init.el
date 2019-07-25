@@ -486,9 +486,9 @@
       (need-install nil)
       )
   (dolist (package package-selected-packages)
-    (condition-case nil
+    (condition-case err
         (require package)
-      (error (setq need-install t))))
+      (error (message "Error when loading %S: %S" package err) (setq need-install t))))
   (when need-install
     (package-refresh-contents)
     (package-install-selected-packages)))
