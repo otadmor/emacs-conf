@@ -86,13 +86,16 @@ If the input is empty, select the previous history element instead."
         (caller (ivy-state-caller ivy-last))
         )
     (rename-buffer
-     (format "*ivy-occur%s \"%s\" dir: %s*"
+     (if (eq caller 'counsel-find-file)
+         (format "*files: %s%s*"
+                 ivy--directory
+                 ivy-text)
+       (format "*ivy-occur%s \"%s\" dir: %s*"
              (if caller
                  (concat " " (prin1-to-string caller))
                "")
              ivy-text
-             ivy--directory)
-     t)))
+             ivy--directory)) t)))
 
 (defun ivy--mouse-hook (orig-fun &rest args)
   (let* (
