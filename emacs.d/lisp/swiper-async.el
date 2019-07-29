@@ -172,7 +172,8 @@ candidate is limited to isearch-swiper-limit(default=3) while searching."
 (defvar swiper--async-did-action nil
   "Changed to t when the action function is called for the first time
 on the current search.")
-(defun swiper--async-action(x)
+
+(defun swiper--async-action(x &optional dont-update-action)
   "goto the candidate position in the file and mark it for a second for the
 user to see where it is."
   (let (
@@ -182,7 +183,8 @@ user to see where it is."
                    )
                (swiper--async-match-in-buffer x)))
         )
-    (setq swiper--async-did-action t)
+    (unless dont-update-action
+      (setq swiper--async-did-action t))
     (let (
           (beg (car res))
           (pos (cdr res))
@@ -191,7 +193,7 @@ user to see where it is."
         (widen)
         (if (or (eq this-command 'ivy-alt-done)
                 (eq this-command 'ivy-done))
-          (ivy--pulse-region beg pos)
+            (ivy--pulse-region beg pos)
           (let (
                 (search-highlight t)
                 )
@@ -588,7 +590,10 @@ from"
       (setq ivy--index ivy-index--persp-variables)
       (setq ivy-index--persp-variables nil))
     (cond
-     ((not (swiper--async-is-valid-input)) (swiper--async-reset-state))
+     ((not (swiper--async-is-valid-input))
+      (swiper--async-reset-state)
+      (goto-char swiper--opoint)
+      nil)
      ((string= ivy-text ivy--old-text) (swiper--async-update-all-candidates nil))
      ((and (not (eq 'swiper--regexp-builder ivy--regex-function))
            (or (<= (length ivy-text) isearch-swiper-limit)
@@ -657,6 +662,7 @@ FOLLOW-IVY-INDEX changes ivy--index to be the first candidate after swiper--opoi
           (let (
                 (idx nil)
                 (first-past-opoint-idx nil)
+                (first-past-opoint-item nil)
                 )
             (let (
                   (filtered-results
@@ -679,12 +685,14 @@ FOLLOW-IVY-INDEX changes ivy--index to be the first candidate after swiper--opoi
                                            (when (and (>= (swiper--get-begin x)
                                                           swiper--opoint)
                                                       (null first-past-opoint-idx))
-                                             (setq first-past-opoint-idx idx)))
+                                             (setq first-past-opoint-idx idx)
+                                             (setq first-past-opoint-item x)))
                                          has-match)))))
                   )
               (when (and follow-ivy-index
                          (not (null first-past-opoint-idx)))
-                (setq ivy--index first-past-opoint-idx))
+                (setq ivy--index first-past-opoint-idx)
+                (swiper--async-action first-past-opoint-item t))
               filtered-results)))))
 
 (defun swiper--async-add-hooks()
@@ -879,7 +887,7 @@ candidates in the minibuffer asynchrounouosly."
   (save-match-data
     (when (active-minibuffer-window)
       (with-ivy-window
-        (save-excursion
+        (progn ; save-excursion
           (deactivate-mark)
           (let* (
                  (which-func-mode nil)
