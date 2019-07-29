@@ -53,7 +53,6 @@
     (if (eq (selected-window) (active-minibuffer-window))
         (funcall company-orig--completion-in-region-function
                  start end collection predicate)
-      (message "not in mini")
       (company-completion-in-region start end collection predicate)))
 
   (require 'company-quickhelp)
