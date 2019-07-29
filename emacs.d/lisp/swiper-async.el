@@ -1,7 +1,7 @@
 ;; -*- lexical-binding: t; -*-
-(require 'swiper)
-(require 'ivy)
-(require 'counsel) ; for counsel--async
+;; (require 'swiper)
+;; (require 'ivy)
+;; (require 'counsel) ; for counsel--async
 
 (defmacro benchmark-and-get-result (&rest forms)
   "Return the time in seconds elapsed for execution of FORMS.
@@ -139,7 +139,6 @@ minibuffer."
           nil
           line-beg) res)
         res))))
-(ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
 (defun swiper--async-match-in-buffer (item)
   "Returns the actual match beginning and end of the candidate.
@@ -444,9 +443,10 @@ and for regexp function which is regexp - it verifies the re is a valid pattern.
        (or (not (eq 'swiper--regexp-builder ivy--regex-function))
            (swiper--async-legal-pcre-regex-p ivy-text))))
 
-(defcustom swiper--async-grep-limit 2
+(defcustom swiper--async-grep-limit most-positive-fixnum
   "The minimum letter count required for searching using grep.
-To disable grep put here a large number, like 999."
+To disable grep put here a large number, like 999, or most-positive-fixnum.
+The grep method is enabled after counsel is loaded."
   :type 'integer)
 (defun swiper--async-same-as-disk()
   "Checks all requirements for using grep. This function is called many times
@@ -723,7 +723,6 @@ FOLLOW-IVY-INDEX changes ivy--index to be the first candidate after swiper--opoi
   (with-ivy-window
     (lazy-highlight-cleanup t)
     (isearch-dehighlight)))
-(advice-add 'swiper--cleanup :after #'swiper--async-swiper--cleanup-hook)
 
 (defun swiper-async (&optional initial-input)
   "`isearch' with an overview.
@@ -814,8 +813,6 @@ the minibuffer with the new candidates."
       (when has-missing-lines
         (swiper--async-kick-async))))
   (apply orig-fun args))
-(advice-add 'ivy--wnd-cands-to-str :around #'ivy--wnd-cands-to-str-hook)
-
 
 (defun swiper--async-should-quit-async ()
   (or (input-pending-p)
@@ -1398,11 +1395,6 @@ Markers highlights the results in the buffer itself."
                 (null end))
       (ivy-add-face-text-property beg end 'lazy-highlight str)))
   str)
-(add-to-list 'ivy-highlight-functions-alist '(swiper--regexp-builder . swiper--async-highlighter))
-(add-to-list 'ivy-highlight-functions-alist '(regexp-quote . swiper--async-highlighter))
-
-
-
 
 (defun swiper--async-update-input-ivy-scroll-hook (window new-window-start)
   (when (and (eq window (ivy--get-window ivy-last)) (active-minibuffer-window))
@@ -1521,16 +1513,8 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (setq ivy--prompt (ivy-add-prompt-count
                      (ivy--quote-format-string
                       (or (ivy-state-prompt ivy-last) "")))))
-(advice-add 'ivy-rotate-preferred-builders :after #'ivy-rotate-preferred-builders-update)
 
-(defun swiper--async-which-func-update ()
-  "Update the function name on which-function when swiper-async
-is switching between candidates."
-  (with-ivy-window
-    (which-func-update-1 (selected-window))))
-(advice-add 'swiper--async-update-input-ivy :after #'swiper--async-which-func-update)
-
-(require 'pcre2el)
+;; (require 'pcre2el)
 
 (defun swiper--async-legal-pcre-regex-p (x)
   "Return t if STR is valid regular expression."
@@ -1541,11 +1525,6 @@ is switching between candidates."
     (rxt-invalid-regexp nil))) ; invalid-regexp, error
 
 (defun swiper--regexp-builder (x) (rxt-pcre-to-elisp x))
-
-(add-to-list 'ivy-preferred-re-builders '(regexp-quote . "text"))
-(add-to-list 'ivy-preferred-re-builders '(swiper--regexp-builder . "regexp"))
-
-
 
 (defun ivy--regex-fuzzy (str)
   "Build a regex sequence from STR.
@@ -1573,16 +1552,13 @@ This is a fix from the official repo which does not exist on the current emacs."
             "%BUILDER"
             (cdr (assq ivy--regex-function ivy-preferred-re-builders))
             str t t)))
-(advice-add 'ivy--quote-format-string :around #'ivy--quote-format-string-hook)
 
 (defun ivy-previous-line-hook(orig-fun &rest args)
   (setq swiper--async-direction-backward t)
   (apply orig-fun args))
-(advice-add 'ivy-previous-line :around #'ivy-previous-line-hook)
 (defun ivy-next-line-hook(orig-fun &rest args)
   (setq swiper--async-direction-backward nil)
   (apply orig-fun args))
-(advice-add 'ivy-next-line :around #'ivy-next-line-hook)
 
 (defun swiper-async-search-forward ()
   (interactive)
@@ -1594,6 +1570,38 @@ This is a fix from the official repo which does not exist on the current emacs."
   (setq swiper--async-direction-backward t)
   (swiper-async))
 
-(ivy-set-occur 'swiper-async 'counsel-grep-occur)
+(defun swiper--async-which-func-update ()
+  "Update the function name on which-function when swiper-async
+is switching between candidates."
+  (with-ivy-window
+    (which-func-update-1 (selected-window))))
+
+(with-eval-after-load 'swiper
+  (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
+
+  (with-eval-after-load 'counsel
+    (setq swiper--async-grep-limit 2))
+
+  (advice-add 'swiper--cleanup :after #'swiper--async-swiper--cleanup-hook)
+
+  (advice-add 'ivy--wnd-cands-to-str :around #'ivy--wnd-cands-to-str-hook)
+
+  (with-eval-after-load 'which-func
+    (advice-add 'swiper--async-update-input-ivy :after #'swiper--async-which-func-update))
+
+
+  (add-to-list 'ivy-highlight-functions-alist '(swiper--regexp-builder . swiper--async-highlighter))
+  (add-to-list 'ivy-highlight-functions-alist '(regexp-quote . swiper--async-highlighter))
+
+  (advice-add 'ivy-rotate-preferred-builders :after #'ivy-rotate-preferred-builders-update)
+  (add-to-list 'ivy-preferred-re-builders '(regexp-quote . "text"))
+
+  (with-eval-after-load 'pcre2el
+    (add-to-list 'ivy-preferred-re-builders '(swiper--regexp-builder . "regexp")))
+
+  (advice-add 'ivy--quote-format-string :around #'ivy--quote-format-string-hook)
+  (advice-add 'ivy-previous-line :around #'ivy-previous-line-hook)
+  (advice-add 'ivy-next-line :around #'ivy-next-line-hook)
+  (ivy-set-occur 'swiper-async 'counsel-grep-occur))
 
 (provide 'swiper-async)
