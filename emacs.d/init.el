@@ -437,7 +437,7 @@
               )
           (when (>= (point) (marker-position pmark))
             (buffer-substring-no-properties pmark (point)))))))
-  (epc-completion-add 'shell-mode 'comint-mode-hook 'shell-completion-prefix)
+  (epc-completion-add 'comint-mode 'comint-mode-hook 'shell-completion-prefix)
 
   (with-eval-after-load 'python-mode
     (require 'company-py-shell)))
