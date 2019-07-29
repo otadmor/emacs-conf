@@ -1021,17 +1021,18 @@ candidates in the minibuffer asynchrounouosly."
                                         candidates-create-time)))))))
               (when (and (/= (length swiper--async-to-search) 0)
                          (not (swiper--async-same-as-disk)))
-                (counsel-delete-process swiper--async-process-name)
-                (let (
-                      (re-str swiper--async-to-search-re)
-                      )
+                (save-excursion
+                  (counsel-delete-process swiper--async-process-name)
                   (let (
-                        (positive-re swiper--async-to-search-positive-re)
-                        (searched-bytes 0)
-                        (last-found nil)
+                        (re-str swiper--async-to-search-re)
                         )
                     (let (
-                          (matches-found-time (car (benchmark-and-get-result
+                          (positive-re swiper--async-to-search-positive-re)
+                          (searched-bytes 0)
+                          (last-found nil)
+                          )
+                      (let (
+                            (matches-found-time (car (benchmark-and-get-result
                     (while (and (not (null overlays))
                                 (not yield-isearch))
                       (let* (
@@ -1115,12 +1116,12 @@ candidates in the minibuffer asynchrounouosly."
                             (unless yield-isearch
                               (setq overlays (cdr overlays)))))))
                     )))
-                          )
-                      (when (/= searched-bytes 0)
-                        (setq swiper--max-search-length ;(* 10 4096)
-                              (ceiling (/ (* searched-bytes
-                                             swiper--max-search-time)
-                                          matches-found-time))))))))
+                            )
+                        (when (/= searched-bytes 0)
+                          (setq swiper--max-search-length ;(* 10 4096)
+                                (ceiling (/ (* searched-bytes
+                                               swiper--max-search-time)
+                                            matches-found-time)))))))))
               (when (/= matches-found 0)
                 (swiper--async-update-output)))
             (when yield-isearch
