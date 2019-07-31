@@ -439,6 +439,16 @@
             (buffer-substring-no-properties pmark (point)))))))
   (epc-completion-add 'comint-mode 'comint-mode-hook 'shell-completion-prefix)
 
+  (defun eshell-completion-prefix ()
+    ;; Note that the input string does not include its terminal newline.
+    (widen)
+    (let (
+          (pmark (eshell-beginning-of-input))
+          )
+      (when (>= (point) (marker-position pmark))
+        (buffer-substring-no-properties pmark (point)))))
+  (epc-completion-add 'eshell-mode 'eshell-mode-hook 'eshell-completion-prefix)
+
   (with-eval-after-load 'python-mode
     (require 'company-py-shell)))
 
