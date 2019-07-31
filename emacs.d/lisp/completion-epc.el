@@ -134,7 +134,8 @@
       (add-hook 'kill-buffer-hook (lambda ()
                                     (epcs:server-stop epc-server-process)) t t))
     (message "EPC Server port %S for buffer %S" port (current-buffer))
-    (make-local-variable 'process-environment)
+    ;; (make-local-variable 'process-environment)
+    ;; (let ((process-environment (cons "LANG=" process-environment)))
     (setenv "EPC_COMPLETION_SERVER_PORT" (format "%d" port))))
 
 
