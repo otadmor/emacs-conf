@@ -17,9 +17,10 @@
   (turn-on-lockstep))
 
 (defun turn-on-lockstep ()
-
   "Synchronize this frame's windows and points."
   (interactive)
+  (when lockstep-show-cursor-on-all-frames
+    (setq cursor-type nil))
   (when (not (memq (selected-frame) lockstep-frames))
     (let ((a-lockstep-frame (when lockstep-frames (car lockstep-frames))))
       (push (selected-frame) lockstep-frames)
@@ -227,6 +228,64 @@ windows can get as small as `window-safe-min-height' and
 
   (defalias 'lockstep-frame 'lockstep-frame-use-persp))
 
+
+
+(defun lockstep--fake-cursor-p (o)
+  "Predicate to check if an overlay is a fake cursor"
+  (eq (overlay-get o 'type) 'lockstep--fake-cursor))
+
+(defun lockstep--all-fake-cursors (&optional start end)
+  (cl-remove-if-not 'lockstep--fake-cursor-p
+                    (overlays-in (or start (point-min))
+                                 (or end   (point-max)))))
+
+(defmacro lockstep--for-each-fake-cursor (&rest forms)
+  `(mapc #'(lambda (cursor) ,@forms)
+         (lockstep--all-fake-cursors)))
+
+(defun lockstep--remove-fake-cursors ()
+  (lockstep--for-each-fake-cursor
+   (delete-overlay cursor)))
+
+;; (defface lockstep--cursor-face
+;;   '((t (:inverse-video t)))
+;;   "The face used for fake cursors"
+;;   :group 'lockstep)
+
+(defface lockstep--cursor-face
+  '((t :inherit highlight))
+  "The face used for fake cursors"
+  :group 'lockstep)
+
+(defface lockstep--region-face
+  '((t :inherit region))
+  "The face used for fake regions"
+  :group 'lockstep)
+(setq lockstep-show-cursor-on-all-frames nil)
+(defun lockstep--create-fake-cursor-and-region (is-eol mark point)
+  (when lockstep-show-cursor-on-all-frames
+    (let ((overlay (make-overlay point (+ point (if is-eol 0 1)) nil t nil)))
+      (overlay-put overlay 'window t)
+      (overlay-put overlay 'priority -1000)
+      (if is-eol
+          (overlay-put overlay 'after-string (propertize " " 'face 'lockstep--cursor-face))
+        (overlay-put overlay 'face 'lockstep--cursor-face))
+      (unless is-eol
+        (overlay-put overlay 'face 'lockstep--cursor-face))
+      (overlay-put overlay 'type 'lockstep--fake-cursor)))
+  (unless (null mark)
+    (let ((overlay (if lockstep-show-cursor-on-all-frames
+                       (if (< mark point)
+                           (make-overlay mark point nil nil t)
+                         (make-overlay (+ point 1) point nil nil t))
+                     (make-overlay mark point nil nil t))))
+      ;; (overlay-put overlay 'after-string
+      ;; (propertize " " 'face 'mc/cursor-face))
+      (overlay-put overlay 'window t)
+      (overlay-put overlay 'face 'lockstep--region-face)
+      (overlay-put overlay 'type 'lockstep--fake-cursor)))
+  nil)
+
 (defun lockstep-point ()
   "Synchronize point in all windows in other lockstep frames visiting this buffer."
   (when (lockstep-needed)
@@ -237,10 +296,19 @@ windows can get as small as `window-safe-min-height' and
                              (and (window-live-p window)
                                   (equal (window-buffer window) (current-buffer))))
                            (loop for frame in other-frames nconcing (window-list frame)))
-            do (progn
-                 (set-window-start window (window-start))
-                 (set-window-point window (point))
-                 (set-frame-selected-window (window-frame window) window))))))
+            do (unless (eq window (selected-window))
+                 (let (
+                       (current-point (point))
+                       (current-mark (and (region-active-p) (mark t)))
+                       (is-eol (eolp))
+                       )
+                   (unless (eq window (selected-window))
+                     (set-window-start window (window-start))
+                     (set-window-point window current-point)
+                     (with-selected-window window
+                       (lockstep--remove-fake-cursors)
+                       (lockstep--create-fake-cursor-and-region is-eol current-mark current-point))
+                     (set-frame-selected-window (window-frame window) window))))))))
 
 (defun lockstep-popup ()
   "Modify the popup library so that popups in a buffer are shown in all windows showing the buffer.
