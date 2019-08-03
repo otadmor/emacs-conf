@@ -6,8 +6,8 @@
 
 ;; (require 'cl)
 
-(add-hook 'post-command-hook 'lockstep-point)
-(add-hook 'window-configuration-change-hook 'lockstep-frame)
+(add-hook 'post-command-hook #'lockstep-point)
+(add-hook 'window-configuration-change-hook #'lockstep-frame)
 
 (defvar lockstep-frames nil)
 
