@@ -229,6 +229,12 @@ windows can get as small as `window-safe-min-height' and
   (defalias 'lockstep-frame 'lockstep-frame-use-persp))
 
 
+;; a fix for having lockstep with emacs server.
+(defun unrecord-window-buffer-line-only (orig-fun &optional window buffer)
+  (when (window-live-p window)
+    (funcall orig-fun window buffer)))
+(advice-add 'unrecord-window-buffer :around #'unrecord-window-buffer-line-only)
+
 
 (defun lockstep--fake-cursor-p (o)
   "Predicate to check if an overlay is a fake cursor"
