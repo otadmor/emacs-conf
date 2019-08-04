@@ -484,7 +484,19 @@
 
 (with-eval-after-load 'ediff
   (require 'ediff-ext)
-  ;; (define-key ediff-help-region-map (kbd) )
+
+  (add-hook
+   'ediff-keymap-setup-hook
+   '(lambda ()
+      (define-key ediff-mode-map (kbd "<right>") (ediff-wrap-interactive #'right-char))
+      (define-key ediff-mode-map (kbd "<left>") (ediff-wrap-interactive #'left-char))
+      (define-key ediff-mode-map (kbd "<up>") (ediff-wrap-interactive #'previous-line))
+      (define-key ediff-mode-map (kbd "<down>") (ediff-wrap-interactive #'next-line))
+      (define-key ediff-mode-map (kbd "<next>") (ediff-wrap-interactive #'scroll-up-command))
+      (define-key ediff-mode-map (kbd "<prior>") (ediff-wrap-interactive #'scroll-down-command))
+
+               ))
+  ;; ediff-help-region-map
   )
 
 (custom-set-variables
