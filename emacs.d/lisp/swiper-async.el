@@ -1577,6 +1577,9 @@ is switching between candidates."
   (with-ivy-window
     (which-func-update-1 (selected-window))))
 
+(defun swiper--make-overlay-hook(orig-fun beg end face wnd priority)
+  (funcall orig-fun beg end face wnd (+ priority 900)))
+
 (with-eval-after-load 'swiper
   (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
@@ -1603,6 +1606,7 @@ is switching between candidates."
   (advice-add 'ivy--quote-format-string :around #'ivy--quote-format-string-hook)
   (advice-add 'ivy-previous-line :around #'ivy-previous-line-hook)
   (advice-add 'ivy-next-line :around #'ivy-next-line-hook)
+  (advice-add 'swiper--make-overlay :around #'swiper--make-overlay-hook)
   (ivy-set-occur 'swiper-async 'counsel-grep-occur))
 
 (provide 'swiper-async)
