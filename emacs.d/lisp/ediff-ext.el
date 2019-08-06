@@ -58,8 +58,9 @@
     (defalias
       (make-symbol (concat "elisp---" (symbol-name func) "---wrapper"))
       (lambda (&rest args)
-        (interactive (advice-eval-interactive-spec
-                      (cadr (interactive-form func))))
+        (interactive (with-current-buffer ediff-buffer-A
+                       (advice-eval-interactive-spec
+                        (cadr (interactive-form func)))))
         (ediff-barf-if-not-control-buffer)
 
         ;; make sure windows aren't dead
