@@ -46,7 +46,8 @@
   (defun ediff-wrap-interactive (func)
     ;; (interactive "P")
     (lambda (&rest args)
-      (interactive)
+      (interactive (advice-eval-interactive-spec
+                    (cadr (interactive-form func))))
       (ediff-barf-if-not-control-buffer)
 
       ;; make sure windows aren't dead
