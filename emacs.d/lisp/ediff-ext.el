@@ -53,7 +53,7 @@
             (error))))
       (select-window wind)))
 
-  (defun ediff-wrap-interactive (func)
+  (defun ediff-wrap-interactive (func &optional shift-translated)
     ;; (interactive "P")
     (defalias
       (make-symbol (concat "elisp---" (symbol-name func) "---wrapper"))
@@ -77,8 +77,17 @@
                            ediff-ancestor-buffer))
                       ))
             (error ediff-KILLED-VITAL-BUFFER))
-        (apply 'ediff-operate-on-windows-func
-               (cons func args)))
+        (let (
+              (wrapped-func (lambda (&rest wrapped-args)
+                              (if shift-translated
+                                  (let (
+                                        (this-command-keys-shift-translated t)
+                                        )
+                                    (apply func wrapped-args))
+                                (apply func wrapped-args))))
+              )
+          (apply 'ediff-operate-on-windows-func
+                 (cons wrapped-func args))))
       (documentation func))))
 
 (with-eval-after-load 'ediff
@@ -104,6 +113,12 @@
       (define-key ediff-mode-map (kbd "C-<end>") (ediff-wrap-interactive #'end-of-buffer))
       (define-key ediff-mode-map (kbd "M-<left>") (ediff-wrap-interactive #'backward-sexp))
       (define-key ediff-mode-map (kbd "M-<right>") (ediff-wrap-interactive #'forward-sexp))
+
+      (define-key ediff-mode-map (kbd "S-<right>") (ediff-wrap-interactive #'right-char t))
+      (define-key ediff-mode-map (kbd "S-<left>") (ediff-wrap-interactive #'left-char t))
+      (define-key ediff-mode-map (kbd "S-<up>") (ediff-wrap-interactive #'previous-line t))
+      (define-key ediff-mode-map (kbd "S-<down>") (ediff-wrap-interactive #'next-line t))
+
 
       (define-key ediff-mode-map [backspace] (ediff-wrap-interactive #'backward-delete-char-untabify))
       (define-key ediff-mode-map "\177" (ediff-wrap-interactive #'delete-forward-char))
