@@ -46,7 +46,7 @@
   (defun ediff-wrap-interactive (func)
     ;; (interactive "P")
     (defalias
-      (make-symbol (concat "elisp---" "---wrapper"))
+      (make-symbol (concat "elisp---" (symbol-name func) "---wrapper"))
       (lambda (&rest args)
         (interactive (advice-eval-interactive-spec
                       (cadr (interactive-form func))))
