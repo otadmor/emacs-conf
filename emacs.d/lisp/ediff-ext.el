@@ -19,28 +19,38 @@
            (wind-B ediff-window-B)
            (wind-C ediff-window-C)
            (wind-Anc ediff-window-Ancestor)
+           (buff-A ediff-buffer-A)
+           (buff-B ediff-buffer-B)
+           (buff-C ediff-buffer-C)
+           (buff-Anc ediff-ancestor-buffer)
            (three-way ediff-3way-job)
            (with-Ancestor (and ediff-merge-with-ancestor-job ediff-show-ancestor)))
-
-      (select-window wind-A)
-      (condition-case nil
-          (apply func args)
-        (error))
-      (select-window wind-B)
-      (condition-case nil
-          (apply func args)
-        (error))
-      (if three-way
-          (progn
-            (select-window wind-C)
-            (condition-case nil
-                (apply func args)
-              (error))))
-      (when with-Ancestor
-        (select-window wind-Anc)
+      (with-selected-window wind-A
+        (unless (eq (current-buffer) buff-A)
+          (switch-to-buffer ediff-buffer-A))
         (condition-case nil
             (apply func args)
           (error)))
+      (with-selected-window wind-B
+        (unless (eq (current-buffer) buff-B)
+          (switch-to-buffer ediff-buffer-B))
+        (condition-case nil
+            (apply func args)
+          (error)))
+      (when three-way
+        (with-selected-window wind-C
+          (unless (eq (current-buffer) buff-C)
+            (switch-to-buffer ediff-buffer-C))
+          (condition-case nil
+              (apply func args)
+            (error))))
+      (when with-Ancestor
+        (with-selected-window wind-Anc
+          (unless (eq (current-buffer) buff-Anc)
+            (switch-to-buffer ediff-ancestor-buffer))
+          (condition-case nil
+              (apply func args)
+            (error))))
       (select-window wind)))
 
   (defun ediff-wrap-interactive (func)
