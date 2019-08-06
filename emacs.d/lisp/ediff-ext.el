@@ -3,6 +3,8 @@
 (with-eval-after-load 'ediff-util
   (defun ediff-operate-on-windows-func (func &rest args)
     ;; make sure windows aren't dead
+    (ediff-barf-if-not-control-buffer)
+
     (if (not (and (window-live-p ediff-window-A) (window-live-p ediff-window-B)))
         (ediff-recenter 'no-rehighlight))
     (if (not (and (ediff-buffer-live-p ediff-buffer-A)
@@ -59,22 +61,6 @@
       (make-symbol (concat "elisp---" (symbol-name func) "---wrapper"))
       (lambda (&rest args)
         (interactive)
-        (ediff-barf-if-not-control-buffer)
-
-        ;; make sure windows aren't dead
-        (if (not (and (window-live-p ediff-window-A)
-                      (window-live-p ediff-window-B)))
-            (ediff-recenter 'no-rehighlight))
-        (if (not (and (ediff-buffer-live-p ediff-buffer-A)
-                      (ediff-buffer-live-p ediff-buffer-B)
-                      (or (not ediff-3way-job)
-                          (ediff-buffer-live-p ediff-buffer-C))
-                      (or (not ediff-merge-with-ancestor-job)
-                          (not ediff-show-ancestor)
-                          (ediff-buffer-live-p
-                           ediff-ancestor-buffer))
-                      ))
-            (error ediff-KILLED-VITAL-BUFFER))
         (let (
               (wrapped-func (lambda (&rest wrapped-args)
                               (if shift-translated
