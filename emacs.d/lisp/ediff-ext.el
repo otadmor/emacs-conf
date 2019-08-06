@@ -85,7 +85,8 @@
                                 (call-interactively func))))
               )
           (apply 'ediff-operate-on-windows-func
-                 (cons wrapped-func args))))
+                 (cons wrapped-func args)))
+        (ediff-fix-mark))
       (documentation func))))
 
 
@@ -160,12 +161,6 @@
       (define-key ediff-mode-map (kbd "C-p") #'ediff-previous-difference)
 
       (define-key ediff-mode-map (kbd "C-?") #'ediff-toggle-help)
-      ))
-
-  (add-hook
-   'ediff-startup-hook
-   '(lambda ()
-      (add-hook 'post-command-hook #'ediff-fix-mark t t)
       ))
   )
 
