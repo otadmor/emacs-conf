@@ -113,6 +113,9 @@
       (define-key ediff-mode-map [return] (ediff-wrap-interactive #'newline))
       (define-key ediff-mode-map (kbd "<tab>") (ediff-wrap-interactive #'indent-for-tab-command))
 
+      (define-key ediff-mode-map [(control z)] (ediff-wrap-interactive #'undo))
+      (define-key ediff-mode-map [(control y)] (ediff-wrap-interactive #'redo))
+
       (set-char-table-range (nth 1 ediff-mode-map) (cons #x100 (max-char))
                             (ediff-wrap-interactive #'self-insert-command))
       (let (
