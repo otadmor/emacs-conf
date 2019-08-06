@@ -88,6 +88,18 @@
                  (cons wrapped-func args))))
       (documentation func))))
 
+
+(defun ediff-fix-mark ()
+  (ediff-operate-on-windows-func
+   (lambda ()
+     (let (
+           (current-point (point))
+           (current-mark (and (region-active-p) (mark t)))
+           (is-eol (eolp))
+           )
+       (lockstep--remove-fake-cursors)
+       (lockstep--create-fake-cursor-and-region is-eol current-mark current-point)))))
+
 (with-eval-after-load 'ediff
   (setq ediff-split-window-function 'split-window-horizontally)
   (setq ediff-toggle-multiframe nil)
@@ -144,7 +156,13 @@
       (define-key ediff-mode-map (kbd "C-p") #'ediff-previous-difference)
 
       (define-key ediff-mode-map (kbd "C-?") #'ediff-toggle-help)
+      ))
 
-      )))
+  (add-hook
+   'ediff-startup-hook
+   '(lambda ()
+      (add-hook 'post-command-hook #'ediff-fix-mark t t)
+      ))
+  )
 
 (provide 'ediff-ext)
