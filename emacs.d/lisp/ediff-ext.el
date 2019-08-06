@@ -58,9 +58,7 @@
     (defalias
       (make-symbol (concat "elisp---" (symbol-name func) "---wrapper"))
       (lambda (&rest args)
-        (interactive (with-current-buffer ediff-buffer-A
-                       (advice-eval-interactive-spec
-                        (cadr (interactive-form func)))))
+        (interactive)
         (ediff-barf-if-not-control-buffer)
 
         ;; make sure windows aren't dead
@@ -83,8 +81,8 @@
                                   (let (
                                         (this-command-keys-shift-translated t)
                                         )
-                                    (apply func wrapped-args))
-                                (apply func wrapped-args))))
+                                    (call-interactively func))
+                                (call-interactively func))))
               )
           (apply 'ediff-operate-on-windows-func
                  (cons wrapped-func args))))
