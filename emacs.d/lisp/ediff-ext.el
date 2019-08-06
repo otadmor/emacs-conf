@@ -69,6 +69,43 @@
   (setq ediff-split-window-function 'split-window-horizontally)
   (setq ediff-toggle-multiframe nil)
   (setq ediff-window-setup-function 'ediff-setup-windows-plain)
-  )
+
+  (add-hook
+   'ediff-keymap-setup-hook
+   '(lambda ()
+      (setq ediff-mode-map (make-keymap))
+      (or (char-table-p (nth 1 ediff-mode-map))
+          (error "The initialization of isearch-mode-map must be updated"))
+      (define-key ediff-mode-map (kbd "<right>") (ediff-wrap-interactive #'right-char))
+      (define-key ediff-mode-map (kbd "<left>") (ediff-wrap-interactive #'left-char))
+      (define-key ediff-mode-map (kbd "<up>") (ediff-wrap-interactive #'previous-line))
+      (define-key ediff-mode-map (kbd "<down>") (ediff-wrap-interactive #'next-line))
+      (define-key ediff-mode-map (kbd "<next>") (ediff-wrap-interactive #'scroll-up-command))
+      (define-key ediff-mode-map (kbd "<prior>") (ediff-wrap-interactive #'scroll-down-command))
+      (define-key ediff-mode-map (kbd "<home>") (ediff-wrap-interactive #'move-beginning-of-line))
+      (define-key ediff-mode-map (kbd "<end>") (ediff-wrap-interactive #'move-end-of-line))
+      (define-key ediff-mode-map (kbd "C-<home>") (ediff-wrap-interactive #'beginning-of-buffer))
+      (define-key ediff-mode-map (kbd "C-<end>") (ediff-wrap-interactive #'end-of-buffer))
+      (define-key ediff-mode-map (kbd "M-<left>") (ediff-wrap-interactive #'backward-sexp))
+      (define-key ediff-mode-map (kbd "M-<right>") (ediff-wrap-interactive #'forward-sexp))
+
+      (define-key ediff-mode-map [backspace] (ediff-wrap-interactive #'backward-delete-char-untabify))
+      (define-key ediff-mode-map "\177" (ediff-wrap-interactive #'delete-forward-char))
+      (define-key ediff-mode-map (kbd "<deletechar>") (ediff-wrap-interactive #'delete-forward-char)) ; <delete>
+      (define-key ediff-mode-map "\r" (ediff-wrap-interactive #'newline))
+      (define-key ediff-mode-map "<return>" (ediff-wrap-interactive #'newline))
+      (define-key ediff-mode-map [return] (ediff-wrap-interactive #'newline))
+      (define-key ediff-mode-map (kbd "<tab>") (ediff-wrap-interactive #'indent-for-tab-command))
+
+      (set-char-table-range (nth 1 ediff-mode-map) (cons #x100 (max-char))
+                            (ediff-wrap-interactive #'self-insert-command))
+      (let (
+            (i 0)
+            )
+        (setq i ?\s)
+        (while (< i 256)
+          (define-key ediff-mode-map (vector i)
+            (ediff-wrap-interactive #'self-insert-command))
+          (setq i (1+ i))))
 
 (provide 'ediff-ext)
