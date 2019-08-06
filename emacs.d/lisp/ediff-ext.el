@@ -45,25 +45,30 @@
 
   (defun ediff-wrap-interactive (func)
     ;; (interactive "P")
-    (lambda (&rest args)
-      (interactive (advice-eval-interactive-spec
-                    (cadr (interactive-form func))))
-      (ediff-barf-if-not-control-buffer)
+    (defalias
+      (make-symbol (concat "elisp---" "---wrapper"))
+      (lambda (&rest args)
+        (interactive (advice-eval-interactive-spec
+                      (cadr (interactive-form func))))
+        (ediff-barf-if-not-control-buffer)
 
-      ;; make sure windows aren't dead
-      (if (not (and (window-live-p ediff-window-A) (window-live-p ediff-window-B)))
-          (ediff-recenter 'no-rehighlight))
-      (if (not (and (ediff-buffer-live-p ediff-buffer-A)
-                    (ediff-buffer-live-p ediff-buffer-B)
-                    (or (not ediff-3way-job)
-                        (ediff-buffer-live-p ediff-buffer-C))
-                    (or (not ediff-merge-with-ancestor-job)
-                        (not ediff-show-ancestor)
-                        (ediff-buffer-live-p ediff-ancestor-buffer))
-                    ))
-          (error ediff-KILLED-VITAL-BUFFER))
-      (apply 'ediff-operate-on-windows-func
-             (cons func args)))))
+        ;; make sure windows aren't dead
+        (if (not (and (window-live-p ediff-window-A)
+                      (window-live-p ediff-window-B)))
+            (ediff-recenter 'no-rehighlight))
+        (if (not (and (ediff-buffer-live-p ediff-buffer-A)
+                      (ediff-buffer-live-p ediff-buffer-B)
+                      (or (not ediff-3way-job)
+                          (ediff-buffer-live-p ediff-buffer-C))
+                      (or (not ediff-merge-with-ancestor-job)
+                          (not ediff-show-ancestor)
+                          (ediff-buffer-live-p
+                           ediff-ancestor-buffer))
+                      ))
+            (error ediff-KILLED-VITAL-BUFFER))
+        (apply 'ediff-operate-on-windows-func
+               (cons func args)))
+      (documentation func))))
 
 (with-eval-after-load 'ediff
   (setq ediff-split-window-function 'split-window-horizontally)
@@ -107,5 +112,12 @@
           (define-key ediff-mode-map (vector i)
             (ediff-wrap-interactive #'self-insert-command))
           (setq i (1+ i))))
+
+      (define-key ediff-mode-map (kbd "C-n") #'ediff-next-difference)
+      (define-key ediff-mode-map (kbd "C-p") #'ediff-previous-difference)
+
+      (define-key ediff-mode-map (kbd "C-?") #'ediff-toggle-help)
+
+      )))
 
 (provide 'ediff-ext)
