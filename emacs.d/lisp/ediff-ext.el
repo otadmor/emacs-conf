@@ -141,6 +141,10 @@
       (define-key ediff-mode-map [(control z)] (ediff-wrap-interactive #'undo))
       (define-key ediff-mode-map [(control y)] (ediff-wrap-interactive #'redo))
 
+      (define-key ediff-mode-map (kbd "C-<insert>") (ediff-wrap-interactive #'kill-ring-save))
+      (define-key ediff-mode-map (kbd "S-<insert>") (ediff-wrap-interactive #'yank))
+      (define-key ediff-mode-map (kbd "S-<delete>") (ediff-wrap-interactive #'kill-region))
+
       (set-char-table-range (nth 1 ediff-mode-map) (cons #x100 (max-char))
                             (ediff-wrap-interactive #'self-insert-command))
       (let (
