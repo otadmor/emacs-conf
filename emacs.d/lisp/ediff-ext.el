@@ -105,13 +105,15 @@
                 )
             (insert "\n")
             (let (
-                  (newline-overlay (make-overlay (- overlay-pos 1) overlay-pos
+                  (newline-overlay (make-overlay overlay-pos (+ overlay-pos 1)
                                                  overlay-buffer t nil))
                   )
               ;; (overlay-put newline-overlay 'window t)
               ;; (overlay-put newline-overlay 'cursor t)
               ;; (overlay-put newline-overlay 'display (propertize newlines 'cursor t))
-              (overlay-put newline-overlay 'after-string (propertize "...")))))))))
+              (overlay-put newline-overlay 'display (propertize "...\n"))
+              ;; (overlay-put newline-overlay 'after-string (propertize "..."))
+              )))))))
 
 
 (defun ediff--get-diff-lines-from-overlay (overlay)
