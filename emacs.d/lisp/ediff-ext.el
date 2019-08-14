@@ -350,6 +350,8 @@
       (define-key ediff-mode-map (kbd "C-p") #'ediff-previous-difference)
 
       (define-key ediff-mode-map (kbd "C-?") #'ediff-toggle-help)
+
+      (define-key ediff-mode-map (kbd "C-M-k") #'ediff-quit)
       ))
   )
 
