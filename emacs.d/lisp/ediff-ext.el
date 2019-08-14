@@ -86,13 +86,100 @@
            )
        (lockstep--remove-fake-cursors)
        (lockstep--create-fake-cursor-and-region is-eol current-mark current-point)))))
- ;; (add-hook 'ediff-load-hook
-(with-eval-after-load 'ediff
-  (setq ediff-split-window-function 'split-window-horizontally)
-  (setq ediff-toggle-multiframe nil)
-  (setq ediff-window-setup-function 'ediff-setup-windows-plain)
-  
-  (dolist (entry '((ediff-current-diff-C . ((((class color) (background light))
+
+(defun ediff--update-overlay-lines (window overlay lines)
+  (message "now window %S" window)
+  (let* (
+         (overlay-start (ediff-overlay-start overlay))
+         (overlay-end (ediff-overlay-end overlay))
+         (overlay-buffer (ediff-overlay-buffer overlay))
+         (overlay-lines (- lines (ediff-overlay-get overlay 'line-count)))
+         )
+    ;; (with-selected-window window
+    (with-current-buffer overlay-buffer
+      (save-excursion
+        (goto-char overlay-end)
+        (dotimes (i overlay-lines)
+          (let (
+                (overlay-pos (+ overlay-end i))
+                )
+            (insert "\n")
+            (let (
+                  (newline-overlay (make-overlay (- overlay-pos 1) overlay-pos
+                                                 overlay-buffer t nil))
+                  )
+              ;; (overlay-put newline-overlay 'window t)
+              ;; (overlay-put newline-overlay 'cursor t)
+              ;; (overlay-put newline-overlay 'display (propertize newlines 'cursor t))
+              (overlay-put newline-overlay 'after-string (propertize "...")))))))))
+
+
+(defun ediff--get-diff-lines-from-overlay (overlay)
+  (with-current-buffer (ediff-overlay-buffer overlay)
+    (let (
+          (lines (count-lines (ediff-overlay-start overlay)
+                              (ediff-overlay-end overlay)))
+          )
+      (ediff-overlay-put overlay 'line-count lines)
+      lines)))
+
+(defun ediff--extend-lines (orig-fun &rest args)
+  (let (
+        (res (apply orig-fun args))
+        (diff-amount ediff--diff-amount)
+        )
+    (message "amount=%S" diff-amount)
+    (dotimes (current-diff (- diff-amount 1))
+      (message "1")
+      (let (
+            (overlay-A (ediff-get-diff-overlay current-diff 'A))
+            (overlay-B (ediff-get-diff-overlay current-diff 'B))
+            (overlay-C (when ediff-3way-job
+                         (ediff-get-diff-overlay current-diff 'C)))
+            (overlay-Anc (when ediff-merge-with-ancestor-job
+                           (ediff-get-diff-overlay current-diff 'Ancestor)))
+            )
+        (ediff-overlay-put overlay-A 'window t)
+        (ediff-overlay-put overlay-B 'window t)
+        (unless (null overlay-C)
+          (ediff-overlay-put overlay-C 'window t))
+        (unless (null overlay-Anc)
+          (ediff-overlay-put overlay-Anc 'window t))
+        (message "2")
+        (let (
+              (lines-A (ediff--get-diff-lines-from-overlay overlay-A))
+              (lines-B (ediff--get-diff-lines-from-overlay overlay-B))
+              (lines-C (if (null overlay-C)
+                           0
+                         (ediff--get-diff-lines-from-overlay overlay-C)))
+              (lines-Anc (if (null overlay-Anc)
+                             0
+                           (ediff--get-diff-lines-from-overlay overlay-Anc)))
+              )
+          (message "3")
+          (let (
+                (max-lines (max lines-A lines-B lines-C lines-Anc))
+                )
+            (message "4")
+            (ediff--update-overlay-lines ediff-window-A overlay-A max-lines)
+            (ediff--update-overlay-lines ediff-window-B overlay-B max-lines)
+            (unless (null overlay-C)
+              (ediff--update-overlay-lines ediff-window-C overlay-C max-lines))
+            (unless (null overlay-Anc)
+              (ediff--update-overlay-lines ediff-window-Ancestor overlay-Anc max-lines))))))
+    res))
+
+(defun ediff--count-diffs (orig-fun &rest args)
+  (let (
+        (res (apply orig-fun args))
+        (diff-amount (length (car args)))
+        )
+    (setq ediff--diff-amount diff-amount)
+    res))
+
+
+(defun ediff--load-faces ()
+    (dolist (entry '((ediff-current-diff-C . ((((class color) (background light))
                                              (:background "#DDEEFF" :foreground "#005588"))
                                             (((class color) (background dark))
                                              (:background "#005588" :foreground "#DDEEFF"))))
@@ -141,7 +228,72 @@
     (let* ((face (car face-map))
            (alias (cdr face-map)))
       (put face 'theme-face nil)
-      (put face 'face-alias alias)))
+      (put face 'face-alias alias))))
+
+(defun ediff-clone-file-to-buffer (buf-name file)
+  (let (
+        (cur-data (with-current-buffer (find-file-noselect file)
+                    (buffer-substring (point-min) (point-max))))
+        (dir-name (expand-file-name (file-name-directory file)))
+        (tmp-buf (new-buffer-frame))
+        )
+    (with-current-buffer tmp-buf
+      (setq default-directory dir-name)
+      (rename-buffer (concat (ediff-convert-standard-filename
+                              (file-name-nondirectory file)) "-" buf-name))
+      (insert cur-data))
+    tmp-buf))
+
+(defun ediff-files-internal-using-buffers (file-A file-B file-C
+                                                  startup-hooks job-name
+                                                  &optional merge-buffer-file)
+  (let (
+        (buf-A (ediff-clone-file-to-buffer "A" file-A))
+        (buf-B (ediff-clone-file-to-buffer "B" file-B))
+        (buf-C (unless (null file-C) (ediff-clone-file-to-buffer "C" file-C)))
+        )
+  (ediff-buffers-internal buf-A buf-B buf-C
+                          startup-hooks job-name
+                          merge-buffer-file)))
+
+
+;; (defun ediff-find-file-as-buffer (file-var buffer-name &optional last-dir hooks-var)
+;;   (let* (
+;;          (file--hook (symbol-value file-var))
+;;          )
+;;     (cond ((not (file-readable-p file--hook))
+;; 	   (user-error "File `%s' does not exist or is not readable" file--hook))
+;; 	  ((file-directory-p file--hook)
+;; 	   (user-error "File `%s' is a directory" file--hook)))
+
+;;     ;; some of the commands, below, require full file name
+;;     (setq file--hook (expand-file-name file--hook))
+
+;;     ;; Record the directory of the file
+;;     (if last-dir
+;; 	(set last-dir (expand-file-name (file-name-directory file--hook))))
+
+;;     (message "ediff find file %S %S" file--hook buffer-name)
+;;     ;; Setup the buffer
+;;     (set buffer-name (ediff-clone-file-to-buffer buffer-name file--hook))
+
+;;     (ediff-with-current-buffer (symbol-value buffer-name)
+;;       (set hooks-var (cons `(lambda () (delete-file ,file--hook))
+;; 				  (symbol-value hooks-var))))))
+
+
+;; (add-hook 'ediff-load-hook
+(with-eval-after-load 'ediff
+  (setq ediff-split-window-function 'split-window-horizontally)
+  (setq ediff-toggle-multiframe nil)
+  (setq ediff-window-setup-function 'ediff-setup-windows-plain)
+
+  (ediff--load-faces)
+
+  ;; (defalias 'ediff-find-file 'ediff-find-file-as-buffer)
+  (defalias 'ediff-files-internal 'ediff-files-internal-using-buffers)
+  (advice-add 'ediff-convert-diffs-to-overlays :around 'ediff--count-diffs)
+  (advice-add 'ediff-setup-windows :around 'ediff--extend-lines)
 
   (add-hook
    'ediff-keymap-setup-hook
