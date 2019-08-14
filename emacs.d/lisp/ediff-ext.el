@@ -88,7 +88,6 @@
        (lockstep--create-fake-cursor-and-region is-eol current-mark current-point)))))
 
 (defun ediff--update-overlay-lines (window overlay lines)
-  (message "now window %S" window)
   (let* (
          (overlay-start (ediff-overlay-start overlay))
          (overlay-end (ediff-overlay-end overlay))
@@ -130,9 +129,7 @@
         (res (apply orig-fun args))
         (diff-amount ediff--diff-amount)
         )
-    (message "amount=%S" diff-amount)
     (dotimes (current-diff (- diff-amount 1))
-      (message "1")
       (let (
             (overlay-A (ediff-get-diff-overlay current-diff 'A))
             (overlay-B (ediff-get-diff-overlay current-diff 'B))
@@ -147,7 +144,6 @@
           (ediff-overlay-put overlay-C 'window t))
         (unless (null overlay-Anc)
           (ediff-overlay-put overlay-Anc 'window t))
-        (message "2")
         (let (
               (lines-A (ediff--get-diff-lines-from-overlay overlay-A))
               (lines-B (ediff--get-diff-lines-from-overlay overlay-B))
@@ -158,11 +154,9 @@
                              0
                            (ediff--get-diff-lines-from-overlay overlay-Anc)))
               )
-          (message "3")
           (let (
                 (max-lines (max lines-A lines-B lines-C lines-Anc))
                 )
-            (message "4")
             (ediff--update-overlay-lines ediff-window-A overlay-A max-lines)
             (ediff--update-overlay-lines ediff-window-B overlay-B max-lines)
             (unless (null overlay-C)
