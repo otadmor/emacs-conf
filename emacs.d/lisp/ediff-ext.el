@@ -53,14 +53,68 @@
           (condition-case nil
               (apply func args)
             (error))))
-      (select-window wind)))
+      (select-window wind))))
 
-  (defun ediff-wrap-interactive (func &optional shift-translated)
-    ;; (interactive "P")
-    (defalias
-      (make-symbol (concat "elisp---" (symbol-name func) "---wrapper"))
-      (lambda (&rest args)
-        (interactive)
+(defun ediff--gather-data (func)
+  (let (
+        (res nil)
+        )
+    (ediff-operate-on-windows-func
+     (lambda ()
+       (add-to-list 'res (funcall func))))
+    res))
+
+(defun all-equal (l) (apply '= l))
+
+(defun all (l)
+  (every #'identity l))
+(defun list-le (l1 l2) (all (mapcar* '<= l1 l2)))
+(defun list-ge (l1 l2) (all (mapcar* '>= l1 l2)))
+
+(defun ediff--goto-line (line)
+  (ediff-operate-on-windows-func (lambda () (when (/= (line-number-at-pos) line)
+                                              (goto-line line)))))
+
+
+(defun ediff--set-window-start-line (window-start-line)
+  (ediff-operate-on-windows-func
+   (lambda ()
+     (set-window-start (selected-window) (save-excursion
+                                           (goto-line window-start-line)
+                                           (line-beginning-position))))))
+
+(defun ediff-realign-points (pre-lines)
+  (when (all-equal pre-lines)
+    (let (
+          (post-lines (ediff--gather-data (lambda () (line-number-at-pos))))
+          )
+      (unless (all-equal post-lines)
+          (ediff--goto-line (if (list-be post-lines pre-lines)
+                                (apply 'min post-lines)
+                              (when (list-le post-lines pre-lines)
+                                (apply 'max post-lines))))
+          )
+      (let (
+            (post-wind-start (ediff--gather-data
+                              (lambda ()
+                                (save-excursion (goto-char (window-start))
+                                                (line-number-at-pos)))))
+            )
+
+        (ediff--set-window-start-line (if (list-be post-lines pre-lines) ;;;;;;;;;;;;;;;;;;;;;;;;
+                                          (apply 'min post-wind-start)
+                                        (apply 'max post-wind-start)))
+        ))))
+
+(defun ediff-wrap-interactive (func &optional shift-translated)
+  ;; (interactive "P")
+  (defalias
+    (make-symbol (concat "elisp---" (symbol-name func) "---wrapper"))
+    (lambda (&rest args)
+      (interactive)
+      (let (
+            (pre-lines (ediff--gather-data (lambda () (line-number-at-pos))))
+            )
         (let (
               (wrapped-func (lambda (&rest wrapped-args)
                               (if shift-translated
@@ -72,8 +126,9 @@
               )
           (apply 'ediff-operate-on-windows-func
                  (cons wrapped-func args)))
-        (ediff-fix-mark))
-      (documentation func))))
+        (ediff-realign-points pre-lines))
+      (ediff-fix-mark))
+    (documentation func)))
 
 
 (defun ediff-fix-mark ()
