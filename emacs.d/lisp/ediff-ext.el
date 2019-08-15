@@ -57,17 +57,18 @@
 
 (defun ediff--gather-data (func)
   (let (
-        (res nil)
+        (ediff-total-data nil)
         )
     (ediff-operate-on-windows-func
      (lambda ()
-       (add-to-list 'res (funcall func))))
-    res))
+       (push (funcall func) ediff-total-data)))
+    (reverse ediff-total-data)))
 
 (defun all-equal (l) (apply '= l))
 
-(defun all (l)
-  (every #'identity l))
+(defun all (l) (every #'identity l))
+(defun any (l) (some #'identity l))
+(defun list-eq (l1 l2) (all (mapcar* '= l1 l2)))
 (defun list-le (l1 l2) (all (mapcar* '<= l1 l2)))
 (defun list-ge (l1 l2) (all (mapcar* '>= l1 l2)))
 
@@ -89,10 +90,10 @@
           (post-lines (ediff--gather-data (lambda () (line-number-at-pos))))
           )
       (unless (all-equal post-lines)
-          (ediff--goto-line (if (list-be post-lines pre-lines)
-                                (apply 'min post-lines)
-                              (when (list-le post-lines pre-lines)
-                                (apply 'max post-lines))))
+        (ediff--goto-line (if (list-ge post-lines pre-lines)
+                              (apply 'min post-lines)
+                            (when (list-le post-lines pre-lines)
+                              (apply 'max post-lines))))
           )
       (let (
             (post-wind-start (ediff--gather-data
@@ -100,11 +101,9 @@
                                 (save-excursion (goto-char (window-start))
                                                 (line-number-at-pos)))))
             )
-
-        (ediff--set-window-start-line (if (list-be post-lines pre-lines) ;;;;;;;;;;;;;;;;;;;;;;;;
+        (ediff--set-window-start-line (if (list-ge post-lines pre-lines)
                                           (apply 'min post-wind-start)
-                                        (apply 'max post-wind-start)))
-        ))))
+                                        (apply 'max post-wind-start)))))))
 
 (defun ediff-wrap-interactive (func &optional shift-translated)
   ;; (interactive "P")
