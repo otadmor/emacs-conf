@@ -73,8 +73,20 @@
 (defun list-ge (l1 l2) (all (mapcar* '>= l1 l2)))
 
 (defun ediff--goto-line (line)
-  (ediff-operate-on-windows-func (lambda () (when (/= (line-number-at-pos) line)
-                                              (goto-line line)))))
+  (ediff-operate-on-windows-func (lambda ()
+                                   (let (
+                                         (line-beg)
+                                         (line-end)
+                                         (pos (point))
+                                         )
+                                     (save-excursion
+                                       (goto-line line)
+                                       (setq line-beg (line-beginning-position))
+                                       (setq line-end (line-end-position)))
+                                     (if (< pos line-beg)
+                                         (goto-char line-beg)
+                                       (when (> pos line-end)
+                                         (goto-char line-end)))))))
 
 
 (defun ediff--set-window-start-line (window-start-line)
