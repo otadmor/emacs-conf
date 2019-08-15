@@ -301,6 +301,7 @@
         )
     (with-current-buffer tmp-buf
       (setq default-directory dir-name)
+      (toggle-truncate-lines 1)
       (rename-buffer (concat (ediff-convert-standard-filename
                               (file-name-nondirectory file)) "-" buf-name))
       (insert cur-data))
