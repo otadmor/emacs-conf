@@ -341,7 +341,8 @@
          (tmp-buf (generate-new-buffer
                    (concat (ediff-convert-standard-filename
                             (file-name-nondirectory file)) "-" buf-name)))
-        )
+         )
+    (add-to-list 'ediff--temporary-buffers tmp-buf)
     (with-current-buffer tmp-buf
       (add-hook 'write-contents-functions (lambda () (ediff-save-file tmp-buf file)))
       (setq default-directory dir-name)
@@ -386,6 +387,10 @@
 ;;       (set hooks-var (cons `(lambda () (delete-file ,file--hook))
 ;; 				  (symbol-value hooks-var))))))
 
+(setq ediff--temporary-buffers nil)
+(defun ediff--kill-all-buffers ()
+  (dolist (buffer ediff--temporary-buffers)
+    (kill-buffer buffer)))
 
 ;; (add-hook 'ediff-load-hook
 (with-eval-after-load 'ediff
@@ -399,6 +404,7 @@
   (defalias 'ediff-files-internal 'ediff-files-internal-using-buffers)
   (advice-add 'ediff-convert-diffs-to-overlays :around 'ediff--count-diffs)
   (advice-add 'ediff-setup-windows :around 'ediff--extend-lines)
+  (add-hook 'ediff-quit-hook #'ediff--kill-all-buffers)
 
   (add-hook
    'ediff-keymap-setup-hook
