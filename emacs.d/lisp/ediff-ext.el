@@ -177,6 +177,7 @@
               ;; (overlay-put newline-overlay 'cursor t)
               ;; (overlay-put newline-overlay 'display (propertize newlines 'cursor t))
               (overlay-put newline-overlay 'display (propertize "...\n"))
+              (overlay-put newline-overlay 'ediff-alignment-overlay t)
               ;; (overlay-put newline-overlay 'after-string (propertize "..."))
               )))))))
 
@@ -292,18 +293,59 @@
       (put face 'theme-face nil)
       (put face 'face-alias alias))))
 
+(defun elisp--find-overlays-specifying (prop)
+  (let ((overlays (overlays-at (point)))
+        found)
+    (while overlays
+      (let ((overlay (car overlays)))
+        (if (overlay-get overlay prop)
+            (setq found (cons overlay found))))
+      (setq overlays (cdr overlays)))
+    found))
+
+(defun ediff-is-current-alignment-overlay ()
+  (not (null (elisp--find-overlays-specifying 'ediff-alignment-overlay))))
+
+(defun ediff-save-file (buffer file)
+  (with-current-buffer (orig-buffer (find-file-noselect file))
+    (let (
+          (new-text (with-temp-buffer ; calculate this before delete-region
+                      (let (
+                            (tmp-buffer (current-buffer))
+                            )
+                        (with-current-buffer buffer
+                          (save-excursion
+                            (goto-char (point-min))
+                            (while (< (point) (point-max))
+                              (when (not (ediff-is-current-alignment-overlay))
+                                (let (
+                                      (current-line (thing-at-point 'line))
+                                      )
+                                  (with-current-buffer tmp-buffer
+                                    (insert current-line))))
+                              (forward-line))
+                            (with-current-buffer tmp-buffer
+                              (buffer-substring (point-min) (point-max))))))))
+          )
+      (delete-region (point-min) (point-max))
+      (insert new-text)
+      (save-buffer)))
+  t) ; return true to stop saving in write-contents-functions hook.
+
 (defun ediff-clone-file-to-buffer (buf-name file)
-  (let (
-        (cur-data (with-current-buffer (find-file-noselect file)
-                    (buffer-substring (point-min) (point-max))))
-        (dir-name (expand-file-name (file-name-directory file)))
-        (tmp-buf (new-buffer-frame))
+  (let* (
+         (file (expand-file-name file))
+         (cur-data (with-current-buffer (find-file-noselect file)
+                     (buffer-substring (point-min) (point-max))))
+         (dir-name (expand-file-name (file-name-directory file)))
+         (tmp-buf (generate-new-buffer
+                   (concat (ediff-convert-standard-filename
+                            (file-name-nondirectory file)) "-" buf-name)))
         )
     (with-current-buffer tmp-buf
+      (add-hook 'write-contents-functions (lambda () (ediff-save-file tmp-buf file)))
       (setq default-directory dir-name)
       (toggle-truncate-lines 1)
-      (rename-buffer (concat (ediff-convert-standard-filename
-                              (file-name-nondirectory file)) "-" buf-name))
       (insert cur-data))
     tmp-buf))
 
@@ -397,6 +439,8 @@
       (define-key ediff-mode-map (kbd "C-<insert>") (ediff-wrap-interactive #'kill-ring-save))
       (define-key ediff-mode-map (kbd "S-<insert>") (ediff-wrap-interactive #'yank))
       (define-key ediff-mode-map (kbd "S-<delete>") (ediff-wrap-interactive #'kill-region))
+
+      (define-key ediff-mode-map (kbd "C-x C-s") (ediff-wrap-interactive #'save-buffer))
 
       (set-char-table-range (nth 1 ediff-mode-map) (cons #x100 (max-char))
                             (ediff-wrap-interactive #'self-insert-command))
