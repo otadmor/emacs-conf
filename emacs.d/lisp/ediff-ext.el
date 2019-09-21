@@ -1,6 +1,38 @@
 ;; -*- lexical-binding: t; -*-
 
+(defun ediff-fix-windows-for-buffers(frame-or-window)
+  (dolist (window (window-list))
+    (with-selected-window window
+      (when (ediff-in-control-buffer-p)
+        (let* (
+               (buff-A ediff-buffer-A)
+               (buff-B ediff-buffer-B)
+               (buff-C ediff-buffer-C)
+               (buff-Anc ediff-ancestor-buffer)
+               (wind-A nil)
+               (wind-B nil)
+               (wind-C nil)
+               (wind-Anc nil)
+               )
+          (dolist (window (window-list))
+            (let (
+                  (buffer (window-buffer window))
+                  )
+              (with-selected-window window
+                (cond
+                 ((eq buff-A buffer) (setq wind-A window))
+                 ((eq buff-B buffer) (setq wind-B window))
+                 ((eq buff-C buffer) (setq wind-C window))
+                 ((eq buff-Anc buffer) (setq wind-Anc window))))))
+          (unless (null wind-A) (setq ediff-window-A wind-A))
+          (unless (null wind-B) (setq ediff-window-B wind-B))
+          (unless (null wind-C) (setq ediff-window-C wind-C))
+          (unless (null wind-Anc) (setq ediff-window-Ancestor wind-Anc)))))))
+
 (with-eval-after-load 'ediff-util
+  (with-eval-after-load 'persp-mode
+    (add-hook 'persp-activated-functions #'ediff-fix-windows-for-buffers))
+
   (defun ediff-operate-on-windows-func (func &rest args)
     ;; make sure windows aren't dead
     (ediff-barf-if-not-control-buffer)
@@ -54,6 +86,78 @@
               (apply func args)
             (error))))
       (select-window wind))))
+
+
+(setq ediff-changes nil)
+(defun ediff-before-change-gather (start end)
+  (push (list start end (count-lines start end)) ediff-changes))
+
+
+
+
+
+(defun ediff-after-change-update (start end deleted)
+  (save-excursion
+    (let (
+          (added-lines (count-lines start end))
+          (final-line nil)
+          )
+      (message "1")
+      (goto-char end)
+      (message "2")
+      (dotimes (i added-lines)
+        (message "3")
+        (when (null final-line)
+          (message "4")
+          (let (
+                (overlay
+                 (elisp--find-overlays-specifying 'ediff-alignment-overlay))
+                )
+            (message "5")
+            (if (null overlay)
+                (setq final-line i)
+              (message "6")
+              (delete-overlay overlay)
+              (message "6.1")))))
+      (message "7")
+      (when (not (null final-line))
+        (message "8")
+        (goto-char start)
+        (message "9")
+        (let (
+              (changed-buffer (current-buffer))
+              (add-empty-at-line (+ (line-number-at-pos) final-line))
+              (lines-to-add (- added-lines final-line))
+              )
+          (message "10")
+          (with-current-buffer ediff-control-buffer
+            (ediff-operate-on-windows-func
+             (lambda ()
+               (when (not (eq changed-buffer (current-buffer)))
+                 (save-excursion
+                   (message "10.1")
+                   (goto-line add-empty-at-line)
+                   (message "10.2")
+                   (ediff-add-fake-lines (current-buffer)
+                                         (point)
+                                         lines-to-add)
+                   (message "10.3")
+                   )
+                 ))))
+          (message "11")
+          )
+        ))))
+
+
+    ;; (dolist (pre-change ediff-changes)
+    ;;   (let (
+    ;;         (change-start (car pre-change))
+    ;;         (change-end (cadr pre-change))
+    ;;         (change-lines (caddr pre-change))
+    ;;         )
+    ;;     (when (<= start change-start change-end end)
+    ;;       )
+    ;;     ))))
 
 (defun ediff--gather-data (func)
   (let (
@@ -153,6 +257,26 @@
        (lockstep--remove-fake-cursors)
        (lockstep--create-fake-cursor-and-region is-eol current-mark current-point)))))
 
+(defun ediff-add-fake-lines (buffer pos lines)
+ (with-current-buffer buffer
+   (save-excursion
+     (goto-char pos)
+     (dotimes (i lines)
+       (let (
+             (at-pos (+ pos i))
+             )
+         (insert "\n")
+         (let (
+               (newline-overlay (make-overlay at-pos (+ at-pos 1) buffer t nil))
+               )
+           ;; (overlay-put newline-overlay 'window t)
+           ;; (overlay-put newline-overlay 'cursor t)
+           ;; (overlay-put newline-overlay 'display (propertize newlines 'cursor t))
+           (overlay-put newline-overlay 'display (propertize "...\n"))
+           (overlay-put newline-overlay 'ediff-alignment-overlay t)
+           ;; (overlay-put newline-overlay 'after-string (propertize "..."))
+           ))))))
+
 (defun ediff--update-overlay-lines (window overlay lines)
   (let* (
          (overlay-start (ediff-overlay-start overlay))
@@ -161,25 +285,7 @@
          (overlay-lines (- lines (ediff-overlay-get overlay 'line-count)))
          )
     ;; (with-selected-window window
-    (with-current-buffer overlay-buffer
-      (save-excursion
-        (goto-char overlay-end)
-        (dotimes (i overlay-lines)
-          (let (
-                (overlay-pos (+ overlay-end i))
-                )
-            (insert "\n")
-            (let (
-                  (newline-overlay (make-overlay overlay-pos (+ overlay-pos 1)
-                                                 overlay-buffer t nil))
-                  )
-              ;; (overlay-put newline-overlay 'window t)
-              ;; (overlay-put newline-overlay 'cursor t)
-              ;; (overlay-put newline-overlay 'display (propertize newlines 'cursor t))
-              (overlay-put newline-overlay 'display (propertize "...\n"))
-              (overlay-put newline-overlay 'ediff-alignment-overlay t)
-              ;; (overlay-put newline-overlay 'after-string (propertize "..."))
-              )))))))
+    (ediff-add-fake-lines overlay-buffer overlay-end overlay-lines)))
 
 
 (defun ediff--get-diff-lines-from-overlay (overlay)
@@ -345,6 +451,7 @@
     (add-to-list 'ediff--temporary-buffers tmp-buf)
     (with-current-buffer tmp-buf
       (add-hook 'write-contents-functions (lambda () (ediff-save-file tmp-buf file)))
+      (add-hook 'after-change-functions #'ediff-after-change-update t t)
       (setq default-directory dir-name)
       (toggle-truncate-lines 1)
       (insert cur-data))
