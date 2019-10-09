@@ -62,110 +62,177 @@
       (with-selected-window wind-A
         (unless (eq (current-buffer) buff-A)
           (switch-to-buffer ediff-buffer-A))
-        (condition-case nil
-            (apply func args)
-          (error)))
+        (combine-after-change-calls
+          (condition-case nil
+              (apply func args)
+            (error))))
       (with-selected-window wind-B
         (unless (eq (current-buffer) buff-B)
           (switch-to-buffer ediff-buffer-B))
-        (condition-case nil
-            (apply func args)
-          (error)))
+        (combine-after-change-calls
+          (condition-case nil
+              (apply func args)
+            (error))))
       (when three-way
         (with-selected-window wind-C
           (unless (eq (current-buffer) buff-C)
             (switch-to-buffer ediff-buffer-C))
-          (condition-case nil
-              (apply func args)
-            (error))))
+          (combine-after-change-calls
+            (condition-case nil
+                (apply func args)
+              (error)))))
       (when with-Ancestor
         (with-selected-window wind-Anc
           (unless (eq (current-buffer) buff-Anc)
             (switch-to-buffer ediff-ancestor-buffer))
-          (condition-case nil
-              (apply func args)
-            (error))))
+          (combine-after-change-calls
+            (condition-case nil
+                (apply func args)
+              (error)))))
       (select-window wind))))
 
 
-(setq ediff-changes nil)
-(defun ediff-before-change-gather (start end)
-  (push (list start end (count-lines start end)) ediff-changes))
+(defun ediff-create-lines-database (start end)
+  (goto-char start)
+  (beginning-of-line)
+  (let (
+        (new-list nil)
+        (last-pos (point))
+        )
+    (beginning-of-line 2)
+    (while (< (point) end)
+      (push (- (point) last-pos) new-list)
+      (setq last-pos (point))
+      (beginning-of-line 2))
+    (when (and (= (point) end)
+               (/= (point) (point-max)))
+      (push (- (point) last-pos) new-list)
+      (setq last-pos (point))
+      (beginning-of-line 2))
+    (push (- (point) last-pos) new-list)
+    (reverse new-list)))
+
+
+(defun ediff-find-in-database (start end)
+  (if (null ediff-db)
+      (list (cons 0 nil) (cons 0 nil) t)
+    (let (
+          (start-remain start)
+          (end-remain end)
+          (current ediff-db)
+          )
+      (setq start-remain (- start-remain (car current)))
+      (setq end-remain (- end-remain (car current)))
+      (let (
+            (prev nil)
+            (prev-line 0)
+            (next nil)
+            (next-line 2)
+            (current-line 2)
+            )
+        (while (and (> start-remain 0)
+                    (not (null (cdr current))))
+          (setq prev current)
+          (setq prev-line (+ prev-line 1))
+          (setq current (cdr current))
+          (setq current-line (+ current-line 1))
+          (setq next (cdr current))
+          (setq next-line (+ next-line 1))
+          (setq start-remain (- start-remain (car current)))
+          (setq end-remain (- end-remain (car current))))
+        (if (not (null (cdr current)))
+            (while (and (> end-remain 0)
+                        (not (null (cdr current))))
+              (setq current (cdr current))
+              (setq current-line (+ current-line 1))
+              (setq next (cdr current))
+              (setq next-line (+ next-line 1))
+              (setq end-remain (- end-remain (car current))))
+          (setq prev-line (+ prev-line 1))
+          (setq current-line (+ current-line 1))
+          (setq next-line (+ next-line 1)))
+        (list (cons prev-line prev)
+              (cons next-line next)
+              (= end-remain 0))))))
 
 (defun ediff-after-change-update (start end deleted)
   (save-excursion
-    (let (
-          (added-lines (count-lines start end))
-          (final-line nil)
-          (last-insert-is-newline (save-excursion (goto-char end) (bolp)))
-          )
-      ;; (message "1 %S" (current-buffer))
+    (let* (
+           (find-res (ediff-find-in-database start (+ start deleted)))
+           (first-res (car find-res))
+           (last-res (cadr find-res))
+           (last-deleted-before-newline (caddr find-res))
+           (first-line (car first-res))
+           (first (cdr first-res))
+           (last-line (car last-res))
+           (last (cdr last-res))
+           (last-insert-is-newline (progn (goto-char end) (bolp)))
+           (added-lines (count-lines start end))
+           (deleted-lines (- last-line first-line))
+           (lines-diff (- added-lines (if (> deleted-lines 2) (- deleted-lines 2) 0)))
+           (final-line nil)
+           (alignments-to-remove 0)
+           )
       (goto-char end)
-      ;; (message "2")
-      (dotimes (i added-lines)
-        ;; (message "3")
+      (dotimes (i lines-diff)
         (when (null final-line)
-          ;; (message "4")
           (let (
                 (overlay
                  (elisp--find-overlays-specifying 'ediff-alignment-overlay))
                 )
-            ;; (message "5")
             (if (null overlay)
                 (setq final-line i)
-              ;; (message "6 %S" overlay)
               (delete-overlay (car overlay))
-              ;; (message "6.1")
-              (beginning-of-line 1)))))
-      ;; (message "7")
-      (when (not (null final-line))
-        ;; (message "8")
+              (beginning-of-line 2)))))
+      (if (null final-line)
+          (setq alignments-to-remove (+ lines-diff (if last-insert-is-newline 1 0)))
+        (setq alignments-to-remove (+ final-line 1)))
+      (when (> alignments-to-remove 1)
+        (delete-region end (+ end alignments-to-remove -1)))
+      (unless (null final-line)
         (goto-char start)
-        ;; (message "9")
         (let (
               (changed-buffer (current-buffer))
-              (add-empty-at-line (line-number-at-pos))
-              (lines-to-add (- added-lines final-line (if last-insert-is-newline 0 1)))
+              (add-empty-at-line (+ first-line 1))
+              (lines-to-add (- lines-diff alignments-to-remove (if last-insert-is-newline -1 0)))
               (old-window (selected-window))
               )
-          (message "10 %S %S" ediff-control-buffer last-insert-is-newline)
           (dolist (window (window-list))
             (with-selected-window window
-              (message "has window %S %S %S %S %S %S %S" (ediff-in-control-buffer-p) window old-window ediff-window-A ediff-window-B ediff-window-C ediff-window-Ancestor)
               (when (and (ediff-in-control-buffer-p)
                          (or (eq old-window ediff-window-A)
                              (eq old-window ediff-window-B)
                              (eq old-window ediff-window-C)
                              (eq old-window ediff-window-Ancestor)))
-                (message "after when")
                 (ediff-operate-on-windows-func
                  (lambda ()
-                   ;; (message "op %S %S " changed-buffer (current-buffer))
                    (when (not (eq changed-buffer (current-buffer)))
                      (save-excursion
-                       ;; (message "10.1")
                        (goto-line add-empty-at-line)
-                       (message "10.2 %S" lines-to-add)
                        (ediff-add-fake-lines (current-buffer)
-                                             (point)
-                                             lines-to-add)
-                       ;; (message "10.3")
-                       )
-                     ))))))
-          ;; (message "11")
-          )
-        ))))
-
-
-    ;; (dolist (pre-change ediff-changes)
-    ;;   (let (
-    ;;         (change-start (car pre-change))
-    ;;         (change-end (cadr pre-change))
-    ;;         (change-lines (caddr pre-change))
-    ;;         )
-    ;;     (when (<= start change-start change-end end)
-    ;;       )
-    ;;     ))))
+                                               (point)
+                                               lines-to-add))))))))))
+      (when (> (- (+ deleted-lines (if last-deleted-before-newline 1 0))
+                  added-lines) 2)
+        (when last-deleted-before-newline
+          (delete-region end (+ end 1)))
+        (ediff-add-fake-lines (current-buffer)
+                              start
+                              (- (+ deleted-lines
+                                    (if last-deleted-before-newline 1 0))
+                                 added-lines 2)))
+      (let (
+            (new-lines-db (ediff-create-lines-database start end))
+            )
+        (if (null first)
+            (if (null new-lines-db)
+                (setq ediff-db last)
+              (setq ediff-db new-lines-db))
+          (if (null new-lines-db)
+              (setcdr first last)
+            (setcdr first new-lines-db)))
+        (unless (null new-lines-db)
+          (setcdr (last new-lines-db) last))))))
 
 (defun ediff--gather-data (func)
   (let (
@@ -192,6 +259,7 @@
                                          (pos (point))
                                          )
                                      (save-excursion
+                                       ;; (- line (line-number-at-pos))
                                        (goto-line line)
                                        (setq line-beg (line-beginning-position))
                                        (setq line-end (line-end-position)))
@@ -212,6 +280,7 @@
   (when (all-equal pre-lines)
     (let (
           (post-lines (ediff--gather-data (lambda () (line-number-at-pos))))
+          (post-columns (ediff--gather-data (lambda () (current-column))))
           )
       (unless (all-equal post-lines)
         (ediff--goto-line (if (list-ge post-lines pre-lines)
@@ -269,11 +338,12 @@
  (with-current-buffer buffer
    (save-excursion
      (goto-char pos)
+     (insert (make-string lines ?\n))
      (dotimes (i lines)
        (let (
              (at-pos (+ pos i))
              )
-         (insert "\n")
+         (goto-char at-pos)
          (let (
                (newline-overlay (make-overlay at-pos (+ at-pos 1) buffer t nil))
                )
@@ -458,6 +528,7 @@
          )
     (add-to-list 'ediff--temporary-buffers tmp-buf)
     (with-current-buffer tmp-buf
+      (defvar-local ediff-db nil)
       (add-hook 'write-contents-functions (lambda () (ediff-save-file tmp-buf file)))
       (add-hook 'after-change-functions #'ediff-after-change-update nil t)
       (setq default-directory dir-name)
