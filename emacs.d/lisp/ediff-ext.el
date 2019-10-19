@@ -115,14 +115,14 @@
 
 (defun ediff-find-in-database (start end)
   (if (null ediff-db)
-      (list (cons 0 nil) (cons 0 nil) t)
+      (list (cons 0 nil) (cons 0 nil) t t)
     (let (
           (start-remain start)
           (end-remain end)
           (current ediff-db)
           )
-      (setq start-remain (- start-remain (car current)))
-      (setq end-remain (- end-remain (car current)))
+      (setq start-remain (- start-remain (car current) 1))
+      (setq end-remain (- end-remain (car current) 1))
       (let (
             (prev nil)
             (prev-line 0)
@@ -153,6 +153,7 @@
           (setq next-line (+ next-line 1)))
         (list (cons prev-line prev)
               (cons next-line next)
+              (= start-remain 0)
               (= end-remain 0))))))
 
 (defun ediff-after-change-update (start end deleted)
@@ -161,7 +162,8 @@
            (find-res (ediff-find-in-database start (+ start deleted)))
            (first-res (car find-res))
            (last-res (cadr find-res))
-           (last-deleted-before-newline (caddr find-res))
+           (first-deleted-before-newline (caddr find-res))
+           (last-deleted-before-newline (cadddr find-res))
            (first-line (car first-res))
            (first (cdr first-res))
            (last-line (car last-res))
@@ -212,15 +214,24 @@
                        (ediff-add-fake-lines (current-buffer)
                                                (point)
                                                lines-to-add))))))))))
-      (when (> (- (+ deleted-lines (if last-deleted-before-newline 1 0))
-                  added-lines) 2)
-        (when last-deleted-before-newline
-          (delete-region end (+ end 1)))
+      (let (
+            (deleted-lines-for-fake-lines
+             (+ deleted-lines
+                ;; (if last-deleted-before-newline 1 0)
+                ;; (if first-deleted-before-newline 0 -1)
+                ))
+            (start-for-fake-lines (if first-deleted-before-newline
+                                      start
+                                    (line-beginning-position 2)
+                                     ;; (if first-deleted-before-newline 0 1)
+                                     ))
+            )
+      (when (> (- deleted-lines-for-fake-lines added-lines) 2)
+        ;; (when last-deleted-before-newline
+        ;;   (delete-region end (+ end 1)))
         (ediff-add-fake-lines (current-buffer)
-                              start
-                              (- (+ deleted-lines
-                                    (if last-deleted-before-newline 1 0))
-                                 added-lines 2)))
+                              start-for-fake-lines
+                              (- deleted-lines-for-fake-lines added-lines 2))))
       (let (
             (new-lines-db (ediff-create-lines-database start end))
             )
