@@ -346,25 +346,25 @@
        (lockstep--create-fake-cursor-and-region is-eol current-mark current-point)))))
 
 (defun ediff-add-fake-lines (buffer pos lines)
- (with-current-buffer buffer
-   (save-excursion
-     (goto-char pos)
-     (insert (make-string lines ?\n))
-     (dotimes (i lines)
-       (let (
-             (at-pos (+ pos i))
-             )
-         (goto-char at-pos)
-         (let (
-               (newline-overlay (make-overlay at-pos (+ at-pos 1) buffer t nil))
-               )
-           ;; (overlay-put newline-overlay 'window t)
-           ;; (overlay-put newline-overlay 'cursor t)
-           ;; (overlay-put newline-overlay 'display (propertize newlines 'cursor t))
-           (overlay-put newline-overlay 'display (propertize "...\n"))
-           (overlay-put newline-overlay 'ediff-alignment-overlay t)
-           ;; (overlay-put newline-overlay 'after-string (propertize "..."))
-           ))))))
+  (with-current-buffer buffer
+    (save-excursion
+      (goto-char pos)
+      (insert (make-string lines ?\n))
+      (dotimes (i lines)
+        (let (
+              (at-pos (+ pos i))
+              )
+          (goto-char at-pos)
+          (let (
+                (newline-overlay (make-overlay at-pos (+ at-pos 1) buffer t nil))
+                )
+            ;; (overlay-put newline-overlay 'window t)
+            ;; (overlay-put newline-overlay 'cursor t)
+            ;; (overlay-put newline-overlay 'display (propertize newlines 'cursor t))
+            (overlay-put newline-overlay 'display (propertize "...\n"))
+            (overlay-put newline-overlay 'ediff-alignment-overlay t)
+            ;; (overlay-put newline-overlay 'after-string (propertize "..."))
+            ))))))
 
 (defun ediff--update-overlay-lines (window overlay lines)
   (let* (
