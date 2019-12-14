@@ -1400,8 +1400,9 @@ Markers highlights the results in the buffer itself."
 (defun swiper--async-update-input-ivy-scroll-hook (window new-window-start)
   (when (and (eq window (ivy--get-window ivy-last)) (active-minibuffer-window))
     (with-selected-window window
-      (swiper--async-mark-candidates-in-range
-       new-window-start (window-end (selected-window) t)))))
+      (save-excursion
+        (swiper--async-mark-candidates-in-range
+         new-window-start (window-end (selected-window) t))))))
 
 (defun swiper--async-update-input-ivy-size-hook (frame)
   (swiper--async-mark-candidates-in-window))
@@ -1410,7 +1411,8 @@ Markers highlights the results in the buffer itself."
   "Called when `ivy' input is updated."
   (with-ivy-window
     (swiper--cleanup)
-    (swiper--async-mark-candidates-in-window)))
+    (save-excursion
+      (swiper--async-mark-candidates-in-window))))
 
 (defvar swiper--async-process-name "*swiper--async*"
   "Saves the buffer name of the grep process.")
