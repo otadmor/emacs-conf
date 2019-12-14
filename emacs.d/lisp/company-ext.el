@@ -44,7 +44,7 @@
 
 (with-eval-after-load 'company
   (add-hook 'after-init-hook 'global-company-mode)
-  (setq company-minimum-prefix-length 0)
+  (setq company-minimum-prefix-length 1)
   (setq company-require-match nil)
 
   (setq company-orig--completion-in-region-function
