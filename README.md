@@ -1,13 +1,13 @@
 # emacs-conf
-My personal Emacs configuration
-See also https://github.com/aviramc/.emacs.d
+My personal Emacs configuration.
+See also https://github.com/aviramc/.emacs.d and https://github.com/borfig/emacs-conf
 ## Installation
 ```shell
 mv ~/.emacs.d{,.orig} || true
 ln -s emacs.d ~/.emacs.d
 ```
 ### gdb completion
-Put the content of .emacs.d/lisp/completion_epc.gdbinit in ~/.gdbinit.
+Put the content of .gdbinit in ~/.gdbinit.
 ## Keys
 ### Global Keys
 - *Ctrl-x c*: leave emacs (the default Ctrl-x Ctrl-c is disabled on purpose)
