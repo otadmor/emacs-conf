@@ -114,6 +114,7 @@
 
 
 (defun ediff-find-in-database (start end)
+  (message "start %S end %S" start end)
   (if (null ediff-db)
       (list (cons 0 nil) (cons 0 nil) t t)
     (let* (
@@ -158,15 +159,17 @@
           (setq next (cdr current))
           (setq next-line (+ next-line 1))
           (setq end-remain (- end-remain (car current)))))
-      (when (and (= end-remain 0)
+      (when (and (/= start end)
+                 (= end-remain 0)
                  (not (null (cdr current))))
         (setq current (cdr current))
         (setq current-line (+ current-line 1))
         (setq next (cdr current))
         (setq next-line (+ next-line 1)))
+      (message "sr %S er %S" start-remain end-remain)
       (list (cons prev-line prev)
             (cons next-line next)
-            (= start-remain 0)
+            (= start-remain -1)
             (= end-remain 0)))))
 
 (defun ediff-after-change-update (start end deleted)
@@ -176,7 +179,7 @@
            (first-res (car find-res))
            (last-res (cadr find-res))
            (first-deleted-before-newline (caddr find-res))
-           (last-deleted-before-newline (cadddr find-res))
+           (last-deleted-after-newline (cadddr find-res))
            (first-line (car first-res))
            (first (cdr first-res))
            (last-line (car last-res))
@@ -201,10 +204,16 @@
               (beginning-of-line 2)))))
       (if (null final-line)
           (setq alignments-to-remove (+ lines-diff
-                                        (if last-insert-is-newline 1 0)))
+                                        ;; (if last-insert-is-newline 1 0)
+                                        ))
         (setq alignments-to-remove (+ final-line 1)))
-      (when (> alignments-to-remove 1)
-        (delete-region end (+ end alignments-to-remove -1)))
+      (when (> (+ alignments-to-remove
+                  ;; (if last-deleted-after-newline 1 0)
+                  ) 1)
+        (message "deleting %S" alignments-to-remove)
+        (delete-region end (min (point-max) (+ end alignments-to-remove
+                                               ;; (if last-deleted-after-newline 1 0)
+                                               -1))))
       (unless (null final-line)
         (goto-char start)
         (let (
@@ -231,10 +240,11 @@
                                                lines-to-add))))))))))
       (let (
             (start-for-fake-lines (if first-deleted-before-newline
-                                      start
-                                    (line-beginning-position 2)))
+                                      (line-beginning-position 2)
+                                    start))
             (leftover-lines (max 0 (- deleted-lines added-lines 2)))
             )
+        (message "leftover-lines %S last-line %S first-line %S first-deleted-before-newline %S" leftover-lines last-line first-line first-deleted-before-newline)
         (when (> leftover-lines 0)
           (ediff-add-fake-lines (current-buffer)
                                 start-for-fake-lines
@@ -243,7 +253,8 @@
               (new-lines-db (ediff-create-lines-database
                              start
                              (+ end leftover-lines)))
-            )
+              )
+          (message "lines from %S to %S is %S lines" start (+ end leftover-lines) (length new-lines-db))
         (if (null first)
             (if (null new-lines-db)
                 (setq ediff-db last)
