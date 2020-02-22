@@ -116,7 +116,7 @@
 (defun ediff-find-in-database (start end)
   (message "start %S end %S" start end)
   (if (null ediff-db)
-      (list (cons 0 nil) (cons 0 nil) t t)
+      (list (cons 0 nil) (cons 0 nil) 0 0)
     (let* (
            (start-remain (- start 1))
            (end-remain (- end 1))
@@ -169,8 +169,8 @@
       (message "sr %S er %S" start-remain end-remain)
       (list (cons prev-line prev)
             (cons next-line next)
-            (= start-remain -1)
-            (= end-remain 0)))))
+            start-remain
+            end-remain))))
 
 (defun ediff-after-change-update (start end deleted)
   (save-excursion
@@ -178,8 +178,9 @@
            (find-res (ediff-find-in-database start (+ start deleted)))
            (first-res (car find-res))
            (last-res (cadr find-res))
-           (first-deleted-before-newline (caddr find-res))
-           (last-deleted-after-newline (cadddr find-res))
+           (first-deleted-before-newline (= (caddr find-res) -1))
+           (first-deleted-after-newline (= (caddr find-res) 0))
+           (last-deleted-after-newline (= (cadddr find-res) 0))
            (first-line (car first-res))
            (first (cdr first-res))
            (last-line (car last-res))
@@ -187,11 +188,12 @@
            (last-insert-is-newline (progn (goto-char end) (bolp)))
            (added-lines (count-lines start end))
            (deleted-lines (- last-line first-line))
-           (lines-diff (- added-lines (if (> deleted-lines 2) (- deleted-lines 2) 0)))
+           (lines-diff (max (- added-lines (if (> deleted-lines 2) (- deleted-lines 2) 0)) 0))
            (final-line nil)
            (alignments-to-remove 0)
            )
       (goto-char end)
+      (message "lines-diff %S" lines-diff)
       (dotimes (i lines-diff)
         (when (null final-line)
           (let (
@@ -252,9 +254,10 @@
         (let (
               (new-lines-db (ediff-create-lines-database
                              start
-                             (+ end leftover-lines)))
+                             (max end
+                                  (+ start-for-fake-lines leftover-lines -1))))
               )
-          (message "lines from %S to %S is %S lines" start (+ end leftover-lines) (length new-lines-db))
+          (message "lines from %S to max(%S, %S) is %S lines" start end (+ start-for-fake-lines leftover-lines -1) (length new-lines-db))
         (if (null first)
             (if (null new-lines-db)
                 (setq ediff-db last)
