@@ -148,10 +148,10 @@
           (setq current (cdr current))
           (setq current-line (+ current-line 1))
           (setq next (cdr current))
-          (setq next-line (+ next-line 1))))
+          (setq next-line (+ next-line 1))
+          (setq end-remain (- end-remain (car current)))))
       (when (and (> end-remain 0)
                  (not (null (cdr current))))
-        (setq end-remain (- end-remain (car current)))
         (while (and (> end-remain 0)
                     (not (null (cdr current))))
           (setq current (cdr current))
@@ -165,8 +165,10 @@
         (setq current (cdr current))
         (setq current-line (+ current-line 1))
         (setq next (cdr current))
-        (setq next-line (+ next-line 1)))
-      (message "sr %S er %S" start-remain end-remain)
+        (setq next-line (+ next-line 1))
+        (message "advance %S %S" current-line next-line)
+        )
+      (message "sr %S sl %S er %S el %S cl %S" start-remain prev-line end-remain next-line current-line)
       (list (cons prev-line prev)
             (cons next-line next)
             start-remain
@@ -241,12 +243,12 @@
                                                (point)
                                                lines-to-add))))))))))
       (let (
-            (start-for-fake-lines (if first-deleted-before-newline
-                                      (line-beginning-position 2)
-                                    start))
+            (start-for-fake-lines (if first-deleted-after-newline
+                                      start
+                                    (line-beginning-position 2)))
             (leftover-lines (max 0 (- deleted-lines added-lines 2)))
             )
-        (message "leftover-lines %S last-line %S first-line %S first-deleted-before-newline %S" leftover-lines last-line first-line first-deleted-before-newline)
+        (message "leftover-lines %S last-line %S first-line %S first-deleted-before-newline %S first-deleted-after-newline %S" leftover-lines last-line first-line first-deleted-before-newline first-deleted-after-newline)
         (when (> leftover-lines 0)
           (ediff-add-fake-lines (current-buffer)
                                 start-for-fake-lines
@@ -255,18 +257,18 @@
               (new-lines-db (ediff-create-lines-database
                              start
                              (max end
-                                  (+ start-for-fake-lines leftover-lines -1))))
+                                  (+ start-for-fake-lines leftover-lines))))
               )
-          (message "lines from %S to max(%S, %S) is %S lines" start end (+ start-for-fake-lines leftover-lines -1) (length new-lines-db))
-        (if (null first)
+          (message "lines from %S to max(%S, %S) is %S lines" start end (+ start-for-fake-lines leftover-lines) (length new-lines-db))
+          (if (null first)
+              (if (null new-lines-db)
+                  (setq ediff-db last)
+                (setq ediff-db new-lines-db))
             (if (null new-lines-db)
-                (setq ediff-db last)
-              (setq ediff-db new-lines-db))
-          (if (null new-lines-db)
-              (setcdr first last)
-            (setcdr first new-lines-db)))
-        (unless (null new-lines-db)
-          (setcdr (last new-lines-db) last)))))))
+                (setcdr first last)
+              (setcdr first new-lines-db)))
+          (unless (null new-lines-db)
+            (setcdr (last new-lines-db) last)))))))
 
 (defun ediff--gather-data (func)
   (let (
