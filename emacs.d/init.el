@@ -29,7 +29,6 @@
 
 (setq CONFIGURATION-PATH (expand-file-name "~/.emacs.d/lisp"))
 (setq load-path (cons (expand-file-name (concat CONFIGURATION-PATH "/jss-master")) load-path))
-(setq load-path (cons (expand-file-name (concat CONFIGURATION-PATH "/ess-18.10.2/lisp/")) load-path))
 (setq load-path (cons CONFIGURATION-PATH load-path))
 
 ;; (set-cursor-color "white")
@@ -493,7 +492,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (r-autoyas company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra))))
+    (r-autoyas company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra ess))))
 
 (let (
       (need-install nil)
