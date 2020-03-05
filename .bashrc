@@ -23,3 +23,15 @@ function stfu() {
 
 alias ec="stfu emacsclient -c --display=localhost:current"
 alias start=nautilus
+
+fp () {
+    grep -RP "$1"
+}
+
+ff () {
+    find -path "*$1*"
+}
+
+fs () {
+    find lib/ -name '*.so*' -exec nm --print-file-name --defined-only --dynamic {} \; | grep $1
+}
