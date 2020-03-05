@@ -178,6 +178,7 @@
 (define-key comint-mode-map [C-down] 'comint-next-matching-input-from-input)
 (define-key comint-mode-map (kbd "M-r") 'counsel-shell-history)
 (define-key comint-mode-map [(shift return)] 'newline)
+(define-key comint-mode-map (kbd "C-c C-]") (lambda () (interactive) (insert (kbd "C-]")) (comint-send-input)))
 
 (require 'comint-ext)
 (add-hook 'shell-mode-hook 'ansi-color-for-comint-mode-on)
