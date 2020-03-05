@@ -28,4 +28,6 @@ git apply xterm.c.patch
 make
 sudo make install
 systemctl --user enable emacs
+sudo apt-get install npm
+sudo npm -g install js-beautify
 ```
