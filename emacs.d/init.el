@@ -212,6 +212,9 @@
 (require 'simple)
 ; ess-smart-underscore ess-smart-equals  exwm xelb perspective fuzzy
 
+(with-eval-after-load 'org-mode
+  (define-key org-mode-map [(control tab)] 'next-buff))
+
 (with-eval-after-load 'ivy
   (ido-mode nil)
   (ivy-mode nil)

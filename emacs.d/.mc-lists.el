@@ -13,12 +13,14 @@
         mc/paste
         my-comment-or-uncomment-region
         overwrite-mode
+        py-electric-delete
         ))
 
 (setq mc/cmds-to-run-once
       '(
         beginning-of-buffer
         column-number-mode
+        compile-goto-error
         counsel-M-x
         counsel-find-file
         describe-variable
@@ -27,6 +29,7 @@
         ivy-backward-delete-char
         ivy-forward-char
         ivy-switch-buffer
+        kill-buffer
         line-number-mode
         mcs-alt-done
         mcs-cancel
@@ -42,9 +45,8 @@
         mouse-select-window
         mouse-set-region
         next-buff
-        prev-buffer
-        swiper
-        swiper-mc
+        next-error-no-select
+        perspsw0
         perspsw1
         perspsw2
         perspsw3
@@ -54,8 +56,7 @@
         perspsw7
         perspsw8
         perspsw9
-        perspsw0
-        next-error-no-select
-        kill-buffer
-        compile-goto-error
+        prev-buffer
+        swiper
+        swiper-mc
         ))
