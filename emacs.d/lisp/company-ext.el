@@ -44,6 +44,8 @@
 
 (with-eval-after-load 'company
   (add-hook 'after-init-hook 'global-company-mode)
+  (add-to-list 'company-continue-commands 'comint-previous-matching-input-from-input t)
+  (add-to-list 'company-continue-commands 'comint-next-matching-input-from-input t)
   (setq company-minimum-prefix-length 1)
   (setq company-require-match nil)
 
