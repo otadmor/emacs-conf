@@ -1,6 +1,7 @@
 python
 def rl_attempted_completion(s, start=None, end=None):
-    s = ''.join(s).splitlines()[-1]
+    s = ''.join(s)
+    s = s.splitlines()[-1] if s.strip() != '' else ''
     x = gdb.execute('complete ' + s, to_string=True)
     res = tuple(x.splitlines())
     return res
