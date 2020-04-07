@@ -215,7 +215,20 @@
 (require 'simple)
 ; ess-smart-underscore ess-smart-equals  exwm xelb perspective fuzzy
 
-(with-eval-after-load 'org-mode
+(with-eval-after-load 'org
+  (setq org-support-shift-select t)
+  (setq org-replace-disputed-keys t)
+  (setq org-disputed-keys
+        '(
+          ([(shift left)]          . [(meta -)])         ; change status (todo/closed/done)
+          ([(shift right)]         . [(meta =)])         ;
+          ([(shift up)]            . [(control meta -)]) ; change priority
+          ([(shift down)]          . [(control meta =)]) ;
+          ([(control shift right)] . [(meta +)])         ; status of group
+          ([(control shift left)]  . [(meta _)])         ;
+          ([(control shift up)]    . [(control meta +)]) ; change clock logs
+          ([(control shift down)]  . [(control meta _)]) ;
+          ))
   (define-key org-mode-map [(control tab)] 'next-buff))
 
 (with-eval-after-load 'ivy
