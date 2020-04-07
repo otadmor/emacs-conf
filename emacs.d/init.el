@@ -11,6 +11,9 @@
 (setq enable-local-eval nil)
 (setq enable-local-variables nil)
 
+(set-language-environment "UTF-8")
+(set-default-coding-systems 'utf-8)
+
 ;; for 64 bit systems
 ;; https://emacs.stackexchange.com/questions/3824/what-piece-of-code-in-emacs-makes-line-number-mode-print-as-line-number-i/3827#3827
 (setq line-number-display-limit-width 2000000)
