@@ -1,10 +1,19 @@
+set max-completions unlimited
+
 python
+try:
+    gdb.execute("guile (use-modules (gdb))", to_string=True)
+    HAS_GUILE = True
+except gdb.error:
+    HAS_GUILE = False
 def rl_attempted_completion(s, start=None, end=None):
     s = ''.join(s)
     s = s.splitlines()[-1] if s.strip() != '' else ''
-    x = gdb.execute('complete ' + s, to_string=True)
-    res = tuple(x.splitlines())
-    return res
+    if HAS_GUILE:
+        x = gdb.execute('guile (execute "complete %s")' % (s.replace('"', '\\"'),), to_string=True)
+    else:
+        x = gdb.execute('complete ' + s, to_string=True)
+    return tuple(x.splitlines())
 
 import os
 if os.environ.get("TERM", "") == 'dumb':
