@@ -34,3 +34,6 @@ sudo npm -g install js-beautify
 ## GDB completion / context
 The context command is provided by GEF and then sent to emacs using epc.
 ![](gdb.gif)
+## Python completion
+Support following python and completion from python interpreter.
+![](python.gif)
