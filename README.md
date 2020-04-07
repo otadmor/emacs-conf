@@ -31,3 +31,6 @@ systemctl --user enable emacs
 sudo apt-get install npm
 sudo npm -g install js-beautify
 ```
+## GDB completion / context
+The context command is provided by GEF and then sent to emacs using epc.
+![](gdb.gif)
