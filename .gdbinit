@@ -10,11 +10,11 @@ end
 python
 def get_images():
     return [os.path.basename(x.path) for x in get_process_maps() if x.permission & Permission.EXECUTE]
-def io(image):
+def __io(image):
     vmmap = get_process_maps()
     return min([x.page_start for x in vmmap if os.path.basename(x.path) == image])
 def bo(image, offset, conds):
-    addr = io(image) + offset
+    addr = __io(image) + offset
     cmd = "b * " + str(addr) + ('' if conds == '' else ' ' + conds)
     gdb.execute(cmd)
 class BreakOffsetCommand(gdb.Command):
