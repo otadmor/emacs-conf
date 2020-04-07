@@ -21,6 +21,7 @@ if os.environ.get("TERM", "") == 'dumb':
         from collections import namedtuple
         from epc.server import EPCServer
         from epc.client import EPCClient
+        from epc.handler import EPCError
         import sys
         import threading
     except ImportError:
@@ -29,6 +30,22 @@ if os.environ.get("TERM", "") == 'dumb':
             pass
     else:
         class GDBEPCCompletion(object):
+            def __init__(self):
+                def complete(*cargs, **ckargs):
+                    return self.complete(*cargs, **ckargs)
+                self.register_function(complete)
+                gdb.events.stop.connect(self.stop_handler)
+            def stop_handler(self, event):
+                symtabline = gdb.selected_frame().find_sal()
+                filename = symtabline.symtab.fullname()
+                lineno = symtabline.line
+                # print ("completion event type: stop")
+                def stop_called(reply):
+                    pass
+                def stop_error(error):
+                    if error.args[0] != 'EPC-ERROR: No such method : debugger-stop-event':
+                        print(error)
+                self.call('debugger-stop-event', [filename, lineno, ], callback=stop_called, errback=stop_error)
             def complete(self, *to_complete):
                 res = rl_attempted_completion(to_complete)
                 res = tuple(res)
@@ -37,11 +54,6 @@ if os.environ.get("TERM", "") == 'dumb':
         class EPCCompletionServer(EPCServer):
             def __init__(self, address="localhost", port=0, *args, **kargs):
                 EPCServer.__init__(self, (address, port), *args, **kargs)
-
-                def complete(*cargs, **ckargs):
-                    return self.complete(*cargs, **ckargs)
-                self.register_function(complete)
-
             def print_port(self, stream=None):
                 if stream is None:
                     stream = sys.stdout
@@ -53,10 +65,6 @@ if os.environ.get("TERM", "") == 'dumb':
                 if port is not None:
                     args = ((address, port),) + args
                 EPCClient.__init__(self, *args, **kargs)
-
-                def complete(*cargs, **ckargs):
-                    return self.complete(*cargs, **ckargs)
-                self.register_function(complete)
 
         class GDBEPCCompletionServer(EPCCompletionServer, GDBEPCCompletion):
             def __init__(self, *args, **kargs):

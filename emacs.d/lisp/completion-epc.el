@@ -138,11 +138,28 @@
     ;; (let ((process-environment (cons "LANG=" process-environment)))
     (setenv "EPC_COMPLETION_SERVER_PORT" (format "%d" port))))
 
+(defun debugger-stop-event(filename lineno)
+  ;; (message "STOPPED AT %S:%S" filename lineno)
+  (condition-case nil
+      (let (
+            (my-buffer (find-file-noselect filename))
+            )
+        ;; (message "buffer is %S" my-buffer)
+        (let (
+              (my-window (display-buffer my-buffer))
+              )
+          ;; (message "window is %S" my-window)
+          (with-selected-window my-window
+            (goto-line lineno)
+            ;; (message "went to line")
+            (winstack-push nil t))))
+    (error nil)))
 
 (defun epc:incoming-connection-made-mngr (mngr working-buffer)
   (with-current-buffer working-buffer
     (message "EPC client connected in buffer %S" (current-buffer))
-    (setq-local mngr-complete-epc mngr)))
+    (setq-local mngr-complete-epc mngr)
+    (epc:define-method mngr 'debugger-stop-event 'debugger-stop-event "args" "notify emacs for breakpoint.")))
 
 (defun completion--comint-output-filter (string)
   (save-match-data
