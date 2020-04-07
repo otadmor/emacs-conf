@@ -138,28 +138,46 @@
     ;; (let ((process-environment (cons "LANG=" process-environment)))
     (setenv "EPC_COMPLETION_SERVER_PORT" (format "%d" port))))
 
-(defun debugger-stop-event(filename lineno)
+(defun epc-gdb-command-mngr (mngr command callback)
+  (deferred:$
+    (epc:call-deferred mngr 'gdbcommand command)
+    (deferred:nextc it callback)
+    (deferred:error it
+      (lambda (err) (message "error %S" err) (cond
+                     ((stringp err) (message "error completion epc %S" err))
+                     ((eq 'epc-error (car err)) (message "error completion epc2 %S" (cadr err))))))))
+
+(defun debugger-stop-event(working-buffer filename lineno context)
   ;; (message "STOPPED AT %S:%S" filename lineno)
-  (condition-case nil
-      (let (
-            (my-buffer (find-file-noselect filename))
-            )
-        ;; (message "buffer is %S" my-buffer)
+  (with-current-buffer working-buffer
+    (with-current-buffer (get-buffer-create (concat (buffer-name) "-debugger-context"))
+      (erase-buffer)
+      (insert context)
+      (ansi-color-apply-on-region (point-min) (point-max)))
+    (condition-case nil
         (let (
-              (my-window (display-buffer my-buffer))
+              (my-buffer (find-file-noselect filename))
               )
-          ;; (message "window is %S" my-window)
-          (with-selected-window my-window
-            (goto-line lineno)
-            ;; (message "went to line")
-            (winstack-push nil t))))
-    (error nil)))
+          ;; (message "buffer is %S" my-buffer)
+          (let (
+                (my-window (display-buffer my-buffer))
+                )
+            ;; (message "window is %S" my-window)
+            (with-selected-window my-window
+              (goto-line lineno)
+              ;; (message "went to line")
+              (winstack-push nil t))))
+      (error nil))))
+
+(defun register-post-connection-made-callbacks (mngr working-buffer)
+  (lexical-let ((working-buffer working-buffer))
+    (epc:define-method mngr 'debugger-stop-event (lambda (filename lineno context) (debugger-stop-event working-buffer filename lineno context)) "args" "notify emacs for breakpoint.")))
 
 (defun epc:incoming-connection-made-mngr (mngr working-buffer)
   (with-current-buffer working-buffer
     (message "EPC client connected in buffer %S" (current-buffer))
     (setq-local mngr-complete-epc mngr)
-    (epc:define-method mngr 'debugger-stop-event 'debugger-stop-event "args" "notify emacs for breakpoint.")))
+    (register-post-connection-made-callbacks mngr working-buffer)))
 
 (defun completion--comint-output-filter (string)
   (save-match-data
