@@ -12,7 +12,12 @@
         mc/cut
         mc/paste
         my-comment-or-uncomment-region
+        org-metaright
+        org-self-insert-command
+        org-shiftcontrolright
+        org-shiftleft
         overwrite-mode
+        py-electric-comment
         py-electric-delete
         ))
 
