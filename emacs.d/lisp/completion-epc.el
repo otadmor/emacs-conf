@@ -138,6 +138,7 @@
     ;; (let ((process-environment (cons "LANG=" process-environment)))
     (setenv "EPC_COMPLETION_SERVER_PORT" (format "%d" port))))
 
+;; usage : (epc-gdb-command-mngr mngr-complete-epc "context regs" (lambda (x) (message "REGS=%S" x)))
 (defun epc-gdb-command-mngr (mngr command callback)
   (deferred:$
     (epc:call-deferred mngr 'gdbcommand command)
