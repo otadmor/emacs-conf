@@ -89,8 +89,8 @@ if os.environ.get("TERM", "") == 'dumb':
                 def complete(*cargs, **ckargs):
                     return self.complete(*cargs, **ckargs)
                 self.register_promise(gdb_promise(complete))
-                def gdbcommand(accept, reject, *cargs, **ckargs):
-                    return self.gdb_command(accept, reject, *cargs, **ckargs)
+                def gdbcommand(*cargs, **ckargs):
+                    return self.gdb_command(*cargs, **ckargs)
                 self.register_promise(gdb_promise(gdbcommand))
                 gdb.events.stop.connect(self.stop_handler)
             def stop_handler(self, event):
