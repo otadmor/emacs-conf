@@ -148,6 +148,12 @@
                      ((stringp err) (message "error completion epc %S" err))
                      ((eq 'epc-error (car err)) (message "error completion epc2 %S" (cadr err))))))))
 
+(defun epc-gdb-command (command &optional callback)
+  (interactive "sGDB Command: ")
+  (when (null callback)
+    (setq callback (lambda (x) (message "%S" x))))
+  (epc-gdb-command-mngr mngr-complete-epc command callback))
+
 (defun debugger-stop-event(working-buffer filename lineno context)
   ;; (message "STOPPED AT %S:%S" filename lineno)
   (with-current-buffer working-buffer
