@@ -18,7 +18,6 @@ DISABLED_SOURCE = False
 import os
 if os.environ.get("TERM", "") == 'dumb':
     try:
-        from collections import namedtuple
         from epc.server import EPCServer
         from epc.client import EPCClient
         from epc.handler import EPCHandler, EPCError
@@ -31,7 +30,6 @@ if os.environ.get("TERM", "") == 'dumb':
             # Do nothing when we cannot import the EPC module.
             pass
     else:
-
         def EPCHandler__default_handle_error(this, err):
             if this.handle_error(err):
                 return
@@ -95,18 +93,26 @@ if os.environ.get("TERM", "") == 'dumb':
                 gdb.events.stop.connect(self.stop_handler)
             def stop_handler(self, event):
                 symtabline = gdb.selected_frame().find_sal()
-                filename = symtabline.symtab.fullname()
-                lineno = symtabline.line
+                if symtabline.symtab is not None:
+                    filename = symtabline.symtab.fullname()
+                    lineno = symtabline.line
+                else:
+                    filename = None
+                    lineno = None
                 # print ("completion event type: stop")
                 def stop_called(reply):
                     global DISABLED_SOURCE
                     if not DISABLED_SOURCE:
                         gdb.execute('gef config context.layout ""')
+                        gdb.execute('gef config context.nb_lines_code 10')
+                        gdb.execute('gef config context.nb_lines_code_prev 10')
                         DISABLED_SOURCE = True
                 def stop_error(error):
                     if error.args[0] != 'EPC-ERROR: No such method : debugger-stop-event':
                         print(error)
-                self.call('debugger-stop-event', [filename, lineno, gdb.execute("context regs stack code trace", to_string=True)], callback=stop_called, errback=stop_error)
+                context = gdb.execute("context regs stack trace", to_string=True)
+                code = gdb.execute("context code", to_string=True)
+                self.call('debugger-stop-event', [filename, lineno, context, code], callback=stop_called, errback=stop_error)
             def complete(self, *to_complete):
                 res = rl_attempted_completion(to_complete)
                 res = tuple(res)

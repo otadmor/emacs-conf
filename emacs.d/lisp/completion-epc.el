@@ -154,12 +154,16 @@
     (setq callback (lambda (x) (message "%S" x))))
   (epc-gdb-command-mngr mngr-complete-epc command callback))
 
-(defun debugger-stop-event(working-buffer filename lineno context)
-  ;; (message "STOPPED AT %S:%S" filename lineno)
+(defun debugger-stop-event(working-buffer filename lineno context code)
+  (message "STOPPED AT %S:%S" filename lineno)
   (with-current-buffer working-buffer
     (with-current-buffer (get-buffer-create (concat (buffer-name) "-debugger-context"))
       (erase-buffer)
       (insert context)
+      (ansi-color-apply-on-region (point-min) (point-max)))
+    (with-current-buffer (get-buffer-create (concat (buffer-name) "-debugger-code"))
+      (erase-buffer)
+      (insert code)
       (ansi-color-apply-on-region (point-min) (point-max)))
     (condition-case nil
         (let (
