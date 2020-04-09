@@ -154,7 +154,7 @@
     (setq callback (lambda (x) (message "%S" x))))
   (epc-gdb-command-mngr mngr-complete-epc command callback))
 
-(defun debugger-stop-event(working-buffer filename lineno context code)
+(defun debugger-stop-event(working-buffer filename lineno context code lib-offset)
   (message "STOPPED AT %S:%S" filename lineno)
   (with-current-buffer working-buffer
     (with-current-buffer (get-buffer-create (concat (buffer-name) "-debugger-context"))
@@ -182,7 +182,7 @@
 
 (defun register-post-connection-made-callbacks (mngr working-buffer)
   (lexical-let ((working-buffer working-buffer))
-    (epc:define-method mngr 'debugger-stop-event (lambda (filename lineno context) (debugger-stop-event working-buffer filename lineno context)) "args" "notify emacs for breakpoint.")))
+    (epc:define-method mngr 'debugger-stop-event (lambda (filename lineno context code lib-offset) (debugger-stop-event working-buffer filename lineno context code lib-offset)) "args" "notify emacs for breakpoint.")))
 
 (defun epc:incoming-connection-made-mngr (mngr working-buffer)
   (with-current-buffer working-buffer

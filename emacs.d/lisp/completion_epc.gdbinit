@@ -15,6 +15,15 @@ def rl_attempted_completion(s, start=None, end=None):
         x = gdb.execute('complete ' + s, to_string=True)
     return tuple(x.splitlines())
 DISABLED_SOURCE = False
+
+def lo(addr):
+    vm = list()
+    try:
+        fn = next(x.path for x in get_process_maps() if x.page_start <= addr < x.page_end)
+    except StopIteration:
+        return
+    return fn, min([x.page_start for x in get_process_maps() if x.path == fn])
+
 import os
 if os.environ.get("TERM", "") == 'dumb':
     try:
@@ -112,7 +121,8 @@ if os.environ.get("TERM", "") == 'dumb':
                         print(error)
                 context = gdb.execute("context regs stack trace", to_string=True)
                 code = gdb.execute("context code", to_string=True)
-                self.call('debugger-stop-event', [filename, lineno, context, code], callback=stop_called, errback=stop_error)
+                lib_offset = lo(gdb.selected_frame().pc())
+                self.call('debugger-stop-event', [filename, lineno, context, code, lib_offset], callback=stop_called, errback=stop_error)
             def complete(self, *to_complete):
                 res = rl_attempted_completion(to_complete)
                 res = tuple(res)
