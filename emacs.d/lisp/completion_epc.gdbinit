@@ -16,14 +16,6 @@ def rl_attempted_completion(s, start=None, end=None):
     return tuple(x.splitlines())
 DISABLED_SOURCE = False
 
-def lo(addr):
-    vm = list()
-    try:
-        fn = next(x.path for x in get_process_maps() if x.page_start <= addr < x.page_end)
-    except StopIteration:
-        return
-    return fn, min([x.page_start for x in get_process_maps() if x.path == fn])
-
 import os
 if os.environ.get("TERM", "") == 'dumb':
     try:
@@ -39,7 +31,7 @@ if os.environ.get("TERM", "") == 'dumb':
             # Do nothing when we cannot import the EPC module.
             pass
     else:
-        def EPCHandler__default_handle_error(this, err):
+        def EPCHandler__default_handle_error(this, uid, err):
             if this.handle_error(err):
                 return
             if this.server.debugger or this.server.log_traceback:
@@ -47,7 +39,11 @@ if os.environ.get("TERM", "") == 'dumb':
                 this.logger.error('Unexpected error', exc_info=exc_info)
             if this.server.debugger:
                 this.server.debugger.post_mortem(exc_info[2])
-            name = 'epc-error' if uid is undefined else 'return-error'
+            # undefined is initialied to empty list. this is not good coding on behalf of epc
+            # epc should create singleton class UndefinedUID instead.
+            # currently the best way to check if this is undefined is by checking for list of len 0.
+            isundefined = lambda x: type(uid) == list and len(uid) == 0
+            name = 'epc-error' if isundefined(uid) else 'return-error'
             this._send(name, uid, repr(err))
         EPCHandler.default_handle_error = EPCHandler__default_handle_error
 
@@ -62,9 +58,9 @@ if os.environ.get("TERM", "") == 'dumb':
                 def _accept(res):
                     this._send('return', uid, res)
                 try:
-                    func(_accept, this.default_handle_error, *args)
+                    func(_accept, functools.partial(this.default_handle_error, uid), *args)
                 except Exception as err:
-                    this.default_handle_error(err)
+                    this.default_handle_error(uid, err)
                 return None
             return ['return', uid, func(*args)]
         EPCHandler._handle_call = EPCHandler__handle_call
@@ -99,6 +95,23 @@ if os.environ.get("TERM", "") == 'dumb':
                 def gdbcommand(*cargs, **ckargs):
                     return self.gdb_command(*cargs, **ckargs)
                 self.register_promise(gdb_promise(gdbcommand))
+                def idagetsource(accept, reject, *cargs, **ckargs):
+                    def _source_callback(res):
+                        if res is None:
+                            # have newer request, so drop this one
+                            accept(res)
+                            return
+                        if not res.ready:
+                            raise Exception('get source error, result not ready')
+                        if res.error:
+                            try:
+                                res.value
+                            except Exception as err:
+                                reject(err)
+                        else:
+                            accept(res.value)
+                    get_source_from_ida(*cargs, **ckargs, callback=_source_callback)
+                self.register_promise(idagetsource)
                 gdb.events.stop.connect(self.stop_handler)
             def stop_handler(self, event):
                 symtabline = gdb.selected_frame().find_sal()
@@ -121,7 +134,7 @@ if os.environ.get("TERM", "") == 'dumb':
                         print(error)
                 context = gdb.execute("context regs stack trace", to_string=True)
                 code = gdb.execute("context code", to_string=True)
-                lib_offset = lo(gdb.selected_frame().pc())
+                lib_offset = lo()
                 self.call('debugger-stop-event', [filename, lineno, context, code, lib_offset], callback=stop_called, errback=stop_error)
             def complete(self, *to_complete):
                 res = rl_attempted_completion(to_complete)

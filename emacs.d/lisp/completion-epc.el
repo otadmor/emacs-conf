@@ -154,8 +154,32 @@
     (setq callback (lambda (x) (message "%S" x))))
   (epc-gdb-command-mngr mngr-complete-epc command callback))
 
+(defun epc-gdb-get-source (lib-offset callback)
+  (deferred:$
+    (epc:call-deferred mngr 'idagetsource lib-offset)
+    (deferred:nextc it callback)
+    (deferred:error it
+      (lambda (err) (message "error getting source %S" err)))))
+
+(defun goto-source-line (filename lineno)
+  (condition-case nil
+      (let (
+            (my-buffer (find-file-noselect filename))
+            )
+        ;; (message "buffer is %S" my-buffer)
+        (let (
+              (my-window (display-buffer my-buffer))
+              )
+          ;; (message "window is %S" my-window)
+          (with-selected-window my-window
+            (goto-line lineno)
+            ;; (message "went to line")
+            (winstack-push nil t))))
+    (error nil)))
+
 (defun debugger-stop-event(working-buffer filename lineno context code lib-offset)
-  (message "STOPPED AT %S:%S" filename lineno)
+  ;; (message "STOPPED AT %S:%S" filename lineno)
+  ;; (message "%S" lib-offset)
   (with-current-buffer working-buffer
     (with-current-buffer (get-buffer-create (concat (buffer-name) "-debugger-context"))
       (erase-buffer)
@@ -165,20 +189,17 @@
       (erase-buffer)
       (insert code)
       (ansi-color-apply-on-region (point-min) (point-max)))
-    (condition-case nil
-        (let (
-              (my-buffer (find-file-noselect filename))
-              )
-          ;; (message "buffer is %S" my-buffer)
-          (let (
-                (my-window (display-buffer my-buffer))
-                )
-            ;; (message "window is %S" my-window)
-            (with-selected-window my-window
-              (goto-line lineno)
-              ;; (message "went to line")
-              (winstack-push nil t))))
-      (error nil))))
+    (if (null filename)
+        (lexical-let ((working-buffer working-buffer))
+          (epc-gdb-get-source lib-offset
+                              (lambda (source)
+                                (unless (null source)
+                                  (with-current-buffer working-buffer
+                                    (with-current-buffer (get-buffer-create (concat (buffer-name) "-debugger-source"))
+                                      (erase-buffer)
+                                      (insert source)
+                                      (c-mode)))))))
+      (goto-source-line filename lineno))))
 
 (defun register-post-connection-made-callbacks (mngr working-buffer)
   (lexical-let ((working-buffer working-buffer))
