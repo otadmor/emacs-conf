@@ -26,7 +26,7 @@ def get_proc_names():
 
 def attach_remote_proc_by_name(proc_name):
     procs = get_proc_names()
-    procs = [p for p in procs if proc_name in p[2]]
+    procs = [p for p in procs if len(p) >= 3 and proc_name in p[2]]
     if len(procs) == 0:
        raise Exception('no process with name ' + proc_name)
     if len(procs) > 1:
@@ -154,32 +154,49 @@ else:
             })
             f = self.ida_server.modules.builtins.open(ida_tmp_script, 'wt')
             try:
-                f.write("""
+                f.write(r"""
 import idc
 import idaapi
+from copy import copy
 def load_plugin_decompiler():
     idc.RunPlugin("hexrays", 0)
     idc.RunPlugin("hexarm", 0)
+def tag_addrcode(s):
+    return (s[0] == idaapi.COLOR_ON and
+            s[1] == chr(idaapi.COLOR_ADDR))
+def extract_addresses(func, line):
+    line = line.line
+    anchor = idaapi.ctree_anchor_t()
+    addresses = set()
+    while len(line) > 0:
+        skipcode_index = idaapi.tag_skipcode(line)
+        if skipcode_index == 0:  # No code found
+            line = line[1:]  # Skip one character ahead
+        else:
+            if tag_addrcode(line):
+                addr_tag = int(line[2:skipcode_index], 16)
+                anchor.value = addr_tag
+                if anchor.is_citem_anchor() and not anchor.is_blkcmt_anchor():
+                    address = func.treeitems.at(addr_tag).ea
+                    if address != idaapi.BADADDR:
+                        addresses.add(address)
+            line = line[skipcode_index:]  # Skip the colorcodes
+    return list(addresses)
+def get_lines_ea(func):
+    if func is None:
+        func = ScreenEA()
+    if isinstance(func, (int, long, )):
+        func = idaapi.decompile(idaapi.get_func(func))
+    return [extract_addresses(func, line) for line in func.get_pseudocode()]
 if __name__ == "__main__":
     if len(idc.ARGV) == 3:
         offset = int(idc.ARGV[1], 16)
         if not idaapi.init_hexrays_plugin():
             load_plugin_decompiler()
         try:
-            cfunc = idaapi.decompile(offset)
-            tl = idaapi.treeloc_t()
-            tl.ea = offset
-            tl.itp = idaapi.ITP_SEMI
-            orig_comment = cfunc.get_user_cmt(tl, idaapi.RETRIEVE_ALWAYS)
-            comment_marker = "<---------- HERE"
-            if orig_comment is None:
-                cfunc.set_user_cmt(tl, comment_marker)
-            else:
-                cfunc.set_user_cmt(tl, comment_marker + orig_comment)
-            try:
-                s = str(cfunc)
-            finally:
-                cfunc.set_user_cmt(tl, orig_comment)
+            func = idaapi.decompile(idaapi.get_func(offset))
+            lines = get_lines_ea(func)
+            s = '\n'.join([("**  "   if offset in addrs else "    ") + l for l, addrs in zip(str(func).splitlines(), lines)])
             with open(idc.ARGV[2], 'wt') as f:
                 f.write(s)
         except:
