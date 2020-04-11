@@ -166,7 +166,20 @@ if __name__ == "__main__":
         if not idaapi.init_hexrays_plugin():
             load_plugin_decompiler()
         try:
-            s = str(idaapi.decompile(offset))
+            cfunc = idaapi.decompile(offset)
+            tl = idaapi.treeloc_t()
+            tl.ea = offset
+            tl.itp = idaapi.ITP_SEMI
+            orig_comment = cfunc.get_user_cmt(tl, idaapi.RETRIEVE_ALWAYS)
+            comment_marker = "<---------- HERE"
+            if orig_comment is None:
+                cfunc.set_user_cmt(tl, comment_marker)
+            else:
+                cfunc.set_user_cmt(tl, comment_marker + orig_comment)
+            try:
+                s = str(cfunc)
+            finally:
+                cfunc.set_user_cmt(tl, orig_comment)
             with open(idc.ARGV[2], 'wt') as f:
                 f.write(s)
         except:
