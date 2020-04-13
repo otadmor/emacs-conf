@@ -35,3 +35,7 @@ ff () {
 fs () {
     find -name '*.so*' -exec nm -a --print-file-name --defined-only --dynamic {} \; 2> /dev/null | grep $1
 }
+
+fstr () {
+    find -type f | xargs strings --print-file-name | grep -E ".*?\:.*$1"
+}
