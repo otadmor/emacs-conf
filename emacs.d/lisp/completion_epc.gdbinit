@@ -96,22 +96,8 @@ if os.environ.get("TERM", "") == 'dumb':
                     return self.gdb_command(*cargs, **ckargs)
                 self.register_promise(gdb_promise(gdbcommand))
                 def idagetsource(accept, reject, *cargs, **ckargs):
-                    def _source_callback(res):
-                        if res is None:
-                            # have newer request, so drop this one
-                            accept(res)
-                            return
-                        if not res.ready:
-                            raise Exception('get source error, result not ready')
-                        if res.error:
-                            try:
-                                res.value
-                            except Exception as err:
-                                reject(err)
-                        else:
-                            accept(res.value)
                     def _request_source():
-                        get_source_from_ida(*cargs, **ckargs, callback=_source_callback)
+                        get_source_from_ida(*cargs, **ckargs, callback=(accept, reject))
                     gdb.post_event(_request_source)
                 self.register_promise(idagetsource)
                 gdb.events.stop.connect(self.stop_handler)
