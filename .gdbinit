@@ -96,25 +96,68 @@ except ImportError:
             callback(None)
 else:
     def _get_source(lib, off):
-        import os
-        import subprocess
         if lib.startswith('/'):
             lib = lib[1:]
-        if os.path.exists(lib):
-            ida_input_filename = lib
-        elif os.path.exists(lib + idb_ext):
-            ida_input_filename = lib + idb_ext
-        else:
-            raise Exception("idb or binary not found", lib)
-        command = [ida_path, '-A', '-S%s 0x%X %s' % (ida_tmp, off, ida_tmp_out, ), ida_input_filename]
-        print('running command: %s' % (' '.join(command),))
-        subprocess.run(command)
-        f = open(ida_tmp_out, 'rt')
+        import os
+        import subprocess
+        import time
+        import tempfile
+        from epc.client import EPCClient
+        temp_dir = tempfile.gettempdir()
+        server_ports_filename = os.path.join(temp_dir, 'ida_servers.txt')
+        base_dir = os.getcwd()
+        lib = os.path.join(base_dir, lib)
+        error_filename = "%s_idaerror.txt" % (os.path.join(temp_dir, os.path.basename(lib)), )
         try:
-            return f.read()
+            os.unlink(error_filename)
+        except:
+            pass
+        def get_ida_server_port():
+            ida_input_filename = lib.replace('\\', '/') + idb_ext
+            ida_servers = [l.split(None, 1) for l in open(server_ports_filename, 'r+t').readlines()]
+            ida_servers = [port for port, image in ida_servers if image.replace('\n', '') == ida_input_filename]
+            assert len(ida_servers) > 0, "%s not found in ida server database" % (ida_input_filename,)
+            assert ida_servers[0] != '-', "%s not found in ida server database" % (ida_input_filename,)
+            return int(ida_servers[0])
+        def run_ida_with_server(lib):
+            if os.path.exists(lib + ".til"):
+                raise Exception("idb is already opened or not closed correctly", lib)
+            elif os.path.exists(lib + idb_ext):
+                ida_input_filename = lib + idb_ext
+            elif os.path.exists(lib):
+                raise Exception("binary found but without idb", lib, idb_ext)
+            else:
+                raise Exception("binary not found", lib)
+            command = [ida_path, '-S%s' % (ida_tmp_script, ), ida_input_filename]
+            print('running command: %s' % (' '.join(command),))
+            subprocess.Popen(command)
+            print('command returned: %s' % (' '.join(command),))
+        try:
+            port = get_ida_server_port()
+        except (FileNotFoundError, AssertionError):
+            run_ida_with_server(lib)
+        port = None
+        for _ in range(10):
+            try:
+                port = get_ida_server_port()
+                if port is not None:
+                   time.sleep(0.5)
+                   break
+            except (FileNotFoundError, AssertionError):
+                time.sleep(0.5)
+        else:
+            try:
+                extra_info = open(error_filename, 'rt').read()
+            except FileNotFoundError:
+                extra_info = "ida seems to start correctly"
+            raise Exception("cannot connect to ida server", extra_info)
+        print('connect to port %d' % (port,))
+        conn = EPCClient(("localhost", port))
+        print('connected, requesting offset %X' % (off,))
+        try:
+            return conn.call_sync('decompile_with_ea_lines', [off,])
         finally:
-            f.close()
-
+            conn.close()
     class IdaRemoteHandler(object):
         def __init__(self):
             self.ida_server = None
@@ -145,19 +188,14 @@ else:
             addr_string = '%s_%d' % (my_addr[0].replace('.', '_').replace(':', '_'), my_addr[1],)
             remote_tmp_dir = self.ida_server.modules.tempfile.gettempdir()
             ida_tmp_script = self.ida_server.modules.os.path.join(remote_tmp_dir, 'idatmpscript_%s.py' % (addr_string,))
-            ida_tmp_out = self.ida_server.modules.os.path.join(remote_tmp_dir, 'idatmpout_%s.txt' % (addr_string,))
-            self._get_source = rpyc.utils.classic.teleport_function(self.ida_server, _get_source, globals={
-                'ida_tmp' : ida_tmp_script,
-                'idb_ext' : idb_ext,
-                'ida_path' : ida_path,
-                'ida_tmp_out' : ida_tmp_out,
-            })
+            self.ida_server.modules.atexit.register(self.ida_server.modules.os.unlink, ida_tmp_script)
             f = self.ida_server.modules.builtins.open(ida_tmp_script, 'wt')
             try:
                 f.write(r"""
 import idc
 import idaapi
 from copy import copy
+import threading
 def load_plugin_decompiler():
     idc.RunPlugin("hexrays", 0)
     idc.RunPlugin("hexarm", 0)
@@ -188,27 +226,118 @@ def get_lines_ea(func):
     if isinstance(func, (int, long, )):
         func = idaapi.decompile(idaapi.get_func(func))
     return [extract_addresses(func, line) for line in func.get_pseudocode()]
+def match_lines_asm(offset):
+    func = idaapi.decompile(idaapi.get_func(offset))
+    lines = get_lines_ea(func)
+    s = '\n'.join([("**  "   if offset in addrs else "    ") + l for l, addrs in zip(str(func).splitlines(), lines)])
+    return s
+def run_ida_server(errors):
+    import os
+    import threading
+    import signal
+    from time import sleep
+    import tempfile
+    import atexit
+    from epc.py3compat import SocketServer
+    from epc.handler import EPCHandler
+    from epc.server import EPCServer
+    from epc.utils import newthread
+    server_ports_filename = os.path.join(tempfile.gettempdir(), 'ida_servers.txt')
+    def update_ida_server_port(db_path, _image_name, port):
+        if port is None:
+            port = '-'
+        else:
+            port = str(port)
+        _image_name = _image_name.replace('\\', '/')
+        with open(db_path, 'w+t') as f:
+             f.seek(0)
+             should_write_filename = False
+             while True:
+                 current_pos = f.tell()
+                 l = f.readline()
+                 l = l.replace('\n', '')
+                 if l == '':
+                     should_write_filename = True
+                     break
+                 try:
+                     image_name_in_file = l.split(None, 1)[1]
+                 except:
+                     errors.append("invalid database name %r" % (l,))
+                 else:
+                     if image_name_in_file == _image_name:
+                         break
+             f.seek(current_pos)
+             f.write(port.ljust(8))
+             if should_write_filename:
+                 f.write(_image_name + '\n')
+    class ThreadingDaemonEPCHandler(EPCHandler):
+        def _handle(self, sexp):
+            # running this thread makes sure each request from the same user will be in its own thread
+            t = newthread(self, target=EPCHandler._handle, args=(self, sexp))
+            t.daemon = True
+            t.start()
+    class ThreadingDaemonEPCServer(SocketServer.ThreadingMixIn, EPCServer):
+        # inheriting from ThreadingMixIn makes sure each client request listener has its own thread
+        daemon_threads = True
+        def __init__(self, *args, **kwds):
+            kwds.update(RequestHandlerClass=ThreadingDaemonEPCHandler)
+            EPCServer.__init__(self, *args, **kwds)
+    ida_server = ThreadingDaemonEPCServer(('localhost', 0))
+    @ida_server.register_function
+    def decompile_with_ea_lines(offset):
+        batch(1)
+        try:
+            return match_lines_asm(offset)
+        finally:
+            batch(0)
+    ida_server_port = ida_server.server_address[1]
+    ida_server_thread = threading.Thread(target=ida_server.serve_forever)
+    ida_server_thread.daemon = True
+    image_name =  idc.get_idb_path()
+    def closeserver(_image_name):
+        try:
+            update_ida_server_port(server_ports_filename, _image_name, None)
+        finally:
+            ida_server.shutdown()
+            ida_server_thread.join()
+    atexit.register(closeserver, image_name)
+    update_ida_server_port(server_ports_filename, image_name, ida_server_port)
+    ida_server_thread.start()
 if __name__ == "__main__":
-    if len(idc.ARGV) == 3:
-        offset = int(idc.ARGV[1], 16)
+    errors = []
+    batch(1)
+    import tempfile
+    temp_base_dir = tempfile.gettempdir()
+    try:
         if not idaapi.init_hexrays_plugin():
             load_plugin_decompiler()
+        idc.auto_wait()
+        run_ida_server(errors)
+    except:
         try:
-            func = idaapi.decompile(idaapi.get_func(offset))
-            lines = get_lines_ea(func)
-            s = '\n'.join([("**  "   if offset in addrs else "    ") + l for l, addrs in zip(str(func).splitlines(), lines)])
-            with open(idc.ARGV[2], 'wt') as f:
-                f.write(s)
-        except:
             import traceback
-            with open(idc.ARGV[2], 'wt') as f:
+            with open("%s_idaerror.txt" % (os.path.join(temp_base_dir, idaapi.get_root_filename()), ), 'wt') as f:
+                f.write('cwd = %s\n' % (os.getcwd(),))
+                f.write('errors:\n' + '\n'.join(errors))
                 traceback.print_exc(file=f)
-    idc.Exit(0)
+        finally:
+            qexit(0) # idc.Exit(1)
+    else:
+        try:
+            os.unlink("%s_idaerror.txt" % (os.path.join(temp_base_dir, idaapi.get_root_filename()), ))
+        except:
+            pass
+    finally:
+        batch(0)
 """)
             finally:
                 f.close()
-            self.serve_thread = threading.Thread(target=self.ida_server.serve_all)
-            self.serve_thread.start()
+            self._get_source = rpyc.utils.classic.teleport_function(self.ida_server, _get_source, globals={
+                'ida_tmp_script' : ida_tmp_script,
+                'idb_ext' : idb_ext,
+                'ida_path' : ida_path,
+            })
+            self.serve_thread = rpyc.utils.helpers.BgServingThread(self.ida_server)
         def check_ida_server(self):
             if not self.ida_server:
                 return False
