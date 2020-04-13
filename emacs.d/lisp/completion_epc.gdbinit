@@ -110,7 +110,9 @@ if os.environ.get("TERM", "") == 'dumb':
                                 reject(err)
                         else:
                             accept(res.value)
-                    get_source_from_ida(*cargs, **ckargs, callback=_source_callback)
+                    def _request_source():
+                        get_source_from_ida(*cargs, **ckargs, callback=_source_callback)
+                    gdb.post_event(_request_source)
                 self.register_promise(idagetsource)
                 gdb.events.stop.connect(self.stop_handler)
             def stop_handler(self, event):
