@@ -33,5 +33,5 @@ ff () {
 }
 
 fs () {
-    find lib/ -name '*.so*' -exec nm --print-file-name --defined-only --dynamic {} \; | grep $1
+    find -name '*.so*' -exec nm -a --print-file-name --defined-only --dynamic {} \; 2> /dev/null | grep $1
 }
