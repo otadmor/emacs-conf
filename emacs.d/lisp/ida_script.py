@@ -8,12 +8,12 @@ import idc
 import idaapi
 from copy import copy
 import threading
+from collections import defaultdict
 def load_plugin_decompiler():
     idc.RunPlugin("hexrays", 0)
     idc.RunPlugin("hexarm", 0)
 def tag_addrcode(s):
-    return (s[0] == idaapi.COLOR_ON and
-            s[1] == chr(idaapi.COLOR_ADDR))
+    return s[0] == idaapi.COLOR_ON and s[1] == chr(idaapi.COLOR_ADDR)
 def extract_addresses(func, line):
     line = line.line
     anchor = idaapi.ctree_anchor_t()
@@ -31,13 +31,28 @@ def extract_addresses(func, line):
                     if address != idaapi.BADADDR:
                         addresses.add(address)
             line = line[skipcode_index:]  # Skip the colorcodes
-    return list(addresses)
-def get_lines_ea(func):
+    return addresses
+def get_lines_ea(func=None):
     if func is None:
         func = ScreenEA()
     if isinstance(func, (int, long, )):
         func = idaapi.decompile(idaapi.get_func(func))
-    return [extract_addresses(func, line) for line in func.get_pseudocode()]
+    lines = [extract_addresses(func, line) for line in func.get_pseudocode()]
+    ea_to_lines = defaultdict(set)
+    for i, eas in enumerate(lines):
+        for ea in eas:
+            ea_to_lines[ea].add(i)
+    chunk_ea = first_func_chunk(func.entry_ea)
+    func_body = func.body
+    while chunk_ea != idaapi.BADADDR:
+        chunk_end_ea = get_fchunk_attr(chunk_ea, FUNCATTR_END)
+        ea = chunk_ea
+        while ea != idaapi.BADADDR:
+            for i in ea_to_lines[func_body.find_closest_addr(ea).ea]:
+                lines[i].add(ea)
+            ea = next_head(ea, chunk_end_ea)
+        chunk_ea = next_func_chunk(chunk_ea, chunk_ea)
+    return [list(line) for line in lines]
 def match_lines_asm(offset):
     func = idaapi.decompile(idaapi.get_func(offset))
     lines = get_lines_ea(func)
