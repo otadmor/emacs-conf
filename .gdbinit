@@ -100,8 +100,6 @@ else:
     class IdaRemoteHandler(object):
         def __init__(self):
             self.ida_server = None
-            self.serve_thread = None
-            self._get_source = None
             self.in_request = False
             self.requested_params = None
         def connect_ida_server(self, ip=None, port=19999, callback=None):
