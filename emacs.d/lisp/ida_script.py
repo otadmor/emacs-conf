@@ -56,8 +56,10 @@ def get_lines_ea(func=None):
 def match_lines_asm(offset):
     func = idaapi.decompile(idaapi.get_func(offset))
     lines = get_lines_ea(func)
-    s = '\n'.join([("**  "   if offset in addrs else "    ") + l for l, addrs in zip(str(func).splitlines(), lines)])
-    return s
+    return [
+        (offset in addrs, l, [(addr == offset, idc.GetDisasm(addr)) for addr in addrs])
+        for l, addrs in zip(str(func).splitlines(), lines)
+    ]
 def run_ida_server(errors):
     from epc.py3compat import SocketServer
     from epc.handler import EPCHandler

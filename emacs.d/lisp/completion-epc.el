@@ -177,6 +177,28 @@
             (winstack-push nil t))))
     (error nil)))
 
+(defun gdb-request-parse-source-asm-lines (working-buffer)
+  (lexical-let ((working-buffer working-buffer))
+    (epc-gdb-get-source lib-offset
+                        (lambda (source)
+                          (unless (null source)
+                            ;; (message "got source %S" source)
+                            (setq global-source source)
+                            ;; (message "2 %S" (mapconcat 'identity (mapcar 'cadr source) "\n"))
+                            (let* (
+                                   (c-source (with-temp-buffer (insert (mapconcat 'cadr source "\n"))
+                                                               (c-mode)
+                                                               (buffer-substring (point-min) (point-max))))
+                                   )
+                              ;; (message "0")
+                              ;; (message "1 %S" (mapconcat 'identity 'c-source "\n"))
+                              (with-current-buffer working-buffer
+                                (with-current-buffer (get-buffer-create (concat (buffer-name) "-debugger-source"))
+                                  (erase-buffer)
+                                  (insert c-source)
+                                  ))
+                              ))))))
+
 (defun debugger-stop-event(working-buffer filename lineno context code lib-offset)
   ;; (message "STOPPED AT %S:%S" filename lineno)
   ;; (message "%S" lib-offset)
@@ -190,15 +212,7 @@
       (insert code)
       (ansi-color-apply-on-region (point-min) (point-max)))
     (if (null filename)
-        (lexical-let ((working-buffer working-buffer))
-          (epc-gdb-get-source lib-offset
-                              (lambda (source)
-                                (unless (null source)
-                                  (with-current-buffer working-buffer
-                                    (with-current-buffer (get-buffer-create (concat (buffer-name) "-debugger-source"))
-                                      (erase-buffer)
-                                      (insert source)
-                                      (c-mode)))))))
+        (gdb-request-parse-source-asm-lines working-buffer)
       (goto-source-line filename lineno))))
 
 (defun register-post-connection-made-callbacks (mngr working-buffer)
