@@ -177,11 +177,13 @@
             (winstack-push nil t))))
     (error nil)))
 
-;; (defface coverage-high-covered-face
-;;   '((default (:background (face-background 'coverage-covered-face)
-;;               :inherit coverage-covered-face)))
-;;   "The face used for different coverage alongside the original coverage"
-;;   :group 'coverage)
+(defface coverage-high-covered-face
+  '((((class color) (background light))
+     :background "#aaccaa")
+    (((class color) (background dark))
+     :background "#113311"))
+  "The face used for different coverage alongside the original coverage"
+  :group 'coverage)
 
 (defun gdb-apply-faces ()
   (let* (
@@ -197,7 +199,7 @@
           (let (
                 (execute-overlay (make-overlay start-pos execute-end-pos))
                 )
-            (overlay-put execute-overlay 'face 'coverage-covered-face)) ; hi-blue hi-green highlight
+            (overlay-put execute-overlay 'face 'coverage-covered-face))
           ))
       (setq start-pos end-pos))))
 
@@ -284,7 +286,10 @@
                                       (unless (string= asm-lines "")
                                         (let ((code-overlay (make-overlay (line-beginning-position) (+ (line-end-position) 1) nil t)))
                                           (end-of-line)
-                                          (let ((asm-begin (point)))
+                                          (let (
+                                                (asm-begin (point))
+                                                (line-executed (get-text-property (overlay-start code-overlay) 'executed))
+                                                )
                                             (insert "\n")
                                             (insert asm-lines)
                                             (let ((asm-line-count (count-lines asm-begin (point))))
@@ -316,6 +321,10 @@
                                                 (overlay-put code-overlay 'keymap code-overlay-map)
                                                 (overlay-put asm-overlay 'i-am-asm t)
                                                 (overlay-put asm-overlay 'keymap asm-overlay-map)
+                                                (let ((asm-box-overlay (make-overlay (+ asm-begin 1) asm-end nil t)))
+                                                  (if line-executed
+                                                      (overlay-put asm-box-overlay 'face 'coverage-high-covered-face)
+                                                    (overlay-put asm-box-overlay 'face 'coverage-uncovered-face)))
                                                 (let ((code-executed (get-text-property (overlay-start code-overlay) 'executed)))
                                                   (when (or (not code-executed) first-shown)
                                                     (overlay-put asm-overlay 'invisible t))
