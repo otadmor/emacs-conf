@@ -327,7 +327,7 @@
     ;; (setq ido-file-extensions-order t)
     (global-set-key (kbd "C-x C-f") 'counsel-find-file)
     (global-set-key (kbd "M-x") 'counsel-M-x)
-    (global-set-key (kbd "C-x C-a") 'counsel-locate)
+    (global-set-key (kbd "C-x a") 'counsel-locate)
     (global-set-key (kbd "C-x p") 'counsel-git)
     )
   )
