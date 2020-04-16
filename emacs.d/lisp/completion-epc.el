@@ -235,14 +235,14 @@
       (setq overlays (cdr overlays)))
     found))
 
-(defun code-show-or-hide-assembly()
+(defun gdb-epc-code-show-or-hide-assembly()
   (interactive)
   (let ((code-overlays (elisp--find-overlays-specifying 'asm-overlay)))
     (dolist (code-overlay code-overlays)
       (let ((asm-overlay (overlay-get code-overlay 'asm-overlay)))
         (overlay-put asm-overlay 'invisible (not (overlay-get asm-overlay 'invisible)))))))
 
-(defun asm-hide-assembly()
+(defun gdb-epc-asm-hide-assembly()
   (interactive)
   (let ((asm-overlays (elisp--find-overlays-specifying 'i-am-asm)))
     (dolist (asm-overlay asm-overlays)
@@ -252,13 +252,14 @@
 
 (defvar code-overlay-map
   (let ((map (make-sparse-keymap)))
-    (define-key map [(tab)] 'code-show-or-hide-assembly)
+    (define-key map [(tab)] 'gdb-epc-code-show-or-hide-assembly)
     map)
   "Code keymap to show or hide assembly")
 
 (defvar asm-overlay-map
   (let ((map (make-sparse-keymap)))
-    (define-key map [(tab)] 'asm-hide-assembly)
+    (define-key map [(tab)] 'gdb-epc-asm-hide-assembly)
+    (define-key map [f2] 'gdb-epc-asm-toggle-breakpoint)
     map)
   "Code keymap to hide assembly")
 
