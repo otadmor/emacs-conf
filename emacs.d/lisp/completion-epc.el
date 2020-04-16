@@ -300,6 +300,7 @@
                                                 (let* (
                                                        (asm-addr (get-text-property (point) 'addr))
                                                        (addr-str (format "%s:%08x" (file-name-nondirectory lib) asm-addr))
+                                                       (addr-str-len (length addr-str))
                                                        )
                                                   (let* (
                                                          (line-start (point))
@@ -309,7 +310,7 @@
                                                     (let* (
                                                            (line-end (point))
                                                            (line-len (- line-end line-start -1))
-                                                           (line-len-format (format "%%%ds" (- 100 line-len)))
+                                                           (line-len-format (format "%%%ds" (- 120 line-len addr-str-len)))
                                                            )
                                                       (insert (propertize (format line-len-format addr-str)
                                                                           'executed asm-executed
