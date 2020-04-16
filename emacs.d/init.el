@@ -124,6 +124,7 @@
 (global-set-key [f4] 'next-error)
 (global-set-key [(shift f4)] 'previous-error)
 (global-set-key [f1] 'manual-entry)
+(global-set-key [f2] nil)
 (global-set-key [(shift f1)] 'info)
 (global-set-key [(control f10)] 'start-kbd-macro)
 (global-set-key [(meta f10)] 'end-kbd-macro)
