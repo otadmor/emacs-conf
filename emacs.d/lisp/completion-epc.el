@@ -139,20 +139,21 @@
     (setenv "EPC_COMPLETION_SERVER_PORT" (format "%d" port))))
 
 ;; usage : (epc-gdb-command-mngr mngr-complete-epc "context regs" (lambda (x) (message "REGS=%S" x)))
-(defun epc-gdb-command-mngr (mngr command callback)
-  (deferred:$
-    (epc:call-deferred mngr 'gdbcommand command)
-    (deferred:nextc it callback)
-    (deferred:error it
-      (lambda (err) (message "error %S" err) (cond
-                     ((stringp err) (message "error completion epc %S" err))
-                     ((eq 'epc-error (car err)) (message "error completion epc2 %S" (cadr err))))))))
+(defun epc-gdb-command-mngr (mngr command callback &optional errback)
+  (lexical-let ((errback errback))
+    (deferred:$
+      (epc:call-deferred mngr 'gdbcommand command)
+      (deferred:nextc it callback)
+      (deferred:error it
+        (lambda (err) (if (null errback)
+                          (message "error %S" err)
+                        (funcall errback err)))))))
 
-(defun epc-gdb-command (command &optional callback)
+(defun epc-gdb-command (command &optional callback errback)
   (interactive "sGDB Command: ")
   (when (null callback)
     (setq callback (lambda (x) (message "%S" x))))
-  (epc-gdb-command-mngr mngr-complete-epc command callback))
+  (epc-gdb-command-mngr mngr-complete-epc command callback errback))
 
 (defun epc-gdb-get-source (lib-offset callback)
   (deferred:$
