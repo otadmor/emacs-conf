@@ -98,6 +98,7 @@ try:
     import epc
     from epc.client import EPCClient
     from functools import partial
+    from collections import defaultdict
 except ImportError:
     def get_source_from_ida(lib=None, off=None, callback=None):
         if callback is None:
@@ -105,15 +106,26 @@ except ImportError:
         else:
             callback(None)
 else:
-    def parse_source_results(off, lines):
+    def parse_source_results(off, lines, breakpoints):
         lines_addresses = [
             set([addr for _, addr in line[1]])
             for line in lines
         ]
         return [
-            (off in line_addresses, line[0], [(off == addr, disasm, addr) for disasm, addr in line[1]])
+            (off in line_addresses, line[0], [(off == addr, disasm, addr, list(breakpoints[addr])) for disasm, addr in line[1]])
             for line_addresses, line in zip(lines_addresses, lines)
         ]
+    def get_all_breakpoints():
+        try:
+            return [(lo(int(b.location[2:], 16)), b.number) for b in gdb.breakpoints() if b.location.startswith('* ')]
+        except:
+            return []
+    def get_breakpoints_for_lib(lib):
+        break_at_addr = defaultdict(set)
+        for (l, addr), no in get_all_breakpoints():
+            if l == lib:
+                break_at_addr[addr].add(no)
+        return break_at_addr
     class IdaRemoteHandler(object):
         def __init__(self):
             self.ida_server = None
@@ -149,7 +161,8 @@ else:
         def get_source(self, lib, off, callback=None):
             cached = self.search_in_cache(lib, off)
             if cached is not None:
-                cached_parsed = parse_source_results(off, cached)
+                lib_breakpoints = get_breakpoints_for_lib(lib)
+                cached_parsed = parse_source_results(off, cached, lib_breakpoints)
                 if callback is not None:
                     accept, _ = callback
                     accept(cached_parsed)
@@ -168,7 +181,8 @@ else:
                 try:
                     lines = self.ida_server.call_sync("get_source", [lib, off])
                     self.cache_results(lib, lines)
-                    return parse_source_results(off, lines)
+                    lib_breakpoints = get_breakpoints_for_lib(lib)
+                    return parse_source_results(off, lines, lib_breakpoints)
                 finally:
                     self.in_request = False
             else:
@@ -181,7 +195,8 @@ else:
                         self.in_request = False
                         if is_accept:
                             self.cache_results(lib, res)
-                            accept(parse_source_results(off, res))
+                            lib_breakpoints = get_breakpoints_for_lib(lib)
+                            accept(parse_source_results(off, res, lib_breakpoints))
                         else:
                             reject(res)
                     self.ida_server.call("get_source", [lib, off],
