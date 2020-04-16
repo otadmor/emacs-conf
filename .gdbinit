@@ -145,6 +145,7 @@ else:
                 if callback is not None:
                     accept, _ = callback
                     accept(cached_parsed)
+                    return
                 else:
                     return cached_parsed
             self.requested_params = (lib, off)
