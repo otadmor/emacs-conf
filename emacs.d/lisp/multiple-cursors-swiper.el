@@ -85,7 +85,7 @@
                               (set-marker (make-marker)
                                           (let ((mark-even-if-inactive t))
                                             line-begin)))
-                      nil) str)
+                           nil) str)
   str)
 
 (cl-defun swiper--mcs-candidates (&optional numbers-width &key advancer1 initiater1 use-marker use-format-mode-line include-empty-last-line)
