@@ -177,27 +177,75 @@
             (winstack-push nil t))))
     (error nil)))
 
+;; (defface coverage-high-covered-face
+;;   '((default (:background (face-background 'coverage-covered-face)
+;;               :inherit coverage-covered-face)))
+;;   "The face used for different coverage alongside the original coverage"
+;;   :group 'coverage)
+
+(defun gdb-apply-faces ()
+  (let* (
+         (start-pos (point-min))
+         (end-pos nil)
+         )
+    (while (not (null start-pos))
+      (setq end-pos (next-single-property-change start-pos 'executed))
+      (when (get-text-property start-pos 'executed)
+        (let (
+              (execute-end-pos (if (null end-pos) (point-max) (+ end-pos 1)))
+              )
+          (let (
+                (execute-overlay (make-overlay start-pos execute-end-pos))
+                )
+            (overlay-put execute-overlay 'face 'coverage-covered-face)) ; hi-blue hi-green highlight
+          ))
+      (setq start-pos end-pos))))
+
+(defun gdb-parse-asm-lines (asm-lines)
+  (with-temp-buffer (insert
+                     (mapconcat
+                      (lambda (x) (propertize (cadr x) 'executed (car x)))
+                      asm-lines "\n"))
+                    (asm-mode)
+                    (font-lock-ensure)
+                    (buffer-substring (point-min) (point-max))))
+
+(defun gdb-parse-c-lines (c-lines)
+  (with-temp-buffer (insert
+                     (mapconcat
+                      (lambda (x) (propertize (concat "        " (cadr x)) 'executed (car x)))
+                      c-lines "\n"))
+                    (c-mode)
+                    (font-lock-ensure)
+                    (buffer-substring (point-min) (point-max))))
+
 (defun gdb-request-parse-source-asm-lines (working-buffer)
   (lexical-let ((working-buffer working-buffer))
     (epc-gdb-get-source lib-offset
                         (lambda (source)
                           (unless (null source)
-                            ;; (message "got source %S" source)
                             (setq global-source source)
-                            ;; (message "2 %S" (mapconcat 'identity (mapcar 'cadr source) "\n"))
-                            (let* (
-                                   (c-source (with-temp-buffer (insert (mapconcat 'cadr source "\n"))
-                                                               (c-mode)
-                                                               (buffer-substring (point-min) (point-max))))
-                                   )
-                              ;; (message "0")
-                              ;; (message "1 %S" (mapconcat 'identity 'c-source "\n"))
-                              (with-current-buffer working-buffer
-                                (with-current-buffer (get-buffer-create (concat (buffer-name) "-debugger-source"))
-                                  (erase-buffer)
-                                  (insert c-source)
-                                  ))
-                              ))))))
+                            (with-current-buffer working-buffer
+                              (with-current-buffer (get-buffer-create (concat (buffer-name) "-debugger-source"))
+                                (erase-buffer)
+                                (let (
+                                      (c-source (gdb-parse-c-lines source))
+                                      )
+                                  (insert c-source))
+                                (beginning-of-buffer)
+                                (dolist (x source)
+                                  (end-of-line)
+                                  (let (
+                                        (asm-lines (gdb-parse-asm-lines (caddr x)))
+                                        )
+                                    (unless (string= asm-lines "")
+                                      (insert "\n")
+                                      (insert asm-lines)
+                                      ))
+                                  (end-of-line 2))
+                                (gdb-apply-faces)
+                                ))
+                            )))))
 
 (defun debugger-stop-event(working-buffer filename lineno context code lib-offset)
   ;; (message "STOPPED AT %S:%S" filename lineno)
