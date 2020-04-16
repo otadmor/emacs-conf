@@ -204,7 +204,10 @@
 (defun gdb-parse-asm-lines (asm-lines)
   (with-temp-buffer (insert
                      (mapconcat
-                      (lambda (x) (propertize (cadr x) 'executed (car x)))
+                      (lambda (x) (propertize (cadr x)
+                                              'executed (car x)
+                                              'addr (caddr x)
+                                              ))
                       asm-lines "\n"))
                     (asm-mode)
                     (font-lock-ensure)
@@ -259,7 +262,7 @@
 (setq --epc-gdb--orig-command-error-function command-error-function)
 
 (defun gdb-request-parse-source-asm-lines (working-buffer lib-offset)
-  (lexical-let ((working-buffer working-buffer))
+  (lexical-let ((working-buffer working-buffer) (lib (car lib-offset)))
     (epc-gdb-get-source lib-offset
                         (lambda (source)
                           (unless (null source)
@@ -284,6 +287,29 @@
                                           (let ((asm-begin (point)))
                                             (insert "\n")
                                             (insert asm-lines)
+                                            (let ((asm-line-count (count-lines asm-begin (point))))
+                                              (goto-char (+ asm-begin 1))
+                                              (dotimes (i (- asm-line-count 1))
+                                                (let* (
+                                                       (asm-addr (get-text-property (point) 'addr))
+                                                       (addr-str (format "%s:%08x" (file-name-nondirectory lib) asm-addr))
+                                                       )
+                                                  (let* (
+                                                         (line-start (point))
+                                                         (asm-executed (get-text-property line-start 'executed))
+                                                         )
+                                                    (end-of-line)
+                                                    (let* (
+                                                           (line-end (point))
+                                                           (line-len (- line-end line-start -1))
+                                                           (line-len-format (format "%%%ds" (- 100 line-len)))
+                                                           )
+                                                      (insert (propertize (format line-len-format addr-str)
+                                                                          'executed asm-executed
+                                                                          'addr asm-addr)))))
+                                                (beginning-of-line 2)))
+                                            (unless (= (point) (point-max))
+                                              (backward-char))
                                             (let ((asm-end (point)))
                                               (let ((asm-overlay (make-overlay asm-begin asm-end nil t)))
                                                 (overlay-put code-overlay 'asm-overlay asm-overlay)
@@ -294,7 +320,7 @@
                                                   (when (or (not code-executed) first-shown)
                                                     (overlay-put asm-overlay 'invisible t))
                                                   (when code-executed
-                                                      (setq first-shown t)))))))))
+                                                    (setq first-shown t)))))))))
                                     (end-of-line 2)))
                                 (gdb-apply-faces)
                                 (read-only-mode t))))))))
