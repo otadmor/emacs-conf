@@ -219,7 +219,7 @@
                     (font-lock-ensure)
                     (buffer-substring (point-min) (point-max))))
 
-(defun gdb-request-parse-source-asm-lines (working-buffer)
+(defun gdb-request-parse-source-asm-lines (working-buffer lib-offset)
   (lexical-let ((working-buffer working-buffer))
     (epc-gdb-get-source lib-offset
                         (lambda (source)
@@ -260,7 +260,7 @@
       (insert code)
       (ansi-color-apply-on-region (point-min) (point-max)))
     (if (null filename)
-        (gdb-request-parse-source-asm-lines working-buffer)
+        (gdb-request-parse-source-asm-lines working-buffer lib-offset)
       (goto-source-line filename lineno))))
 
 (defun register-post-connection-made-callbacks (mngr working-buffer)
