@@ -185,6 +185,10 @@
   "The face used for different coverage alongside the original coverage"
   :group 'coverage)
 
+(setq --gdb-epc--gdb-mi-loaded nil)
+(with-eval-after-load 'gdb-mi
+  (setq --gdb-epc--gdb-mi-loaded t))
+(require 'gdb-mi)
 (defun gdb-apply-faces ()
   (let* (
          (start-pos (point-min))
@@ -193,15 +197,16 @@
     (while (not (null start-pos))
       (setq end-pos (next-single-property-change start-pos 'executed))
       (when (get-text-property start-pos 'executed)
-        (let (
-              (execute-end-pos (if (null end-pos) (point-max) (+ end-pos 1)))
-              )
-          (let (
-                (execute-overlay (make-overlay start-pos execute-end-pos))
-                )
-            (overlay-put execute-overlay 'face 'coverage-covered-face))
-          ))
-      (setq start-pos end-pos))))
+        (let ((execute-end-pos (if (null end-pos) (point-max) (+ end-pos 1))))
+          (let ((execute-overlay (make-overlay start-pos execute-end-pos)))
+            (overlay-put execute-overlay 'face 'coverage-covered-face))))
+      (setq start-pos end-pos)))
+  (when --gdb-epc--gdb-mi-loaded
+    (beginning-of-buffer)
+    (while (/= (point) (point-max))
+      (when (get-text-property (point) 'break)
+        (gdb-put-breakpoint-icon t 0))
+      (beginning-of-line 2))))
 
 (defun gdb-parse-asm-lines (asm-lines)
   (with-temp-buffer (insert
@@ -209,6 +214,7 @@
                       (lambda (x) (propertize (cadr x)
                                               'executed (car x)
                                               'addr (caddr x)
+                                              'break (cadddr x)
                                               ))
                       asm-lines "\n"))
                     (insert "\n")
@@ -279,6 +285,8 @@
                                     (funcall --epc-gdb--orig-command-error-function data context caller)))
                                 (setq-local command-error-function #'ignore-readonly-error-function)
                                 (erase-buffer)
+                                (when --gdb-epc--gdb-mi-loaded
+                                  (gdb-remove-breakpoint-icons (point-min) (point-max)))
                                 (let ((c-source (gdb-parse-c-lines source)))
                                   (insert c-source))
                                 (insert "\n")
