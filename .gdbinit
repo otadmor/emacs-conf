@@ -97,6 +97,15 @@ except ImportError:
         else:
             callback(None)
 else:
+    def parse_source_results(off, lines):
+        lines_addresses = [
+            set([addr for _, addr in line[1]])
+            for line in lines
+        ]
+        return [
+            (off in line_addresses, line[0], [(off == addr, disasm, addr) for disasm, addr in line[1]])
+            for line_addresses, line in zip(lines_addresses, lines)
+        ]
     class IdaRemoteHandler(object):
         def __init__(self):
             self.ida_server = None
@@ -128,7 +137,7 @@ else:
                 if not self.check_ida_server():
                     self.connect_ida_server()
                 try:
-                    return self.ida_server.call_sync("get_source", [lib, off])
+                    return parse_source_results(off, self.ida_server.call_sync("get_source", [lib, off]))
                 finally:
                     self.in_request = False
             else:
@@ -140,7 +149,7 @@ else:
                             return
                         self.in_request = False
                         if is_accept:
-                            accept(res)
+                            accept(parse_source_results(off, res))
                         else:
                             reject(res)
                     self.ida_server.call("get_source", [lib, off],
