@@ -111,6 +111,7 @@ else:
             self.ida_server = None
             self.in_request = False
             self.requested_params = None
+            self.cached_results = {}
         def connect_ida_server(self, ip=None, port=19999, callback=None):
             if ip is None:
                ip = __config__['ida-interact.host'][0]
@@ -124,9 +125,28 @@ else:
                 self.ida_server.call(*args, callback=accept, errback=reject)
             else:
                 return self.ida_server.call_sync(*args)
+        def cache_results(self, lib, lines):
+            addresses = set.union(*(
+                set([addr for _, addr in line[1]])
+                for line in lines
+            ))
+            self.cached_results.update({
+                (lib, addr) : lines
+                for addr in addresses
+            })
+        def search_in_cache(self, lib, off):
+            return self.cached_results.get((lib, off), None)
         def check_ida_server(self):
             return self.ida_server is not None
         def get_source(self, lib, off, callback=None):
+            cached = self.search_in_cache(lib, off)
+            if cached is not None:
+                cached_parsed = parse_source_results(off, cached)
+                if callback is not None:
+                    accept, _ = callback
+                    accept(cached_parsed)
+                else:
+                    return cached_parsed
             self.requested_params = (lib, off)
             self.in_request, old_in_request = True, self.in_request
             if old_in_request:
@@ -137,7 +157,9 @@ else:
                 if not self.check_ida_server():
                     self.connect_ida_server()
                 try:
-                    return parse_source_results(off, self.ida_server.call_sync("get_source", [lib, off]))
+                    lines = self.ida_server.call_sync("get_source", [lib, off])
+                    self.cache_results(lib, lines)
+                    return parse_source_results(off, lines)
                 finally:
                     self.in_request = False
             else:
@@ -149,6 +171,7 @@ else:
                             return
                         self.in_request = False
                         if is_accept:
+                            self.cache_results(lib, res)
                             accept(parse_source_results(off, res))
                         else:
                             reject(res)
