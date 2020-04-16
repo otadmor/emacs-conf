@@ -50,7 +50,8 @@ def lo(addr=None):
 
 class BreakOffsetCommand(gdb.Command):
     """Break at image offset
-Usage : bo [image] [offset] {if ...}"""
+Usage : bo [image] [offset] {if ...}
+        bo [image:hexoffset] {if ...}"""
     def __init__ (self):
         super(BreakOffsetCommand, self).__init__("bo", gdb.COMMAND_BREAKPOINTS)
     def complete(self, arguments_string, last):
@@ -64,7 +65,7 @@ Usage : bo [image] [offset] {if ...}"""
             # if is_brk_char:
             #     return gdb.COMPLETE_NONE
             if args[0] in images:
-                return args[0] # it's complete
+                return [args[0], args[0] + ":",] # it's complete
             return images # valid option flags
         elif argc == 2:
             return ["0x" ,]
@@ -77,6 +78,13 @@ Usage : bo [image] [offset] {if ...}"""
         return [] # No more valid options
     def invoke (self, arg, from_tty):
         args = arg.split()
+        if len(args) < 1:
+            info(self.__doc__)
+            return
+        if ':' in args[0]:
+            image, offset = args[0].split(':')
+            offset = "0x" + offset
+            args = [image, offset,] + args[1:]
         if len(args) < 2:
             info(self.__doc__)
             return
