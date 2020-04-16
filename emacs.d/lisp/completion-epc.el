@@ -321,10 +321,9 @@
                                                 (overlay-put code-overlay 'keymap code-overlay-map)
                                                 (overlay-put asm-overlay 'i-am-asm t)
                                                 (overlay-put asm-overlay 'keymap asm-overlay-map)
-                                                (let ((asm-box-overlay (make-overlay (+ asm-begin 1) asm-end nil t)))
-                                                  (if line-executed
-                                                      (overlay-put asm-box-overlay 'face 'coverage-high-covered-face)
-                                                    (overlay-put asm-box-overlay 'face 'coverage-uncovered-face)))
+                                                (if line-executed
+                                                    (overlay-put asm-overlay 'face 'coverage-high-covered-face)
+                                                  (overlay-put asm-overlay 'face 'coverage-uncovered-face))
                                                 (let ((code-executed (get-text-property (overlay-start code-overlay) 'executed)))
                                                   (when (or (not code-executed) first-shown)
                                                     (overlay-put asm-overlay 'invisible t))
