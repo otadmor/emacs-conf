@@ -207,11 +207,11 @@
 (defun gdb-parse-asm-lines (asm-lines)
   (with-temp-buffer (insert
                      (mapconcat
-                      (lambda (x) (propertize (cadr x)
-                                              'executed (car x)
-                                              'addr (caddr x)
-                                              'break (cadddr x)
-                                              ))
+                      (lambda (x) (let ((line (cadr x)))
+                                    (put-text-property 0 1 'executed (car x)    line)
+                                    (put-text-property 0 1 'addr     (caddr x)  line)
+                                    (put-text-property 0 1 'break    (cadddr x) line)
+                                    line))
                       asm-lines "\n"))
                     (insert "\n")
                     (asm-mode)
@@ -221,7 +221,9 @@
 (defun gdb-parse-c-lines (c-lines)
   (with-temp-buffer (insert
                      (mapconcat
-                      (lambda (x) (propertize (concat "        " (cadr x)) 'executed (car x)))
+                      (lambda (x) (let ((line (concat "        " (cadr x))))
+                                    (put-text-property 0 1 'executed (car x)    line)
+                                    line))
                       c-lines "\n"))
                     (c-mode)
                     (font-lock-ensure)
