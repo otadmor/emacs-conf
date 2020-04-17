@@ -5,6 +5,8 @@ See also https://github.com/aviramc/.emacs.d and https://github.com/borfig/emacs
 ```shell
 mv ~/.emacs.d{,.orig} || true
 ln -s emacs.d ~/.emacs.d
+cp emacsclient.desktop ~/.local/share/applications/
+chmod +x  ~/.local/share/applications/emacsclient.desktop
 ```
 ### gdb completion
 Put the content of .gdbinit in ~/.gdbinit.
