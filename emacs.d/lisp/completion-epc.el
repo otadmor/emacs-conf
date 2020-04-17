@@ -256,7 +256,6 @@
         (goto-char (- (overlay-start asm-overlay) 1))
         (overlay-put asm-overlay 'invisible t)))))
 
-
 (defun gdb-epc-set-breakpoint (lib addr)
   (lexical-let (
                 (pos (point))
@@ -267,7 +266,6 @@
     (epc-gdb-command-mngr (with-current-buffer --comint-buffer mngr-complete-epc) (format "bo %s:%X" lib addr)
                           (lambda (res)
                             (let ((breakpoint-id (string-to-number (cadr (split-string res)))))
-                              (message "%S" (cons breakpoint-id (get-text-property (point) 'break)))
                               (with-current-buffer source-buffer
                                 (save-excursion (goto-char pos)
                                                 (gdb-put-breakpoint-icon t 0)
@@ -289,21 +287,20 @@
                 )
     (let ((inhibit-read-only t))
       (put-text-property pos (+ pos 1) 'in-op t))
-    (message "delete %d from %S" breakpoint-id (get-text-property (point) 'break))
-      (epc-gdb-command-mngr (with-current-buffer --comint-buffer mngr-complete-epc) (format "delete %d" breakpoint-id)
-                            (lambda (res)
-                              (with-current-buffer source-buffer
-                                (save-excursion (goto-char pos)
-                                                (gdb-remove-breakpoint-icons (point) (point))
-                                                (let ((inhibit-read-only t))
-                                                  (put-text-property pos (+ pos 1) 'break
-                                                                     (delq breakpoint-id (get-text-property (point) 'break)))
-                                                  (put-text-property pos (+ pos 1) 'in-op nil)))))
-                            (lambda (res)
-                              (with-current-buffer source-buffer
-                                (save-excursion (goto-char pos)
-                                                (let ((inhibit-read-only t))
-                                                  (put-text-property pos (+ pos 1) 'in-op nil))))))))
+    (epc-gdb-command-mngr (with-current-buffer --comint-buffer mngr-complete-epc) (format "delete %d" breakpoint-id)
+                          (lambda (res)
+                            (with-current-buffer source-buffer
+                              (save-excursion (goto-char pos)
+                                              (gdb-remove-breakpoint-icons (point) (point))
+                                              (let ((inhibit-read-only t))
+                                                (put-text-property pos (+ pos 1) 'break
+                                                                   (delq breakpoint-id (get-text-property (point) 'break)))
+                                                (put-text-property pos (+ pos 1) 'in-op nil)))))
+                          (lambda (res)
+                            (with-current-buffer source-buffer
+                              (save-excursion (goto-char pos)
+                                              (let ((inhibit-read-only t))
+                                                (put-text-property pos (+ pos 1) 'in-op nil))))))))
 
 (defun gdb-epc-asm-toggle-breakpoint()
   (interactive)
