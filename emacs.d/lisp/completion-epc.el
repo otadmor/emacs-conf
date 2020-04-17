@@ -256,6 +256,71 @@
         (goto-char (- (overlay-start asm-overlay) 1))
         (overlay-put asm-overlay 'invisible t)))))
 
+
+(defun gdb-epc-set-breakpoint (lib addr)
+  (lexical-let (
+                (pos (point))
+                (source-buffer (current-buffer))
+                )
+    (let ((inhibit-read-only t))
+      (put-text-property pos (+ pos 1) 'in-op t))
+    (epc-gdb-command-mngr (with-current-buffer --comint-buffer mngr-complete-epc) (format "bo %s:%X" lib addr)
+                          (lambda (res)
+                            (let ((breakpoint-id (string-to-number (cadr (split-string res)))))
+                              (message "%S" (cons breakpoint-id (get-text-property (point) 'break)))
+                              (with-current-buffer source-buffer
+                                (save-excursion (goto-char pos)
+                                                (gdb-put-breakpoint-icon t 0)
+                                                (let ((inhibit-read-only t))
+                                                  (put-text-property pos (+ pos 1) 'break
+                                                                     (cons breakpoint-id (get-text-property (point) 'break)))
+                                                  (put-text-property pos (+ pos 1) 'in-op nil))))))
+                          (lambda (res)
+                              (with-current-buffer source-buffer
+                                (save-excursion (goto-char pos)
+                                                (let ((inhibit-read-only t))
+                                                  (put-text-property pos (+ pos 1) 'in-op nil))))))))
+
+(defun gdb-epc-unset-breakpoint (breakpoint-id)
+  (lexical-let (
+                (pos (point))
+                (source-buffer (current-buffer))
+                (breakpoint-id breakpoint-id)
+                )
+    (let ((inhibit-read-only t))
+      (put-text-property pos (+ pos 1) 'in-op t))
+    (message "delete %d from %S" breakpoint-id (get-text-property (point) 'break))
+      (epc-gdb-command-mngr (with-current-buffer --comint-buffer mngr-complete-epc) (format "delete %d" breakpoint-id)
+                            (lambda (res)
+                              (with-current-buffer source-buffer
+                                (save-excursion (goto-char pos)
+                                                (gdb-remove-breakpoint-icons (point) (point))
+                                                (let ((inhibit-read-only t))
+                                                  (put-text-property pos (+ pos 1) 'break
+                                                                     (delq breakpoint-id (get-text-property (point) 'break)))
+                                                  (put-text-property pos (+ pos 1) 'in-op nil)))))
+                            (lambda (res)
+                              (with-current-buffer source-buffer
+                                (save-excursion (goto-char pos)
+                                                (let ((inhibit-read-only t))
+                                                  (put-text-property pos (+ pos 1) 'in-op nil))))))))
+
+(defun gdb-epc-asm-toggle-breakpoint()
+  (interactive)
+  (save-excursion
+    (beginning-of-line)
+    (unless (get-text-property (point) 'in-op)
+      (let (
+            (breakpoint-nums (get-text-property (point) 'break))
+            (addr (get-text-property (point) 'addr))
+            (lib (get-text-property (point) 'lib))
+            )
+        (if (/= (length breakpoint-nums) 0)
+            (if (/= (length breakpoint-nums) 1)
+                (message "Too many breakpoints in %S to decide" addr)
+              (gdb-epc-unset-breakpoint (car breakpoint-nums)))
+          (gdb-epc-set-breakpoint lib addr))))))
+
 (defvar code-overlay-map
   (let ((map (make-sparse-keymap)))
     (define-key map [(tab)] 'gdb-epc-code-show-or-hide-assembly)
@@ -279,6 +344,7 @@
                             (setq global-source source)
                             (with-current-buffer working-buffer
                               (with-current-buffer (get-buffer-create (concat (buffer-name) "-debugger-source"))
+                                (setq-local --comint-buffer working-buffer)
                                 (setq buffer-read-only nil)
                                 (defun ignore-readonly-error-function (data context caller)
                                   (when (not (eq (car data) 'buffer-read-only))
