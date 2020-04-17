@@ -39,3 +39,15 @@ The context command is provided by GEF and then sent to emacs using epc.
 ## Python completion
 Support following python and completion from python interpreter.
 ![](python.gif)
+## GDB / IDA decompiler integration
+Have your ida on one machine with epc server running:
+```
+cd sysroot-of-binaries
+python -m epc.server --address 0.0.0.0 --port 19999 builtins
+```
+The have your gdb init configure this machine ip:
+```
+gef config ida-interact.host "192.168.99.1"
+```
+And then you will be able to see one window with the decompiled code from ida and for each decompiled code you can see its assembly (press TAB on a source code line to see the assembly).
+![](ida-source.gif)
