@@ -249,7 +249,9 @@ Usage : is [image] [offset]
             info(self.__doc__)
             return
         try:
-            gef_print(get_source_from_ida(*args))
+            source = get_source_from_ida(*args)
+            source = '\n'.join([("**  " if r else "    ") + l for r, l, _ in source])
+            gef_print(source)
         except Exception as e:
             err(e.args[0])
 IdaSourceCommand()
