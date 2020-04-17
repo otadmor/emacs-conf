@@ -341,6 +341,9 @@
   "Code keymap to hide assembly")
 
 (setq --epc-gdb--orig-command-error-function command-error-function)
+(defun ignore-readonly-error-function (data context caller)
+  (when (not (eq (car data) 'buffer-read-only))
+    (funcall --epc-gdb--orig-command-error-function data context caller)))
 
 (defun gdb-request-parse-source-asm-lines (working-buffer lib-offset)
   (lexical-let ((working-buffer working-buffer) (lib (car lib-offset)))
@@ -353,9 +356,6 @@
                                 (setq-local --comint-buffer working-buffer)
                                 (setq buffer-read-only t)
                                 (let ((inhibit-read-only t))
-                                  (defun ignore-readonly-error-function (data context caller)
-                                    (when (not (eq (car data) 'buffer-read-only))
-                                      (funcall --epc-gdb--orig-command-error-function data context caller)))
                                   (setq-local command-error-function #'ignore-readonly-error-function)
                                   (erase-buffer)
                                   (when --gdb-epc--gdb-mi-loaded
