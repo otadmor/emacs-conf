@@ -204,12 +204,13 @@
         (gdb-put-breakpoint-icon t 0))
       (beginning-of-line 2))))
 
-(defun gdb-parse-asm-lines (asm-lines)
+(defun gdb-parse-asm-lines (lib asm-lines)
   (with-temp-buffer (insert
                      (mapconcat
                       (lambda (x) (let ((line (cadr x)))
                                     (put-text-property 0 1 'executed (car x)    line)
                                     (put-text-property 0 1 'addr     (caddr x)  line)
+                                    (put-text-property 0 1 'lib      lib        line)
                                     (put-text-property 0 1 'break    (cadddr x) line)
                                     line))
                       asm-lines "\n"))
@@ -291,7 +292,7 @@
                                 (beginning-of-buffer)
                                 (let ((first-shown nil))
                                   (dolist (x source)
-                                    (let ((asm-lines (gdb-parse-asm-lines (caddr x))))
+                                    (let ((asm-lines (gdb-parse-asm-lines (file-name-nondirectory lib) (caddr x))))
                                       (if (string= asm-lines "\n")
                                           (end-of-line 2)
                                         (let ((code-overlay (make-overlay (line-beginning-position) (+ (line-end-position) 1) nil t)))
