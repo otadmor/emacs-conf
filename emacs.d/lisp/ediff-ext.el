@@ -174,6 +174,19 @@
             start-remain
             end-remain))))
 
+(defun ediff--run-on-all-other-buffers (func)
+  (dolist (window (window-list))
+    (with-selected-window window
+      (when (and (ediff-in-control-buffer-p)
+                 (or (eq old-window ediff-window-A)
+                     (eq old-window ediff-window-B)
+                     (eq old-window ediff-window-C)
+                     (eq old-window ediff-window-Ancestor)))
+        (ediff-operate-on-windows-func
+         (lambda ()
+           (when (not (eq changed-buffer (current-buffer)))
+             (funcall func))))))))
+
 (defun ediff-after-change-update (start end deleted)
   (save-excursion
     (let* (
@@ -552,6 +565,10 @@
       (save-buffer)))
   t) ; return true to stop saving in write-contents-functions hook.
 
+(defun ediff--kill-all-buffers-in-session ()
+  (ediff--run-on-all-other-buffers
+   (lambda () (kill-buffer))))
+
 (defun ediff-clone-file-to-buffer (buf-name file)
   (let* (
          (file (expand-file-name file))
@@ -567,6 +584,7 @@
       (defvar-local ediff-db nil)
       (add-hook 'write-contents-functions (lambda () (ediff-save-file tmp-buf file)))
       (add-hook 'after-change-functions #'ediff-after-change-update nil t)
+      (add-hook 'kill-buffer-hook #'ediff--kill-all-buffers-in-session)
       (setq default-directory dir-name)
       (toggle-truncate-lines 1)
       (insert cur-data))
