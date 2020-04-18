@@ -175,17 +175,21 @@
             end-remain))))
 
 (defun ediff--run-on-all-other-buffers (func)
-  (dolist (window (window-list))
-    (with-selected-window window
-      (when (and (ediff-in-control-buffer-p)
-                 (or (eq old-window ediff-window-A)
-                     (eq old-window ediff-window-B)
-                     (eq old-window ediff-window-C)
-                     (eq old-window ediff-window-Ancestor)))
-        (ediff-operate-on-windows-func
-         (lambda ()
-           (when (not (eq changed-buffer (current-buffer)))
-             (funcall func))))))))
+  (let (
+        (changed-buffer (current-buffer))
+        (old-window (selected-window))
+        )
+    (dolist (window (window-list))
+      (with-selected-window window
+        (when (and (ediff-in-control-buffer-p)
+                   (or (eq old-window ediff-window-A)
+                       (eq old-window ediff-window-B)
+                       (eq old-window ediff-window-C)
+                       (eq old-window ediff-window-Ancestor)))
+          (ediff-operate-on-windows-func
+           (lambda ()
+             (when (not (eq changed-buffer (current-buffer)))
+               (funcall func)))))))))
 
 (defun ediff-after-change-update (start end deleted)
   (save-excursion
@@ -234,27 +238,18 @@
       (unless (null final-line)
         (goto-char start)
         (let (
-              (changed-buffer (current-buffer))
               (add-empty-at-line (+ first-line 1))
               (lines-to-add (- lines-diff alignments-to-remove
                                (if last-insert-is-newline -1 0)))
-              (old-window (selected-window))
               )
-          (dolist (window (window-list))
-            (with-selected-window window
-              (when (and (ediff-in-control-buffer-p)
-                         (or (eq old-window ediff-window-A)
-                             (eq old-window ediff-window-B)
-                             (eq old-window ediff-window-C)
-                             (eq old-window ediff-window-Ancestor)))
-                (ediff-operate-on-windows-func
-                 (lambda ()
-                   (when (not (eq changed-buffer (current-buffer)))
+          (ediff--run-on-all-other-buffers
+           (lambda ()
+           (when (not (eq changed-buffer (current-buffer)))
                      (save-excursion
                        (goto-line add-empty-at-line)
                        (ediff-add-fake-lines (current-buffer)
                                                (point)
-                                               lines-to-add))))))))))
+                                               lines-to-add)))))))
       (let (
             (start-for-fake-lines (if first-deleted-after-newline
                                       start
@@ -584,7 +579,7 @@
       (defvar-local ediff-db nil)
       (add-hook 'write-contents-functions (lambda () (ediff-save-file tmp-buf file)))
       (add-hook 'after-change-functions #'ediff-after-change-update nil t)
-      (add-hook 'kill-buffer-hook #'ediff--kill-all-buffers-in-session)
+      (add-hook 'kill-buffer-hook #'ediff--kill-all-buffers-in-session nil t)
       (setq default-directory dir-name)
       (toggle-truncate-lines 1)
       (insert cur-data))
