@@ -3,6 +3,11 @@
 ;; (require 'ivy)
 ;; (require 'counsel) ; for counsel--async
 
+;; ivy-0.11.0
+;; ivy-rich-0.1.4
+;; counsel-0.11.0
+;; swiper-0.11.0
+
 (defmacro benchmark-and-get-result (&rest forms)
   "Return the time in seconds elapsed for execution of FORMS.
 Returns both the time and the result."
