@@ -31,65 +31,71 @@
 
 (with-eval-after-load 'ediff-util
   (with-eval-after-load 'persp-mode
-    (add-hook 'persp-activated-functions #'ediff-fix-windows-for-buffers))
+    (add-hook 'persp-activated-functions #'ediff-fix-windows-for-buffers)))
 
-  (defun ediff-operate-on-windows-func (func &rest args)
-    ;; make sure windows aren't dead
-    (ediff-barf-if-not-control-buffer)
-
-    (if (not (and (window-live-p ediff-window-A) (window-live-p ediff-window-B)))
-        (ediff-recenter 'no-rehighlight))
-    (if (not (and (ediff-buffer-live-p ediff-buffer-A)
-                  (ediff-buffer-live-p ediff-buffer-B)
-                  (or (not ediff-3way-job) (ediff-buffer-live-p ediff-buffer-C))
-                  (or (not ediff-merge-with-ancestor-job)
-                      (not ediff-show-ancestor)
-                      (ediff-buffer-live-p ediff-ancestor-buffer))
-                  ))
-        (error ediff-KILLED-VITAL-BUFFER))
-
-    (let* ((wind (selected-window))
-           (wind-A ediff-window-A)
-           (wind-B ediff-window-B)
-           (wind-C ediff-window-C)
-           (wind-Anc ediff-window-Ancestor)
-           (buff-A ediff-buffer-A)
-           (buff-B ediff-buffer-B)
-           (buff-C ediff-buffer-C)
-           (buff-Anc ediff-ancestor-buffer)
-           (three-way ediff-3way-job)
-           (with-Ancestor (and ediff-merge-with-ancestor-job ediff-show-ancestor)))
-      (with-selected-window wind-A
+(defun ediff-operate-on-windows-func (func &rest args)
+  ;; make sure windows aren't dead
+  (ediff-barf-if-not-control-buffer)
+  (if (not (and (window-live-p ediff-window-A) (window-live-p ediff-window-B)))
+      (ediff-recenter 'no-rehighlight))
+  ;; (if (not (and (ediff-buffer-live-p ediff-buffer-A)
+  ;;               (ediff-buffer-live-p ediff-buffer-B)
+  ;;               (or (not ediff-3way-job) (ediff-buffer-live-p ediff-buffer-C))
+  ;;               (or (not ediff-merge-with-ancestor-job)
+  ;;                   (not ediff-show-ancestor)
+  ;;                   (ediff-buffer-live-p ediff-ancestor-buffer))
+  ;;               ))
+  ;;     (error ediff-KILLED-VITAL-BUFFER))
+  (let* ((wind (selected-window))
+         (wind-A ediff-window-A)
+         (wind-B ediff-window-B)
+         (wind-C ediff-window-C)
+         (wind-Anc ediff-window-Ancestor)
+         (buff-A ediff-buffer-A)
+         (buff-B ediff-buffer-B)
+         (buff-C ediff-buffer-C)
+         (buff-Anc ediff-ancestor-buffer)
+         (three-way ediff-3way-job)
+         (with-Ancestor (and ediff-merge-with-ancestor-job ediff-show-ancestor)))
+    (with-selected-window wind-A
+      (when (ediff-buffer-live-p buff-A)
         (unless (eq (current-buffer) buff-A)
-          (switch-to-buffer ediff-buffer-A))
-        (combine-after-change-calls
-          (condition-case nil
-              (apply func args)
-            (error))))
-      (with-selected-window wind-B
+          (switch-to-buffer buff-A))
+        (when (eq (current-buffer) buff-A)
+          (combine-after-change-calls
+            (condition-case nil
+                (apply func args)
+              (error))))))
+    (with-selected-window wind-B
+      (when (ediff-buffer-live-p buff-B)
         (unless (eq (current-buffer) buff-B)
-          (switch-to-buffer ediff-buffer-B))
-        (combine-after-change-calls
-          (condition-case nil
-              (apply func args)
-            (error))))
-      (when three-way
-        (with-selected-window wind-C
+          (switch-to-buffer buff-B))
+        (when (eq (current-buffer) buff-B)
+          (combine-after-change-calls
+            (condition-case nil
+                (apply func args)
+              (error))))))
+    (when three-way
+      (with-selected-window wind-C
+        (when (ediff-buffer-live-p buff-C)
           (unless (eq (current-buffer) buff-C)
-            (switch-to-buffer ediff-buffer-C))
-          (combine-after-change-calls
-            (condition-case nil
-                (apply func args)
-              (error)))))
-      (when with-Ancestor
-        (with-selected-window wind-Anc
+            (switch-to-buffer buff-C))
+          (when (eq (current-buffer) buff-C)
+            (combine-after-change-calls
+              (condition-case nil
+                  (apply func args)
+                (error)))))))
+    (when with-Ancestor
+      (with-selected-window wind-Anc
+        (when (ediff-buffer-live-p buff-Anc)
           (unless (eq (current-buffer) buff-Anc)
-            (switch-to-buffer ediff-ancestor-buffer))
-          (combine-after-change-calls
-            (condition-case nil
-                (apply func args)
-              (error)))))
-      (select-window wind))))
+            (switch-to-buffer buff-Anc))
+          (when (eq (current-buffer) buff-Anc)
+            (combine-after-change-calls
+              (condition-case nil
+                  (apply func args)
+                (error)))))))
+    (select-window wind)))
 
 
 (defun ediff-create-lines-database (start end)
@@ -173,23 +179,6 @@
             (cons next-line next)
             start-remain
             end-remain))))
-
-(defun ediff--run-on-all-other-buffers (func)
-  (let (
-        (changed-buffer (current-buffer))
-        (old-window (selected-window))
-        )
-    (dolist (window (window-list))
-      (with-selected-window window
-        (when (and (ediff-in-control-buffer-p)
-                   (or (eq old-window ediff-window-A)
-                       (eq old-window ediff-window-B)
-                       (eq old-window ediff-window-C)
-                       (eq old-window ediff-window-Ancestor)))
-          (ediff-operate-on-windows-func
-           (lambda ()
-             (when (not (eq changed-buffer (current-buffer)))
-               (funcall func)))))))))
 
 (defun ediff-after-change-update (start end deleted)
   (save-excursion
@@ -277,6 +266,28 @@
               (setcdr first new-lines-db)))
           (unless (null new-lines-db)
             (setcdr (last new-lines-db) last)))))))
+
+
+
+(defun ediff--run-on-all-other-buffers (func)
+  (let ((changed-buffer (current-buffer)))
+    (ediff--run-on-ediff-command-window
+     (lambda ()
+       (ediff-operate-on-windows-func
+        (lambda ()
+          (when (not (eq changed-buffer (current-buffer)))
+            (funcall func))))))))
+
+(defun ediff--run-on-ediff-command-window (func)
+  (let ((old-window (selected-window)))
+    (dolist (window (window-list))
+      (with-selected-window window
+        (when (and (ediff-in-control-buffer-p)
+                   (or (eq old-window ediff-window-A)
+                       (eq old-window ediff-window-B)
+                       (eq old-window ediff-window-C)
+                       (eq old-window ediff-window-Ancestor)))
+          (funcall func))))))
 
 (defun ediff--gather-data (func)
   (let (
@@ -561,8 +572,8 @@
   t) ; return true to stop saving in write-contents-functions hook.
 
 (defun ediff--kill-all-buffers-in-session ()
-  (ediff--run-on-all-other-buffers
-   (lambda () (kill-buffer))))
+  (ediff--run-on-ediff-command-window
+   (lambda () (ediff--kill-all-buffers))))
 
 (defun ediff-clone-file-to-buffer (buf-name file)
   (let* (
