@@ -99,6 +99,7 @@ try:
     from epc.client import EPCClient
     from functools import partial
     from collections import defaultdict
+    from operator import itemgetter
 except ImportError:
     def get_source_from_ida(lib=None, off=None, callback=None):
         if callback is None:
@@ -112,7 +113,10 @@ else:
             for line in lines
         ]
         return [
-            (off in line_addresses, line[0], [(off == addr, disasm, addr, list(breakpoints[addr])) for disasm, addr in line[1]])
+            (off in line_addresses, line[0], sorted([
+                (off == addr, disasm, addr, list(breakpoints[addr]))
+                for disasm, addr in line[1]
+            ], key=itemgetter(2)))
             for line_addresses, line in zip(lines_addresses, lines)
         ]
     def get_all_breakpoints():
