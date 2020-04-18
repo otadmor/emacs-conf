@@ -119,10 +119,24 @@ else:
             ], key=itemgetter(2)))
             for line_addresses, line in zip(lines_addresses, lines)
         ]
+    def try_decode_location(location):
+        try:
+            _, locations = gdb.decode_line(location)
+            if locations is None:
+                return []
+            return locations
+        except:
+            import traceback; traceback.print_exc()
+            return []
     def get_all_breakpoints():
         try:
-            return [(lo(int(b.location[2:], 16)), b.number) for b in gdb.breakpoints() if b.location.startswith('* ')]
+            return [
+                (lo(decoded_address.pc), bp.number)
+                for bp in gdb.breakpoints()
+                for decoded_address in try_decode_location(bp.location)
+            ]
         except:
+            import traceback; traceback.print_exc()
             return []
     def get_breakpoints_for_lib(lib):
         break_at_addr = defaultdict(set)
