@@ -233,12 +233,11 @@
               )
           (ediff--run-on-all-other-buffers
            (lambda ()
-           (when (not (eq changed-buffer (current-buffer)))
-                     (save-excursion
-                       (goto-line add-empty-at-line)
-                       (ediff-add-fake-lines (current-buffer)
-                                               (point)
-                                               lines-to-add)))))))
+           (save-excursion
+             (goto-line add-empty-at-line)
+             (ediff-add-fake-lines (current-buffer)
+                                   (point)
+                                   lines-to-add))))))
       (let (
             (start-for-fake-lines (if first-deleted-after-newline
                                       start
