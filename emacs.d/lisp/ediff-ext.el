@@ -253,7 +253,7 @@
               (new-lines-db (ediff-create-lines-database
                              start
                              (max end
-                                  (+ start-for-fake-lines leftover-lines))))
+                                  (+ start-for-fake-lines leftover-lines -1))))
               )
           (message "lines from %S to max(%S, %S) is %S lines" start end (+ start-for-fake-lines leftover-lines) (length new-lines-db))
           (if (null first)
