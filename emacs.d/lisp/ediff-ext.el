@@ -227,7 +227,9 @@
       (unless (null final-line)
         (goto-char start)
         (let (
-              (add-empty-at-line (+ first-line 1))
+              (add-empty-at-line (if first-deleted-after-newline
+                                      (+ first-line 1)
+                                    (+ first-line 2)))
               (lines-to-add (- lines-diff alignments-to-remove
                                (if last-insert-is-newline -1 0)))
               )
