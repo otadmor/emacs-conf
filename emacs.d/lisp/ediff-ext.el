@@ -214,7 +214,7 @@
               (beginning-of-line 2)))))
       (if (null final-line)
           (setq alignments-to-remove (+ lines-diff
-                                        ;; (if last-insert-is-newline 1 0)
+                                        (if last-insert-is-newline 1 0)
                                         ))
         (setq alignments-to-remove (+ final-line 1)))
       (when (> (+ alignments-to-remove
