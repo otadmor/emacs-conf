@@ -57,6 +57,11 @@
                  start end collection predicate)
       (company-completion-in-region start end collection predicate)))
 
+  (define-key company-active-map (kbd "C-i") (lambda()
+                                               (interactive)
+                                               (let ((completion-in-region-function company-orig--completion-in-region-function))
+                                                 (completion-at-point))))
+
   (require 'company-quickhelp)
   (with-eval-after-load 'company-quickhelp
     (define-key company-active-map (kbd "C-c h") #'company-quickhelp-manual-begin)
