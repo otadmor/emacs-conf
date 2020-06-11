@@ -56,7 +56,7 @@
 (setq make-backup-files nil)
 
 ; Clean-up trailing whitespace on save
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
+(add-hook 'before-save-hook (lambda () (when (not (eq 'diff-mode major-mode)) (delete-trailing-whitespace))))
 
 ; I hate tabs!
 (setq-default indent-tabs-mode nil)
