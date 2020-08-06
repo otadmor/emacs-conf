@@ -66,6 +66,7 @@
 
 ; I hate tabs!
 (setq-default indent-tabs-mode nil)
+(setq tab-always-indent 'complete)
 
 (setq show-paren-style 'expression)
 (setq show-paren-delay 0)
@@ -384,6 +385,23 @@
 
 ;(require 'webkit)
 
+
+(with-eval-after-load 'deferred
+  (defun deferred:promise (executor)
+    (lexical-let (
+                  (nd (deferred:new))
+                  (executor executor)
+                  )
+      (deferred:next
+        (lambda (_x)
+          (condition-case err
+              (funcall executor
+                       (lambda (_xx) (deferred:callback-post nd _xx))
+                       (lambda (_xx) (deferred:errorback-post nd _xx)))
+            (error (deferred:errorback-post nd err)))
+          nil))
+      nd)))
+
 (with-eval-after-load 'python-mode
   (require 'python-ext)
 
@@ -396,19 +414,52 @@
 
   ;; (fringe-mode '(0 . nil))
   ;; (require 'anaconda-mode)
-  (with-eval-after-load 'anaconda-mode
-    (setq python-shell-interpreter "python3") ; needed for anaconda-mode
-    (add-hook 'python-mode-hook 'anaconda-mode)
-    ;; (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
-    (define-key anaconda-mode-map goto-def-key 'anaconda-mode-find-assignments)
+  )
 
-    (with-eval-after-load 'company
-      ;; (require 'company-anaconda)
-      (with-eval-after-load 'company-anaconda
-        (add-to-list 'company-backends 'company-anaconda)
-        (setq py-complete-function 'company-complete)))))
-;; (require 'python-mode)
+(with-eval-after-load 'python
+  (setq python-shell-interpreter "python3")) ; needed for anaconda-mode
 
+(with-eval-after-load 'python-mode
+  (add-hook 'python-mode-hook (lambda () (setq forward-sexp-function nil))))
+
+(with-eval-after-load 'anaconda-mode
+  (add-hook 'python-mode-hook 'anaconda-mode)
+  (define-key anaconda-mode-map goto-def-key 'anaconda-mode-find-assignments)
+  ;; (add-hook 'python-mode-hook 'anaconda-eldoc-mode)
+
+  (defun anaconda-completion-at-point()
+    (unless (python-syntax-comment-or-string-p)
+      (let* (
+             (bounds (bounds-of-thing-at-point 'symbol))
+             (start (or (car bounds) (point)))
+             (stop (or (cdr bounds) (point)))
+             )
+        (list start
+              stop
+              (completion-table-dynamic
+               (lambda (_)
+                 (let ((completion-result nil))
+                   (deferred:sync!
+                     (deferred:$
+                       (deferred:promise (lambda (callback errback) (anaconda-mode-call "complete" callback)))
+                       (deferred:nextc it (lambda (reply) (setq completion-result reply)))))
+                   (unless (null completion-result)
+                     (--map (let* ((name (cdr (assoc 'name it)))
+                                   (type (cdr (assoc 'type it)))
+                                   (module-path (cdr (assoc 'module-path it)))
+                                   (line (cdr (assoc 'line it)))
+                                   (docstring (cdr (assoc 'docstring it)))
+                                   (description (if (equal type "statement")
+                                                    "statement"
+                                                  (cdr (assoc 'description it)))))
+                              (put-text-property 0 1 'description description name)
+                              (put-text-property 0 1 'module-path module-path name)
+                              (put-text-property 0 1 'line line name)
+                              (put-text-property 0 1 'docstring docstring name)
+                              name)
+                            completion-result)))))))))
+  (with-eval-after-load 'python
+    (defalias 'python-completion-at-point 'anaconda-completion-at-point)))
 
 ;; (with-eval-after-load 'auto-complete
 ;;   (require 'autocomplete-ext))
@@ -521,7 +572,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (vdiff r-autoyas company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python python-mode swiper company-irony company-anaconda pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra ess))))
+    (vdiff r-autoyas company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python swiper company-irony pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra ess))))
 
 (let (
       (need-install nil)
