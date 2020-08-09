@@ -239,7 +239,13 @@
           ([(control shift up)]    . [(control meta +)]) ; change clock logs
           ([(control shift down)]  . [(control meta _)]) ;
           ))
-  (define-key org-mode-map [(control tab)] 'next-buff))
+  (define-key org-mode-map [(control tab)] 'next-buff)
+
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((python . t)))
+  (setq org-babel-python-command "python3")
+  )
 
 (with-eval-after-load 'ivy
   (ido-mode nil)
