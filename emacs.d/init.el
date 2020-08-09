@@ -571,6 +571,12 @@
 (with-eval-after-load 'ediff
   (require 'ediff-ext))
 
+(with-eval-after-load 'tern
+  (add-hook 'js-mode-hook 'tern-mode)
+  (add-hook 'js2-mode-hook 'tern-mode)
+  (add-hook 'web-mode-hook 'tern-mode))
+
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -578,7 +584,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (vdiff r-autoyas company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python swiper company-irony pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra ess))))
+    (tern vdiff r-autoyas company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python swiper company-irony pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra ess))))
 
 (let (
       (need-install nil)
