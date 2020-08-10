@@ -155,44 +155,6 @@ Otherwise, // will move to root."
       (setq ivy-text (concat ivy--directory ivy-text))))
   (apply orig-fun args))
 
-(defun ivy--magic-file-slash ()
-  "Handle slash when completing file names."
-  (when (or (and (eq this-command #'self-insert-command)
-                 (eolp))
-            (eq this-command #'ivy-partial-or-done))
-    (let ((canonical (expand-file-name ivy-text ivy--directory))
-          (magic (not (string= ivy-text "/"))))
-      (cond ((member ivy-text ivy--all-candidates)
-             (ivy--cd canonical))
-            ((string-match-p "//\\'" ivy-text)
-             (ivy--cd (if (string-match "\\`/\\([^/]+:\\)+/" ivy--directory)
-                          (match-string 0 ivy--directory)
-                        "/")))
-            ((string-match-p "\\`/ssh:" ivy-text)
-             (ivy--cd (file-name-directory ivy-text)))
-            ((string-match "[[:alpha:]]:/\\'" ivy-text)
-             (let ((drive-root (match-string 0 ivy-text)))
-               (when (file-exists-p drive-root)
-                 (ivy--cd drive-root))))
-            ((and magic (file-directory-p canonical))
-             (ivy--cd canonical))
-            ((let ((default-directory ivy--directory))
-               (and (or (> ivy--index 0)
-                        (= ivy--length 1)
-                        magic)
-                    (not (equal (ivy-state-current ivy-last) ""))
-                    (file-directory-p (ivy-state-current ivy-last))
-                    (or (eq ivy-magic-slash-non-match-action
-                            'ivy-magic-slash-non-match-cd-selected)
-                        (eq this-command #'ivy-partial-or-done))))
-             (ivy--cd
-              (expand-file-name (ivy-state-current ivy-last) ivy--directory)))
-            ((and (eq ivy-magic-slash-non-match-action
-                      'ivy-magic-slash-non-match-create)
-                  magic)
-             (ivy--create-and-cd canonical))))))
-
-
 (defun ivy--exhibit ()
   "Insert Ivy completions display.
 Should be run via minibuffer `post-command-hook'."
