@@ -155,6 +155,12 @@ Otherwise, // will move to root."
       (setq ivy-text (concat ivy--directory ivy-text))))
   (apply orig-fun args))
 
+(defun ivy--magic-tilde-directory-hook (orig-fun dir)
+    (expand-file-name
+      (if (string-match "\\`\\(/\\([^/]+:\\)+\\)/" ivy--directory)
+          (match-string 1 ivy--directory)
+        (funcall orig-fun dir))))
+
 (defun ivy--exhibit ()
   "Insert Ivy completions display.
 Should be run via minibuffer `post-command-hook'."
@@ -180,11 +186,7 @@ Should be run via minibuffer `post-command-hook'."
              (cond ((or (string= "~/" ivy-text)
                         (and (string= "~" ivy-text)
                              ivy-magic-tilde))
-                    (ivy--cd
-                     (expand-file-name
-                      (if (string-match "\\`\\(/\\([^/]+:\\)+\\)/" ivy--directory)
-                          (match-string 1 ivy--directory)
-                        "~/"))))
+                    (ivy--cd (ivy--magic-tilde-directory ivy--directory)))
                    ((string-match "/\\'" ivy-text)
                     (ivy--magic-file-slash)
                     (setq ivy--directory (expand-file-name ivy--directory))
@@ -224,6 +226,7 @@ Should be run via minibuffer `post-command-hook'."
   (advice-add 'counsel-find-file-occur :around #'counsel-find-file-occur-hook)
   (advice-add 'ivy--magic-file-slash :around #'ivy--magic-file-slash-hook)
   (advice-add 'ivy--handle-directory :around #'ivy--handle-directory-hook)
+  (advice-add 'ivy--magic-tilde-directory :around #'ivy--magic-tilde-directory-hook)
 
   (advice-add 'ivy-mouse-offset :around #'ivy--mouse-hook)
 
