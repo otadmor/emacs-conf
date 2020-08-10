@@ -120,74 +120,14 @@ If the input is empty, select the previous history element instead."
           (select-window (active-minibuffer-window))
           nil)))))
 
-(defun ivy--directory-done ()
-  "Handle exit from the minibuffer when completing file names."
-  (let (dir)
-    (cond
-      ((equal ivy-text "/sudo::")
-       (setq dir (concat ivy-text (expand-file-name ivy--directory)))
-       (ivy--cd dir)
-       (ivy--exhibit))
-      ((ivy--directory-enter))
-      ((unless (string= ivy-text "")
-         (let ((file (expand-file-name
-                      (if (> ivy--length 0) (ivy-state-current ivy-last) ivy-text)
-                      ivy--directory)))
-           (when (ignore-errors (file-exists-p file))
-             (if (file-directory-p file)
-                 (ivy--cd (file-name-as-directory file))
-               (ivy-done))
-             ivy-text))))
-      ((or (and (equal ivy--directory "/")
-                (string-match-p "\\`[^/]+:.*:.*\\'" ivy-text))
-           (string-match-p "\\`/[^/]+:.*:.*\\'" ivy-text))
-       (ivy-done))
-      ((or (and (equal ivy--directory "/")
-                (cond ((string-match
-                        "\\`\\([^/]+?\\):\\(?:\\(.*\\)@\\)?\\(.*\\)\\'"
-                        ivy-text)
-                       (setq ivy-text (ivy-state-current ivy-last)))
-                      ((string-match
-                        "\\`\\([^/]+?\\):\\(?:\\(.*\\)@\\)?\\(.*\\)\\'"
-                        (ivy-state-current ivy-last))
-                       (setq ivy-text (ivy-state-current ivy-last)))))
-           (string-match
-            "\\`/\\([^/]+?\\):\\(?:\\(.*\\)@\\)?\\(.*\\)\\'"
-            ivy-text))
-       (let ((method (match-string 1 ivy-text))
-             (user (match-string 2 ivy-text))
-             (rest (match-string 3 ivy-text))
-             res)
-         (require 'tramp)
-         (dolist (x (tramp-get-completion-function method))
-           (setq res (append res (funcall (car x) (cadr x)))))
-         (setq res (delq nil res))
-         (when user
-           (dolist (x res)
-             (setcar x user)))
-         (setq res (delete-dups res))
-         (let* ((old-ivy-last ivy-last)
-                (enable-recursive-minibuffers t)
-                (host (let ((ivy-auto-select-single-candidate nil))
-                        (setq ivy--directory (concat "/" method ":"))
-                        (ivy-read (concat "  Find File: /" method ":")
-                                  (mapcar #'ivy-build-tramp-name res)
-                                  :initial-input rest))))
-           (setq ivy-last old-ivy-last)
-           (setq ivy--prompt "  Find File: ")
-           (when host
-             (setq ivy--directory "/")
-             (ivy--cd (concat "/" method ":" host ":"))
-             (setq ivy--directory (expand-file-name ivy--directory)))
-           (ivy--insert-prompt))))
-      ((and (string-match-p "\\`/\\([^/]+:\\)*\\'" ivy--directory)
-            (string-match-p "\\`[^/]+\:\\'" (ivy-state-current ivy-last)))
-       (setq ivy-text (ivy-state-current ivy-last))
-       (ivy--cd (concat ivy--directory ivy-text))
-       (setq ivy--directory (expand-file-name ivy--directory))
-       (ivy--insert-prompt))
-      (t
-       (ivy-done)))))
+
+
+(defun ivy--handle-directory-hook (orig-fun input)
+  (or (funcall orig-fun input)
+      (when (and (string-match-p "\\`/\\([^/]+:\\)*\\'" ivy--directory)
+                 (string-match-p "\\`[^/]+\:\\'" (ivy-state-current ivy-last)))
+        (setq ivy-text (ivy-state-current ivy-last))
+        (concat ivy--directory ivy-text))))
 
 
 (defun ivy--parent-dir (filename)
@@ -213,23 +153,6 @@ Otherwise, // will move to root."
       (setq ivy-text (concat ivy--directory ivy-text))))
   (apply orig-fun args))
 
-
-(defun ivy-backward-delete-char ()
-  "Forward to `delete-backward-char'.
-Call `ivy-on-del-error-function' if an error occurs, usually when
-there is no more text to delete at the beginning of the
-minibuffer."
-  (interactive)
-  (if (and ivy--directory (= (minibuffer-prompt-end) (point)))
-      (progn
-        (ivy--cd (ivy--parent-dir (expand-file-name ivy--directory)))
-        (ivy--exhibit))
-    (setq prefix-arg current-prefix-arg)
-    (condition-case nil
-        (call-interactively #'delete-backward-char)
-      (error
-       (when ivy-on-del-error-function
-         (funcall ivy-on-del-error-function))))))
 
 (defun ivy--sorted-files (dir)
   "Return the list of files in DIR.
@@ -348,7 +271,7 @@ Should be run via minibuffer `post-command-hook'."
          (ivy--format
           (ivy--filter ivy-text ivy--all-candidates))))
       (setq ivy--old-text ivy-text))))
-      
+
 (with-eval-after-load 'ivy
   (setq ivy-format-function #'ivy-format-function-line)
   (setq ivy-magic-tilde nil)
@@ -362,6 +285,7 @@ Should be run via minibuffer `post-command-hook'."
 
   (advice-add 'counsel-find-file-occur :after #'counsel-find-file-occur-hook)
   (advice-add 'ivy--magic-file-slash :around #'ivy--magic-file-slash-hook)
+  (advice-add 'ivy--handle-directory :around #'ivy--handle-directory-hook)
 
   (advice-add 'ivy-mouse-offset :around #'ivy--mouse-hook)
 
