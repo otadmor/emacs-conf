@@ -81,8 +81,9 @@ If the input is empty, select the previous history element instead."
     (ivy-previous-history-element 1))
   (ivy-previous-line arg))
 
-(defun counsel-find-file-occur-hook()
+(defun counsel-find-file-occur-hook(orig-fun &rest args)
   (let (
+        (res (apply orig-fun args))
         (caller (ivy-state-caller ivy-last))
         )
     (rename-buffer
@@ -95,7 +96,8 @@ If the input is empty, select the previous history element instead."
                  (concat " " (prin1-to-string caller))
                "")
              ivy-text
-             ivy--directory)) t)))
+             ivy--directory)) t)
+     res))
 
 (defun ivy--mouse-hook (orig-fun &rest args)
   (let* (
@@ -152,32 +154,6 @@ Otherwise, // will move to root."
     (when (string-match "\\`/[^\:]+:[^\:]+:\\'" (concat ivy--directory ivy-text))
       (setq ivy-text (concat ivy--directory ivy-text))))
   (apply orig-fun args))
-
-
-(defun ivy--sorted-files (dir)
-  "Return the list of files in DIR.
-Directories come first."
-  (let* ((default-directory dir)
-         (seq (condition-case nil
-                  (all-completions "" #'read-file-name-internal
-                                   (ivy-state-predicate ivy-last))
-                (error
-                 (directory-files dir))))
-         sort-fn)
-    (setq seq (delete-dups seq))
-    (setq seq (delete "./" (delete "../" seq)))
-    (when (eq (setq sort-fn (ivy--sort-function #'read-file-name-internal))
-              #'ivy-sort-file-function-default)
-      (setq seq (mapcar (lambda (x)
-                          (propertize x 'dirp (ivy--dirname-p x)))
-                        seq)))
-    (when sort-fn
-      (setq seq (sort seq sort-fn)))
-    (dolist (dir ivy-extra-directories)
-      (push dir seq))
-    (if (string= dir "/")
-        (cl-remove-if (lambda (s) (string-match ":$" s)) (delete "../" seq))
-      seq)))
 
 (defun ivy--magic-file-slash ()
   "Handle slash when completing file names."
@@ -283,7 +259,7 @@ Should be run via minibuffer `post-command-hook'."
   (setq ivy-on-del-error-function 'ignore)
   (setq ivy-magic-slash-non-match-action nil)
 
-  (advice-add 'counsel-find-file-occur :after #'counsel-find-file-occur-hook)
+  (advice-add 'counsel-find-file-occur :around #'counsel-find-file-occur-hook)
   (advice-add 'ivy--magic-file-slash :around #'ivy--magic-file-slash-hook)
   (advice-add 'ivy--handle-directory :around #'ivy--handle-directory-hook)
 
