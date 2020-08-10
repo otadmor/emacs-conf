@@ -171,15 +171,25 @@ Should be run via minibuffer `post-command-hook'."
     (if (ivy-state-dynamic-collection ivy-last)
         ;; while-no-input would cause annoying
         ;; "Waiting for process to die...done" message interruptions
-        (let ((inhibit-message t))
+        (let ((inhibit-message t)
+              coll in-progress)
           (unless (equal ivy--old-text ivy-text)
             (while-no-input
-              (setq ivy--all-candidates
-                    (ivy--sort-maybe
-                     (funcall (ivy-state-collection ivy-last) ivy-text)))
+              (setq coll (funcall (ivy-state-collection ivy-last) ivy-text))
+              (when (eq coll 0)
+                (setq coll nil)
+                (setq ivy--old-re nil)
+                (setq in-progress t))
+              (setq ivy--all-candidates (ivy--sort-maybe coll))
               (setq ivy--old-text ivy-text)))
+          (when (eq ivy--all-candidates 0)
+            (setq ivy--all-candidates nil)
+            (setq ivy--old-re nil)
+            (setq in-progress t))
           (when (or ivy--all-candidates
-                    (not (get-process " *counsel*")))
+                    (and (not (get-process " *counsel*"))
+                         (not in-progress)))
+            (ivy--set-index-dynamic-collection)
             (ivy--insert-minibuffer
              (ivy--format ivy--all-candidates))))
       (cond (ivy--directory
