@@ -39,3 +39,13 @@ fs () {
 fstr () {
     find -type f | xargs strings --print-file-name | grep -E ".*?\:.*$1"
 }
+
+addr2sym () {
+    gdb -nh \
+        -ex "file $1" \
+        -ex "python sym = gdb.execute('info symbol $2', to_string=True)" \
+        -ex "python parse_sym = lambda ssym: ((ssym[0], int(ssym[2])) if len(ssym) == 3 and ssym[2].isdigit() else (ssym[0], 0))" \
+        -ex "python sym_info = '%s+%s' % parse_sym(sym[:sym.find(' in section ')].split()) if not sym.startswith('No symbol matches') else 'no symbol'" \
+        -ex "python print(sym_info)" \
+        -ex "quit" | tail -n 1
+}
