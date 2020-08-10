@@ -156,10 +156,9 @@ Otherwise, // will move to root."
   (apply orig-fun args))
 
 (defun ivy--magic-tilde-directory-hook (orig-fun dir)
-    (expand-file-name
-      (if (string-match "\\`\\(/\\([^/]+:\\)+\\)/" ivy--directory)
-          (match-string 1 ivy--directory)
-        (funcall orig-fun dir))))
+  (expand-file-name
+   (or (file-remote-p ivy--directory)
+       (funcall orig-fun dir))))
 
 (defun ivy--exhibit ()
   "Insert Ivy completions display.
