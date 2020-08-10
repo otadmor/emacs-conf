@@ -120,15 +120,6 @@ If the input is empty, select the previous history element instead."
           (select-window (active-minibuffer-window))
           nil)))))
 
-(defun ivy--parent-dir (filename)
-  "Return parent directory of absolute FILENAME."
-  (let (
-        (curdirname (directory-file-name filename))
-        )
-  (if (string-match "\\`\\(/\\([^/]+:\\)*\\)[^/]+:/?\\'" curdirname)
-      (match-string-no-properties 1 curdirname)
-    (file-name-directory curdirname))))
-
 (defun ivy--directory-done ()
   "Handle exit from the minibuffer when completing file names."
   (let (dir)
@@ -199,60 +190,15 @@ If the input is empty, select the previous history element instead."
        (ivy-done)))))
 
 
-(defun ivy--exhibit ()
-  "Insert Ivy completions display.
-Should be run via minibuffer `post-command-hook'."
-  (when (memq 'ivy--queue-exhibit post-command-hook)
-    (let ((inhibit-field-text-motion nil))
-      (constrain-to-field nil (point-max)))
-    (setq ivy-text (ivy--input))
-    (if (ivy-state-dynamic-collection ivy-last)
-        ;; while-no-input would cause annoying
-        ;; "Waiting for process to die...done" message interruptions
-        (let ((inhibit-message t))
-          (unless (equal ivy--old-text ivy-text)
-            (while-no-input
-              (setq ivy--all-candidates
-                    (ivy--sort-maybe
-                     (funcall (ivy-state-collection ivy-last) ivy-text)))
-              (setq ivy--old-text ivy-text)))
-          (when (or ivy--all-candidates
-                    (not (get-process " *counsel*")))
-            (ivy--insert-minibuffer
-             (ivy--format ivy--all-candidates))))
-      (cond (ivy--directory
-             (cond ((or (string= "~/" ivy-text)
-                        (and (string= "~" ivy-text)
-                             ivy-magic-tilde))
-                    (ivy--cd
-                     (expand-file-name
-                      (if (string-match "\\`\\(/\\([^/]+:\\)+\\)/" ivy--directory)
-                          (match-string 1 ivy--directory)
-                        "~/"))))
-                   ((string-match "/\\'" ivy-text)
-                    (ivy--magic-file-slash)
-                    (setq ivy--directory (expand-file-name ivy--directory))
-                    (ivy--insert-prompt))
-                   ((and (string-match-p "\\`/\\([^/]+:\\)*\\'" ivy--directory)
-                         (string-match-p "\\`[^/]+\:\\'" ivy-text))
-                    (ivy--magic-file-slash)
-                    (setq ivy--directory (expand-file-name ivy--directory))
-                    (ivy--insert-prompt))))
-            ((eq (ivy-state-collection ivy-last) #'internal-complete-buffer)
-             (when (or (and (string-match "\\` " ivy-text)
-                            (not (string-match "\\` " ivy--old-text)))
-                       (and (string-match "\\` " ivy--old-text)
-                            (not (string-match "\\` " ivy-text))))
-               (setq ivy--all-candidates
-                     (if (= (string-to-char ivy-text) ?\s)
-                         (ivy--buffer-list " ")
-                       (ivy--buffer-list "" ivy-use-virtual-buffers)))
-               (setq ivy--old-re nil))))
-      (ivy--insert-minibuffer
-       (with-current-buffer (ivy-state-buffer ivy-last)
-         (ivy--format
-          (ivy--filter ivy-text ivy--all-candidates))))
-      (setq ivy--old-text ivy-text))))
+(defun ivy--parent-dir (filename)
+  "Return parent directory of absolute FILENAME."
+  (let (
+        (curdirname (directory-file-name filename))
+        )
+  (if (string-match "\\`\\(/\\([^/]+:\\)*\\)[^/]+:/?\\'" curdirname)
+      (match-string-no-properties 1 curdirname)
+    (file-name-directory curdirname))))
+
 
 (defcustom ivy-magic-root t
     "When non-nil, / will move to root when selecting files.
@@ -348,6 +294,61 @@ Directories come first."
              (ivy--create-and-cd canonical))))))
 
 
+(defun ivy--exhibit ()
+  "Insert Ivy completions display.
+Should be run via minibuffer `post-command-hook'."
+  (when (memq 'ivy--queue-exhibit post-command-hook)
+    (let ((inhibit-field-text-motion nil))
+      (constrain-to-field nil (point-max)))
+    (setq ivy-text (ivy--input))
+    (if (ivy-state-dynamic-collection ivy-last)
+        ;; while-no-input would cause annoying
+        ;; "Waiting for process to die...done" message interruptions
+        (let ((inhibit-message t))
+          (unless (equal ivy--old-text ivy-text)
+            (while-no-input
+              (setq ivy--all-candidates
+                    (ivy--sort-maybe
+                     (funcall (ivy-state-collection ivy-last) ivy-text)))
+              (setq ivy--old-text ivy-text)))
+          (when (or ivy--all-candidates
+                    (not (get-process " *counsel*")))
+            (ivy--insert-minibuffer
+             (ivy--format ivy--all-candidates))))
+      (cond (ivy--directory
+             (cond ((or (string= "~/" ivy-text)
+                        (and (string= "~" ivy-text)
+                             ivy-magic-tilde))
+                    (ivy--cd
+                     (expand-file-name
+                      (if (string-match "\\`\\(/\\([^/]+:\\)+\\)/" ivy--directory)
+                          (match-string 1 ivy--directory)
+                        "~/"))))
+                   ((string-match "/\\'" ivy-text)
+                    (ivy--magic-file-slash)
+                    (setq ivy--directory (expand-file-name ivy--directory))
+                    (ivy--insert-prompt))
+                   ((and (string-match-p "\\`/\\([^/]+:\\)*\\'" ivy--directory)
+                         (string-match-p "\\`[^/]+\:\\'" ivy-text))
+                    (ivy--magic-file-slash)
+                    (setq ivy--directory (expand-file-name ivy--directory))
+                    (ivy--insert-prompt))))
+            ((eq (ivy-state-collection ivy-last) #'internal-complete-buffer)
+             (when (or (and (string-match "\\` " ivy-text)
+                            (not (string-match "\\` " ivy--old-text)))
+                       (and (string-match "\\` " ivy--old-text)
+                            (not (string-match "\\` " ivy-text))))
+               (setq ivy--all-candidates
+                     (if (= (string-to-char ivy-text) ?\s)
+                         (ivy--buffer-list " ")
+                       (ivy--buffer-list "" ivy-use-virtual-buffers)))
+               (setq ivy--old-re nil))))
+      (ivy--insert-minibuffer
+       (with-current-buffer (ivy-state-buffer ivy-last)
+         (ivy--format
+          (ivy--filter ivy-text ivy--all-candidates))))
+      (setq ivy--old-text ivy-text))))
+      
 (with-eval-after-load 'ivy
   (setq ivy-format-function #'ivy-format-function-line)
   (setq ivy-magic-tilde nil)
