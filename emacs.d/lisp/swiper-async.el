@@ -1590,8 +1590,8 @@ is switching between candidates."
 (with-eval-after-load 'swiper
   (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
-  (with-eval-after-load 'counsel
-    (setq swiper--async-grep-limit 2))
+  ;; (with-eval-after-load 'counsel
+  ;;   (setq swiper--async-grep-limit 2))
 
   (advice-add 'swiper--cleanup :after #'swiper--async-swiper--cleanup-hook)
 
