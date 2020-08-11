@@ -352,94 +352,93 @@ or one pattern not in a list."
 (defun swiper--async-filter (buffer change-begin inserted-end deleted-length)
   "A filter installed on the searched buffer the recognize added or deleted
 matches."
-  (save-excursion
-    (let (
-          (re-str swiper--async-ivy-text-re)
-          )
-      (when (and (not (null swiper--async-last-line-pos))
-                 (< change-begin swiper--async-last-line-pos))
-        (setq swiper--async-last-line nil)
-        (setq swiper--async-last-line-pos nil))
-      (let* (
-             (chars-diff (- (- inserted-end change-begin) deleted-length))
-             (deleted-end (+ change-begin deleted-length))
-             (change-begin-line-point (progn (goto-char change-begin)
-                                             (line-beginning-position)))
-             (inserted-end-line-point (progn (goto-char inserted-end)
-                                             (line-end-position)))
-             (deleted-matches 0)
-             (change-index 0)
-             (first-item nil)
-             (last-item nil)
-             (iterator ivy--orig-cands)
+  (save-match-data
+    (save-excursion
+      (let (
+            (re-str swiper--async-ivy-text-re)
             )
-        (while iterator
+        (when (and (not (null swiper--async-last-line-pos))
+                   (< change-begin swiper--async-last-line-pos))
+          (setq swiper--async-last-line nil)
+          (setq swiper--async-last-line-pos nil))
+        (let* (
+               (chars-diff (- (- inserted-end change-begin) deleted-length))
+               (deleted-end (+ change-begin deleted-length))
+               (change-begin-line-point (progn (goto-char change-begin)
+                                               (line-beginning-position)))
+               (inserted-end-line-point (progn (goto-char inserted-end)
+                                               (line-end-position)))
+               (deleted-matches 0)
+               (change-index 0)
+               (first-item nil)
+               (last-item nil)
+               (iterator ivy--orig-cands)
+               )
+          (while iterator
+            (let (
+                  (item (car iterator))
+                  )
+              (when (< (swiper--get-line-end item) change-begin-line-point)
+                (when (swiper--async-matchp re-str item)
+                  (cl-incf change-index)
+                  (cl-decf deleted-matches))
+                (setq first-item iterator))
+              (when (<= (swiper--get-line-begin item) deleted-end)
+                (when (eq ivy--last-cand iterator)
+                  (setq ivy--last-cand first-item)
+                  (setq ivy--next-cand-index (+ change-index 1)))
+                (when (swiper--async-matchp re-str item)
+                  (cl-incf deleted-matches))
+                (setq last-item iterator)))
+            (setq iterator (cdr iterator)))
+          (setq last-item (if (null last-item) ivy--orig-cands (cdr last-item)))
+          (if (not (null first-item))
+              (setcdr first-item last-item)
+            (setq ivy--orig-cands last-item)
+            (setq ivy--last-cand nil)
+            (setq ivy--next-cand-index 0))
+          (dolist (to-update last-item)
+            (swiper--async-move to-update chars-diff))
           (let (
-                (item (car iterator))
+                (pre-overlay
+                 (when (> change-begin-line-point (point-min))
+                   (swiper--async-overlay-at-point (- change-begin-line-point 1))))
+                (pst-overlay
+                 (when (< inserted-end-line-point (point-max))
+                   (swiper--async-overlay-at-point (+ inserted-end-line-point 1))))
                 )
-            (when (< (swiper--get-line-end item) change-begin-line-point)
-              (when (swiper--async-matchp re-str item)
-                (cl-incf change-index)
-                (cl-decf deleted-matches))
-              (setq first-item iterator))
-            (when (<= (swiper--get-line-begin item) deleted-end)
-              (when (eq ivy--last-cand iterator)
-                (setq ivy--last-cand first-item)
-                (setq ivy--next-cand-index (+ change-index 1)))
-              (when (swiper--async-matchp re-str item)
-                (cl-incf deleted-matches))
-              (setq last-item iterator)))
-          (setq iterator (cdr iterator)))
-        (setq last-item (if (null last-item) ivy--orig-cands (cdr last-item)))
-        (if (not (null first-item))
-            (setcdr first-item last-item)
-          (setq ivy--orig-cands last-item)
-          (setq ivy--last-cand nil)
-          (setq ivy--next-cand-index 0))
-        (dolist (to-update last-item)
-          (swiper--async-move to-update chars-diff))
-        (let (
-              (pre-overlay
-               (when (> change-begin-line-point (point-min))
-                 (swiper--async-overlay-at-point (- change-begin-line-point 1))))
-              (pst-overlay
-               (when (< inserted-end-line-point (point-max))
-                 (swiper--async-overlay-at-point (+ inserted-end-line-point 1))))
-              )
-          ;; should support deletions where half are within an existing overlay and half outside an overlay.
-          (when pre-overlay
-            (setq change-begin-line-point (overlay-start pre-overlay)))
-          (when pst-overlay
-            (setq inserted-end-line-point (overlay-end pst-overlay))))
-        (remove-overlays change-begin-line-point
-                         inserted-end-line-point 'type 'swiper-async)
-        (when (/= change-begin-line-point inserted-end-line-point)
-          (if (not (and (>= swiper--opoint change-begin-line-point)
-                        (<= swiper--opoint inserted-end-line-point)))
-              (swiper--async-create-overlay change-begin-line-point
-                                            inserted-end-line-point)
-            (swiper--async-create-overlays-around-opoint change-begin-line-point
-                                                         inserted-end-line-point))
-          (swiper--async-kick-async))
-        (when (/= deleted-length 0)
-          (swiper--async-update-output))
-        (when (>= ivy--index change-index)
-          (if (>= deleted-matches (- ivy--index change-index))
-              (setq ivy--index change-index)
-            (setq ivy--index (- ivy--index deleted-matches))))
-        ;; (swiper--async-update-output)
-        )
-      (setq counsel--async-time (current-time)))))
+            ;; should support deletions where half are within an existing overlay and half outside an overlay.
+            (when pre-overlay
+              (setq change-begin-line-point (overlay-start pre-overlay)))
+            (when pst-overlay
+              (setq inserted-end-line-point (overlay-end pst-overlay))))
+          (remove-overlays change-begin-line-point
+                           inserted-end-line-point 'type 'swiper-async)
+          (when (/= change-begin-line-point inserted-end-line-point)
+            (if (not (and (>= swiper--opoint change-begin-line-point)
+                          (<= swiper--opoint inserted-end-line-point)))
+                (swiper--async-create-overlay change-begin-line-point
+                                              inserted-end-line-point)
+              (swiper--async-create-overlays-around-opoint change-begin-line-point
+                                                           inserted-end-line-point))
+            (swiper--async-kick-async))
+          (when (/= deleted-length 0)
+            (swiper--async-update-output))
+          (when (>= ivy--index change-index)
+            (if (>= deleted-matches (- ivy--index change-index))
+                (setq ivy--index change-index)
+              (setq ivy--index (- ivy--index deleted-matches))))
+          ;; (swiper--async-update-output)
+          )
+        (setq counsel--async-time (current-time))))))
 
 (defun swiper-async-after-change(begin end deleted-length)
   "The hook for after change."
-  (save-excursion
-    (swiper--async-filter (current-buffer) begin end deleted-length)))
+  (swiper--async-filter (current-buffer) begin end deleted-length))
 
 (defun swiper-async-after-change-prop(begin end)
   "The hook for after change string property in the buffer."
-  (save-excursion
-    (swiper--async-filter (current-buffer) begin end 0)))
+  (swiper--async-filter (current-buffer) begin end 0))
 
 (defun swiper--async-is-valid-input ()
   "verifies the swiper input is valid - meaning its not empty
@@ -1317,11 +1316,12 @@ Markers highlights the results in the buffer itself."
 
 (defun swiper--async-mark-candidates-in-range (beg end)
   "Call the corresponding marker-function,"
-  (setq ivy--marker-function
-        (or (cdr (assq ivy--regex-function ivy-marker-functions-alist))
-            #'swiper--async-mark-candidates-in-range-ivy))
-  (when (swiper--async-is-valid-input)
-    (funcall ivy--marker-function beg end)))
+  (save-match-data
+    (setq ivy--marker-function
+          (or (cdr (assq ivy--regex-function ivy-marker-functions-alist))
+              #'swiper--async-mark-candidates-in-range-ivy))
+    (when (swiper--async-is-valid-input)
+      (funcall ivy--marker-function beg end))))
 
 (defun swiper--async-mark-candidates-in-range-ivy (beg end)
   (when (> (length (ivy-state-current ivy-last)) 0)
