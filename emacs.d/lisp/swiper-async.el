@@ -384,7 +384,7 @@ matches."
             (setq iterator ivy--last-cand)
             (setq first-item iterator)
             (setq last-item iterator)
-            (setq change-index ivy--next-cand-index))
+            (setq change-index (- ivy--next-cand-index 1)))
           (while (not (null iterator))
             (let (
                   (item (car iterator))
