@@ -8,6 +8,8 @@
 ;; counsel-0.11.0
 ;; swiper-0.11.0
 
+(defvar swiper--async-in-op nil)
+
 (defmacro benchmark-and-get-result (&rest forms)
   "Return the time in seconds elapsed for execution of FORMS.
 Returns both the time and the result."
@@ -354,6 +356,7 @@ or one pattern not in a list."
 matches."
   (save-match-data
     (save-excursion
+      (unless swiper--async-in-op (let ((swiper--async-in-op t))
       (let (
             (re-str swiper--async-ivy-text-re)
             )
@@ -376,6 +379,12 @@ matches."
                (new-last-cand ivy--last-cand)
                (new-next-cand-index nil)
                )
+          (when (and (not (null ivy--last-cand))
+                     (< (swiper--get-line-end (car ivy--last-cand)) change-begin-line-point))
+            (setq iterator ivy--last-cand)
+            (setq first-item iterator)
+            (setq last-item iterator)
+            (setq change-index ivy--next-cand-index))
           (while (not (null iterator))
             (let (
                   (item (car iterator))
@@ -437,7 +446,7 @@ matches."
               (setq rerun-function t))
             (when rerun-function
               (swiper--async-kick-async t))))
-        (setq counsel--async-time (current-time))))))
+        (setq counsel--async-time (current-time))))))))
 
 (defun swiper-async-after-change(begin end deleted-length)
   "The hook for after change."
@@ -900,8 +909,10 @@ candidates in the minibuffer asynchrounouosly."
         (cancel-timer swiper--async-timer)
         (setq swiper--async-timer nil)
         (progn ; save-excursion
-          (deactivate-mark)
+          ;; (deactivate-mark)
           (let* (
+                 (swiper--async-in-op t)
+                 (_ (deactivate-mark))
                  (force-update-output swiper--async-force-update-output)
                  (which-func-mode nil)
                  (should-sleep-more nil)
@@ -1461,6 +1472,7 @@ Markers highlights the results in the buffer itself."
   (setq swiper--async-ivy-text-re nil)
   (setq ivy--index 0)
   (setq swiper-use-visual-line nil)
+  (setq swiper--async-force-update-output nil)
   (counsel-delete-process swiper--async-process-name)
   (when (not (null swiper--async-timer))
     (cancel-timer swiper--async-timer)
