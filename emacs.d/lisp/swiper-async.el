@@ -376,7 +376,7 @@ matches."
                (new-last-cand ivy--last-cand)
                (new-next-cand-index nil)
                )
-          (while iterator
+          (while (not (null iterator))
             (let (
                   (item (car iterator))
                   )
@@ -386,7 +386,7 @@ matches."
                   (cl-decf deleted-matches))
                 (setq first-item iterator))
               (when (<= (swiper--get-line-begin item) deleted-end)
-                (when (eq ivy--last-cand iterator)
+                (when (eq new-last-cand iterator)
                   (setq new-last-cand first-item)
                   (setq new-next-cand-index (+ change-index 1)))
                 (when (swiper--async-matchp re-str item)
@@ -419,24 +419,25 @@ matches."
               (setq inserted-end-line-point (overlay-end pst-overlay))))
           (remove-overlays change-begin-line-point
                            inserted-end-line-point 'type 'swiper-async)
-          (when (/= change-begin-line-point inserted-end-line-point)
-            (if (not (and (>= swiper--opoint change-begin-line-point)
-                          (<= swiper--opoint inserted-end-line-point)))
-                (swiper--async-create-overlay change-begin-line-point
-                                              inserted-end-line-point)
-              (swiper--async-create-overlays-around-opoint change-begin-line-point
-                                                           inserted-end-line-point))
-            (swiper--async-kick-async))
-          ;; (when (/= deleted-length 0)
-          ;;   (swiper--async-update-output))
-          (when (>= ivy--index change-index)
-            (if (>= deleted-matches (- ivy--index change-index))
-                (setq ivy--index change-index)
-              (setq ivy--index (- ivy--index deleted-matches))))
-          ;; (swiper--async-update-output)
-          )
-        (setq counsel--async-time (current-time)))
-      )))
+          (let ((rerun-function nil))
+            (when (/= change-begin-line-point inserted-end-line-point)
+              (if (not (and (>= swiper--opoint change-begin-line-point)
+                            (<= swiper--opoint inserted-end-line-point)))
+                  (swiper--async-create-overlay change-begin-line-point
+                                                inserted-end-line-point)
+                (swiper--async-create-overlays-around-opoint change-begin-line-point
+                                                             inserted-end-line-point))
+              (setq rerun-function t))
+            (when (/= deleted-length 0)
+              (setq rerun-function t))
+            (when (>= ivy--index change-index)
+              (if (>= deleted-matches (- ivy--index change-index))
+                  (setq ivy--index change-index)
+                (setq ivy--index (- ivy--index deleted-matches)))
+              (setq rerun-function t))
+            (when rerun-function
+              (swiper--async-kick-async t))))
+        (setq counsel--async-time (current-time))))))
 
 (defun swiper-async-after-change(begin end deleted-length)
   "The hook for after change."
@@ -743,17 +744,19 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 (defvar swiper--async-timer nil
   "The timer swiper-async uses to re-call the async search function.")
-(defun schedule-isearch(buffer func &optional should-sleep-more)
+(defvar swiper--async-force-update-output nil
+  "Mark to force updating the minibuffer when called from filter function")
+(defun schedule-isearch(buffer func &optional should-sleep-more force-update-output)
   "Schedule the search function of swiper-async."
-  (when (not (null swiper--async-timer))
-    (cancel-timer swiper--async-timer)
-    (setq swiper--async-timer nil))
-  (setq swiper--async-timer (run-at-time
-                             (+ swiper--async-isearch-interval
-                                (if should-sleep-more
-                                    swiper--async-isearch-sleep-more-time
+  (when (null swiper--async-timer)
+    (when force-update-output
+      (setq swiper--async-force-update-output t))
+    (setq swiper--async-timer (run-at-time
+                               (+ swiper--async-isearch-interval
+                                  (if should-sleep-more
+                                      swiper--async-isearch-sleep-more-time
                                     0))
-                             nil 'swiper--async-isearch buffer func)))
+                               nil 'swiper--async-isearch buffer func))))
 
 (defcustom swiper--async-isearch-interval 0
   "The interval between subsequent async search function calls."
@@ -894,9 +897,12 @@ candidates in the minibuffer asynchrounouosly."
   (save-match-data
     (when (active-minibuffer-window)
       (with-ivy-window
+        (cancel-timer swiper--async-timer)
+        (setq swiper--async-timer nil)
         (progn ; save-excursion
           (deactivate-mark)
           (let* (
+                 (force-update-output swiper--async-force-update-output)
                  (which-func-mode nil)
                  (should-sleep-more nil)
                  (yield-isearch nil)
@@ -909,6 +915,7 @@ candidates in the minibuffer asynchrounouosly."
                  (found-grep-candidates
                   (not (null swiper--async-process-candidates)))
                  )
+            (setq swiper--async-force-update-output nil)
             (when (and swiper-include-line-number-in-search
                        filled-minibuffer-candidates)
               (setq finished-wndcands t)
@@ -1132,10 +1139,11 @@ candidates in the minibuffer asynchrounouosly."
                                 (ceiling (/ (* searched-bytes
                                                swiper--max-search-time)
                                             matches-found-time)))))))))
-              (when (/= matches-found 0)
+              (when (or (/= matches-found 0)
+                        force-update-output)
                 (swiper--async-update-output)))
             (when yield-isearch
-              (schedule-isearch buffer func should-sleep-more))))))))
+              (schedule-isearch buffer func should-sleep-more force-update-output))))))))
 
 (defun swiper--async-insertion-sort (candidate-cons comp-func insertion-point)
   "Insert the candidate in `candidate-cons' to the list starting at
@@ -1193,7 +1201,7 @@ directly into `ivy--orig-cands'."
         (candidate (swiper--async-create-candidate b e))
         )
     (let (
-          (candidate-cons (list candidate))
+          (candidate-cons (cons candidate nil))
           )
       (let (
             (idx (swiper--async-insertion-sort
@@ -1288,11 +1296,13 @@ directly into `ivy--orig-cands'."
         (swiper--async-call-counsel-grep)
       (swiper--async-kick-async))))
 
-(defun swiper--async-kick-async ()
+(defun swiper--async-kick-async (&optional force-update-output)
   "Initialize a new async search."
   (schedule-isearch
    (current-buffer)
-   'swiper--async-found-new-candidate))
+   'swiper--async-found-new-candidate
+   nil
+   force-update-output))
 
 (defun swiper--async-mark-candidates-in-window ()
   "Tells swiper--async-mark-candidates-in-range where to mark candidates."
