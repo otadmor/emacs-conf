@@ -1539,6 +1539,23 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
       (when swiper--reveal-mode
         (reveal-mode 1)))))
 
+(defun swiper--async-restart-around (orig-fun &rest args)
+  (if (eq (ivy-state-caller ivy-last) 'swiper-async)
+      (let (
+            (search-string ivy-text)
+            (direction-backward swiper--async-direction-backward)
+            (_ (swiper--async-reset-state))
+            (res (let ((swiper--async-in-op t)) (apply orig-fun args)))
+            )
+        ;; (setq ivy--old-text
+        (setq swiper--async-direction-backward direction-backward)
+        (setq ivy--old-text nil)
+        (setq ivy-text search-string)
+        (swiper-async-function ivy-text)
+        (swiper--async-update-output)
+        res)
+    (apply orig-fun args)))
+
 (defun ivy-rotate-preferred-builders-update()
   "Select a new re-builder and update the prompt so the user will understand on which command he is."
   (setq ivy--old-text nil) ; force re-running dynamic function.
@@ -1637,6 +1654,9 @@ is switching between candidates."
 
   (with-eval-after-load 'pcre2el
     (add-to-list 'ivy-preferred-re-builders '(swiper--regexp-builder . "regexp")))
+
+  (with-eval-after-load 'tabulated-list
+    (advice-add 'tabulated-list-print :around 'swiper--async-restart-around))
 
   (advice-add 'ivy--quote-format-string :around #'ivy--quote-format-string-hook)
   (advice-add 'ivy-previous-line :around #'ivy-previous-line-hook)
