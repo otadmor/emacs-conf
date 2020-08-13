@@ -780,14 +780,14 @@ input or processes has some output."
   "Tells swiper if searching forward or backward. Used to tell
 the search function which direction to search (search-forward
 or search-backward).")
-(defcustom swiper--async-default-max-matches-per-search 100
+(defcustom swiper--async-default-max-matches-per-search 1000
   "Maximum search results within one search function call. Reduce this if the minibuffer
 is laggy before the search is finished."
   :type 'integer)
-(defvar swiper--max-search-length (* 10 4096)
+(defvar swiper--max-search-length (* 1024 4096)
   "Saves the maximum amount of bytes the search function will search for the candidate in
 one iteration.") ; one page?
-(defcustom swiper--max-search-time 0.1
+(defcustom swiper--max-search-time 1
   "Soft limit for the execution time of the search function")
 
 (defun swiper--async-update-output ()
