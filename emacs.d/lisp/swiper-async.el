@@ -46,36 +46,38 @@ FORCE will ignore the limit of swiper--async-max-line-count-time."
                  (null swiper--async-last-line)
                  (null swiper--async-last-line-pos))
              (progn (goto-char pos) (line-number-at-pos))
-           (let (
-                 (small-pos (min pos swiper--async-last-line-pos))
-                 (big-pos (max pos swiper--async-last-line-pos))
-                 )
-             (when (or
-                    (<= (- big-pos small-pos) swiper--async-max-line-count-size)
-                    force)
-               (let (
-                     (big-pos-at-newline
-                      (= big-pos (progn (goto-char big-pos)
-                                        (line-beginning-position))))
-                     (lines-diff-and-time (benchmark-and-get-result
-                                           (count-lines small-pos big-pos)))
-                     )
+           (if (= swiper--async-last-line-pos pos)
+               swiper--async-last-line
+             (let (
+                   (small-pos (min pos swiper--async-last-line-pos))
+                   (big-pos (max pos swiper--async-last-line-pos))
+                   )
+               (when (or
+                      (<= (- big-pos small-pos) swiper--async-max-line-count-size)
+                      force)
                  (let (
-                       (lines-time (car lines-diff-and-time))
-                       (lines-diff (cdr lines-diff-and-time))
+                       (big-pos-at-newline
+                        (= big-pos (progn (goto-char big-pos)
+                                          (line-beginning-position))))
+                       (lines-diff-and-time (benchmark-and-get-result
+                                              (count-lines small-pos big-pos)))
                        )
-                   (when (/= big-pos small-pos)
-                     (setq swiper--async-max-line-count-size
-                           (max
-                            (min (ceiling (/ (* (- big-pos small-pos)
-                                                swiper--async-max-line-count-time)
-                                             lines-time))
-                                 1048576) 128)))
-                   (unless big-pos-at-newline
-                     (setq lines-diff (- lines-diff 1)))
-                   (if (> pos swiper--async-last-line-pos)
-                       (+ swiper--async-last-line lines-diff)
-                     (- swiper--async-last-line lines-diff))))))))
+                   (let (
+                         (lines-time (car lines-diff-and-time))
+                         (lines-diff (cdr lines-diff-and-time))
+                         )
+                     (when (/= big-pos small-pos)
+                       (setq swiper--async-max-line-count-size
+                             (max
+                              (min (ceiling (/ (* (- big-pos small-pos)
+                                                  swiper--async-max-line-count-time)
+                                               lines-time))
+                                   1048576) 128)))
+                     (unless big-pos-at-newline
+                       (setq lines-diff (- lines-diff 1)))
+                     (if (> pos swiper--async-last-line-pos)
+                         (+ swiper--async-last-line lines-diff)
+                       (- swiper--async-last-line lines-diff)))))))))
         )
     (unless (null line-no)
       (setq swiper--async-last-line-pos pos)
