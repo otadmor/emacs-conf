@@ -22,10 +22,10 @@ Put the content of .gdbinit in ~/.gdbinit.
 A wild tale tells lucid works better than gtk3 when using emacs daemon. These are the suggested compilation flags:
 ```
 sudo apt-get install build-essential texinfo libx11-dev libxpm-dev libjpeg-dev libpng-dev libgif-dev libtiff-dev libncurses5-dev libxaw7-dev libgnutls28-dev
-wget ftp://ftp.gnu.org/gnu/emacs/emacs-26.3.tar.xz
-tar -xf emacs-26.3.tar.xz
-cd emacs-26.3
-git apply xterm.c.patch
+wget https://ftp.gnu.org/gnu/emacs/emacs-27.1.tar.xz
+tar -xf emacs-27.1.tar.xz
+cd emacs-27.1
+git apply xterm.c.27.1.patch
 ./configure --with-x-toolkit=lucid --with-kerberos --with-kerberos5 --with-wide-int --with-mailutils
 make
 sudo make install
