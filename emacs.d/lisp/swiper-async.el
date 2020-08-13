@@ -787,7 +787,7 @@ is laggy before the search is finished."
 (defvar swiper--max-search-length (* 1024 4096)
   "Saves the maximum amount of bytes the search function will search for the candidate in
 one iteration.") ; one page?
-(defcustom swiper--max-search-time 1
+(defcustom swiper--max-search-time 0.2
   "Soft limit for the execution time of the search function")
 
 (defun swiper--async-update-output ()
@@ -992,6 +992,7 @@ candidates in the minibuffer asynchrounouosly."
                    (ivy--wnd-cands-to-str (reverse new-wnd-cands))))))
             (let (
                   (matches-found 0)
+                  (candidates-create-time 0)
                   (swiper--async-max-matches-per-search
                    (max 1
                         (if (< (length ivy--orig-cands)
@@ -1004,51 +1005,45 @@ candidates in the minibuffer asynchrounouosly."
                 (let (
                       (last-end nil)
                       )
-                  (let (
-                        (candidates-create-time (car (benchmark-and-get-result
-                                                       (while (and (not (setq yield-isearch
-                                                                              (or yield-isearch
-                                                                                  (setq should-sleep-more
-                                                                                        (or should-sleep-more
-                                                                                            (swiper--async-should-quit-async)))
-                                                                                  (>= matches-found
-                                                                                      swiper--async-max-matches-per-search)
-                                                                                  )))
-                                                                   (not (null swiper--async-process-candidates)))
-                                                         (cl-incf matches-found)
-                                                         (let (
-                                                               (beg-end (pop swiper--async-process-candidates))
-                                                               )
-                                                           (setq last-end (cdr beg-end))
-                                                           (funcall func (car beg-end) (cdr beg-end))))
-                                                       ))))
-                    (when (null swiper--async-process-candidates)
-                      (setq swiper--async-process-last-inserted nil))
-                    (unless (null last-end)
-                      (let (
-                            (overlay-at-last-end (when (< last-end (point-max))
-                                                   (swiper--async-overlay-at-point
-                                                    (+ last-end 1))))
-                            )
-                        (unless (null overlay-at-last-end)
-                          (let (
-                                (overlay-at-last-end-end (overlay-end
-                                                          overlay-at-last-end))
-                                )
-                            (delete-overlay overlay-at-last-end)
-                            (swiper--async-create-overlay
-                             (+ last-end 1)
-                             overlay-at-last-end-end))))
-                      (remove-overlays (point-min)
-                                       last-end 'type 'swiper-async))
-                    (when (null (get-process swiper--async-process-name))
-                      (remove-overlays (point-min)
-                                       (point-max) 'type 'swiper-async))
-                    (when (/= matches-found 0)
-                      (setq swiper--async-default-max-matches-per-search
-                            (ceiling (/ (* matches-found
-                                           swiper--max-search-time)
-                                        candidates-create-time)))))))
+                  (setq candidates-create-time (car (benchmark-and-get-result
+                                                      (while (and (not (setq yield-isearch
+                                                                             (or yield-isearch
+                                                                                 (setq should-sleep-more
+                                                                                       (or should-sleep-more
+                                                                                           (swiper--async-should-quit-async)))
+                                                                                 (>= matches-found
+                                                                                     swiper--async-max-matches-per-search)
+                                                                                 )))
+                                                                  (not (null swiper--async-process-candidates)))
+                                                        (cl-incf matches-found)
+                                                        (let (
+                                                              (beg-end (pop swiper--async-process-candidates))
+                                                              )
+                                                          (setq last-end (cdr beg-end))
+                                                          (funcall func (car beg-end) (cdr beg-end))))
+                                                      )))
+                  (when (null swiper--async-process-candidates)
+                    (setq swiper--async-process-last-inserted nil))
+                  (unless (null last-end)
+                    (let (
+                          (overlay-at-last-end (when (< last-end (point-max))
+                                                 (swiper--async-overlay-at-point
+                                                  (+ last-end 1))))
+                          )
+                      (unless (null overlay-at-last-end)
+                        (let (
+                              (overlay-at-last-end-end (overlay-end
+                                                        overlay-at-last-end))
+                              )
+                          (delete-overlay overlay-at-last-end)
+                          (swiper--async-create-overlay
+                           (+ last-end 1)
+                           overlay-at-last-end-end))))
+                    (remove-overlays (point-min)
+                                     last-end 'type 'swiper-async))
+                  (when (null (get-process swiper--async-process-name))
+                    (remove-overlays (point-min)
+                                     (point-max) 'type 'swiper-async))))
               (when (and (/= (length swiper--async-to-search) 0)
                          (not (swiper--async-same-as-disk)))
                 (save-excursion
@@ -1147,11 +1142,17 @@ candidates in the minibuffer asynchrounouosly."
                                                                  (setq overlays (cdr overlays)))))))
                                                        )))
                             )
+                        (setq candidates-create-time matches-found-time)
                         (when (/= searched-bytes 0)
                           (setq swiper--max-search-length ;(* 10 4096)
                                 (ceiling (/ (* searched-bytes
                                                swiper--max-search-time)
                                             matches-found-time)))))))))
+              (when (/= matches-found 0)
+                (setq swiper--async-default-max-matches-per-search
+                      (ceiling (/ (* matches-found
+                                     swiper--max-search-time)
+                                  candidates-create-time))))
               (setq should-update-output (or should-update-output (/= matches-found 0))))
             (when yield-isearch
               (schedule-isearch buffer func should-sleep-more force-update-output)))
