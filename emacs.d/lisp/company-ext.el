@@ -17,20 +17,20 @@
               (prefix (buffer-substring-no-properties
                        (min start (buffer-end 1))
                        (min end (buffer-end 1))))
-              (candidates (progn (let (
-                                       (cands
-                                        (completion-all-completions
-                                         arg
-                                         collection predicate
-                                         (length arg))
-                                         ;; (- (min end (buffer-end 1)) (min start (buffer-end 1))))
+              (candidates (progn (let* (
+                                        (cands
+                                         (completion-all-completions
+                                          arg
+                                          collection predicate
+                                          (length arg))
+                                         )
+                                        (rev-arg (string-reverse arg))
                                         )
-                                       )
                                    (unless (null cands)
                                      (setcdr (last cands) nil))
                                    (dolist (s cands)
                                      (company-ext--remove-props s 'face))
-                                   cands)))
+                                   (mapcar (lambda (a) (concat (file-name-directory arg) a)) cands))))
               (meta (if (stringp arg) (get-text-property 0 'symbol arg)))
               (doc-buffer (company-doc-buffer
                            (if (stringp arg) (get-text-property 0 'document arg))))
