@@ -1636,6 +1636,14 @@ is switching between candidates."
 (defun swiper--make-overlay-hook(orig-fun beg end face wnd priority)
   (funcall orig-fun beg end face wnd (+ priority 900)))
 
+(defun swiper--add-line-overlay-hook (orig-fun &rest args)
+  (let ((str (ivy-state-current ivy-last)))
+    (when (and (>= (swiper--get-begin str) (window-start))
+               (<= (swiper--get-end str) (window-end)))
+      (save-excursion
+        (goto-char (swiper--get-begin str))
+        (apply orig-fun args)))))
+
 (with-eval-after-load 'swiper
   (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
 
@@ -1666,6 +1674,7 @@ is switching between candidates."
   (advice-add 'ivy-previous-line :around #'ivy-previous-line-hook)
   (advice-add 'ivy-next-line :around #'ivy-next-line-hook)
   (advice-add 'swiper--make-overlay :around #'swiper--make-overlay-hook)
+  (advice-add 'swiper--add-line-overlay :around #'swiper--add-line-overlay-hook)
   (ivy-set-occur 'swiper-async 'counsel-grep-occur))
 
 (provide 'swiper-async)
