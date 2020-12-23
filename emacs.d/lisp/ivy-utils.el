@@ -160,66 +160,79 @@ Otherwise, // will move to root."
    (or (file-remote-p ivy--directory)
        (funcall orig-fun dir))))
 
+(defun ivy-set-text (str)
+  "Set `ivy-text' to STR."
+  (setq ivy-text str)
+  (setq ivy-regex (funcall ivy--regex-function ivy-text)))
+
 (defun ivy--exhibit ()
   "Insert Ivy completions display.
 Should be run via minibuffer `post-command-hook'."
   (when (memq 'ivy--queue-exhibit post-command-hook)
     (let ((inhibit-field-text-motion nil))
       (constrain-to-field nil (point-max)))
-    (setq ivy-text (ivy--input))
-    (if (ivy-state-dynamic-collection ivy-last)
-        ;; while-no-input would cause annoying
-        ;; "Waiting for process to die...done" message interruptions
-        (let ((inhibit-message t)
-              coll in-progress)
-          (unless (equal ivy--old-text ivy-text)
-            (while-no-input
-              (setq coll (funcall (ivy-state-collection ivy-last) ivy-text))
-              (when (eq coll 0)
-                (setq coll nil)
-                (setq ivy--old-re nil)
-                (setq in-progress t))
-              (setq ivy--all-candidates (ivy--sort-maybe coll))
-              (setq ivy--old-text ivy-text)))
-          (when (eq ivy--all-candidates 0)
-            (setq ivy--all-candidates nil)
-            (setq ivy--old-re nil)
-            (setq in-progress t))
-          (when (or ivy--all-candidates
-                    (and (not (get-process " *counsel*"))
-                         (not in-progress)))
-            (ivy--set-index-dynamic-collection)
-            (ivy--insert-minibuffer
-             (ivy--format ivy--all-candidates))))
-      (cond (ivy--directory
-             (cond ((or (string= "~/" ivy-text)
-                        (and (string= "~" ivy-text)
-                             ivy-magic-tilde))
-                    (ivy--cd (ivy--magic-tilde-directory ivy--directory)))
-                   ((string-match "/\\'" ivy-text)
-                    (ivy--magic-file-slash)
-                    (setq ivy--directory (expand-file-name ivy--directory))
-                    (ivy--insert-prompt))
-                   ((and (string-match-p "\\`/\\([^/]+:\\)*\\'" ivy--directory)
-                         (string-match-p "\\`[^/]+\:\\'" ivy-text))
-                    (ivy--magic-file-slash)
-                    (setq ivy--directory (expand-file-name ivy--directory))
-                    (ivy--insert-prompt))))
-            ((eq (ivy-state-collection ivy-last) #'internal-complete-buffer)
-             (when (or (and (string-match "\\` " ivy-text)
-                            (not (string-match "\\` " ivy--old-text)))
-                       (and (string-match "\\` " ivy--old-text)
-                            (not (string-match "\\` " ivy-text))))
-               (setq ivy--all-candidates
-                     (if (= (string-to-char ivy-text) ?\s)
-                         (ivy--buffer-list " ")
-                       (ivy--buffer-list "" ivy-use-virtual-buffers)))
-               (setq ivy--old-re nil))))
-      (ivy--insert-minibuffer
-       (with-current-buffer (ivy-state-buffer ivy-last)
-         (ivy--format
-          (ivy--filter ivy-text ivy--all-candidates))))
-      (setq ivy--old-text ivy-text))))
+    (ivy-set-text (ivy--input))
+    (let ((new-minibuffer (ivy--update-minibuffer)))
+      (when new-minibuffer
+        (ivy--insert-minibuffer new-minibuffer)))
+    t))
+
+(defun ivy--dynamic-collection-cands (input)
+  (let ((coll (funcall (ivy-state-collection ivy-last) input)))
+    (if (listp coll)
+        (mapcar (lambda (x) (if (consp x) (car x) x)) coll)
+      coll)))
+
+(defun ivy--update-minibuffer ()
+  (prog1
+      (if (ivy-state-dynamic-collection ivy-last)
+          ;; while-no-input would cause annoying
+          ;; "Waiting for process to die...done" message interruptions
+          (let ((inhibit-message t)
+                coll in-progress)
+            (unless (or (equal ivy--old-text ivy-text)
+                        (eq this-command 'ivy-resume))
+              (while-no-input
+                (setq coll (ivy--dynamic-collection-cands ivy-text))
+                (when (eq coll 0)
+                  (setq coll nil)
+                  (setq ivy--old-re nil)
+                  (setq in-progress t))
+                (setq ivy--all-candidates (ivy--sort-maybe coll))))
+            (when (eq ivy--all-candidates 0)
+              (setq ivy--all-candidates nil)
+              (setq ivy--old-re nil)
+              (setq in-progress t))
+            (when (or ivy--all-candidates
+                      (and (not (get-process " *counsel*"))
+                           (not in-progress)))
+              (ivy--set-index-dynamic-collection)
+              (ivy--format ivy--all-candidates)))
+        (cond (ivy--directory
+               (cond ((or (string= "~/" ivy-text)
+                          (and (string= "~" ivy-text)
+                               ivy-magic-tilde))
+                      (ivy--cd (ivy--magic-tilde-directory ivy--directory)))
+                     ((or (string-match "/\\'" ivy-text)
+                          (and (string-match-p "\\`/\\([^/]+:\\)*\\'" ivy--directory)
+                               (string-match-p "\\`[^/]+\:\\'" ivy-text)))
+                      (ivy--magic-file-slash)
+                      (setq ivy--directory (expand-file-name ivy--directory))
+                      (ivy--insert-prompt))))
+              ((eq (ivy-state-collection ivy-last) #'internal-complete-buffer)
+               (when (or (and (string-match "\\` " ivy-text)
+                              (not (string-match "\\` " ivy--old-text)))
+                         (and (string-match "\\` " ivy--old-text)
+                              (not (string-match "\\` " ivy-text))))
+                 (setq ivy--all-candidates
+                       (if (= (string-to-char ivy-text) ?\s)
+                           (ivy--buffer-list " ")
+                         (ivy--buffer-list "" ivy-use-virtual-buffers)))
+                 (setq ivy--old-re nil))))
+        (with-current-buffer (ivy-state-buffer ivy-last)
+          (ivy--format
+           (ivy--filter ivy-text ivy--all-candidates))))
+    (setq ivy--old-text ivy-text)))
 
 (with-eval-after-load 'ivy
   (setq ivy-format-function #'ivy-format-function-line)
