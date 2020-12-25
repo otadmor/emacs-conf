@@ -7,6 +7,14 @@
   (remove-list-of-text-properties 0 (length str) props str)
   str)
 
+(setq company--return-fullpath t)
+(defun completion-file-name-table-fullpath-hook (orig-fun string pred action)
+  (if (and company--return-fullpath
+           (eq action t))
+      (let ((res (funcall orig-fun string pred action)))
+        (mapcar (lambda (a) (concat (file-name-directory string) a)) res))
+    (funcall orig-fun string pred action)))
+
 (defun company-completion-in-region (start end collection &optional predicate)
   (let* (
          (fixed-candidate-source
@@ -19,10 +27,11 @@
                        (min end (buffer-end 1))))
               (candidates (progn (let* (
                                         (cands
-                                         (completion-all-completions
-                                          arg
-                                          collection predicate
-                                          (length arg))
+                                         (let ((company--return-fullpath t))
+                                           (completion-all-completions
+                                            arg
+                                            collection predicate
+                                            (length arg)))
                                          )
                                         (rev-arg (string-reverse arg))
                                         )
@@ -30,7 +39,7 @@
                                      (setcdr (last cands) nil))
                                    (dolist (s cands)
                                      (company-ext--remove-props s 'face))
-                                   (mapcar (lambda (a) (concat (file-name-directory arg) a)) cands))))
+                                   cands)))
               (meta (if (stringp arg) (get-text-property 0 'symbol arg)))
               (doc-buffer (company-doc-buffer
                            (if (stringp arg) (get-text-property 0 'document arg))))
@@ -46,7 +55,8 @@
   (add-hook 'after-init-hook 'global-company-mode)
   (add-to-list 'company-continue-commands 'comint-previous-matching-input-from-input t)
   (add-to-list 'company-continue-commands 'comint-next-matching-input-from-input t)
-  (setq company-minimum-prefix-length 1)
+  (advice-add 'completion-file-name-table :around #'completion-file-name-table-fullpath-hook)
+  (setq company-minimum-prefix-length 100)
   (setq company-require-match nil)
 
   (setq company-orig--completion-in-region-function
