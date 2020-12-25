@@ -1,4 +1,5 @@
 #!/bin/bash
+NDK=/opt/android-ndk-r21d
 GDB_VERSION=10.1
 PYTHON_VERSION=3.8
 GUILE_VERSION=2.0
@@ -55,7 +56,7 @@ mkdir gdbsupport && cd gdbsupport && ../../gdbsupport/configure  \
 mkdir libiberty && cd libiberty && ../../libiberty/configure \
         LDFLAGS=-static --host=arm-linux-gnueabi && \
     make && cd .. || exit 1
-PATH=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/:$PATH ../gdbserver/configure CPPFLAGS="-include gnulib/import/stdio.h"  \
+../gdbserver/configure CPPFLAGS="-include gnulib/import/stdio.h"  \
         LDFLAGS=-static --host=arm-linux-gnueabi && \
     sed -i 's/GNULIB_BUILDDIR = ..\/gnulib/GNULIB_BUILDDIR = gnulib/g' Makefile && \
     sed -i 's/LIBIBERTY_BUILDDIR = ..\/libiberty/LIBIBERTY_BUILDDIR = libiberty/g' Makefile && \
@@ -63,7 +64,6 @@ PATH=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/:$PATH ../gdbserver/configur
     make gdbserver && cd .. || exit 1
 
 
-NDK=/opt/android-ndk-r21d
 mkdir build-gdbserver-aarch64-linux-android && cd build-gdbserver-aarch64-linux-android || exit 1
 export PATH=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/:$PATH
 mkdir zlib && cd zlib && ../../zlib/configure  \
@@ -110,7 +110,6 @@ PATH=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/:$PATH ../gdbserver/configur
     make gdbserver && aarch64-linux-android-strip gdbserver && cd .. || exit 1
 
 
-NDK=~/android/android-ndk-r21d
 mkdir build-gdbserver-armv7a-linux-androideabi && cd build-gdbserver-armv7a-linux-androideabi || exit 1
 export PATH=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/:$PATH
 mkdir zlib && cd zlib && ../../zlib/configure  \

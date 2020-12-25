@@ -1,4 +1,5 @@
 #!/bin/bash
+NDK=/opt/android-ndk-r21d
 # sudo apt-get install guile-2.2 guile-2.2-dev guile-2.2-libs
 # GDB_VERSION=10.1
 GDB_VERSION=9.2
@@ -47,8 +48,6 @@ pushd build-gdbserver-arm-linux-gnueabi
 make || exit 1
 popd
 
-
-NDK=/opt/android-ndk-r21d
 
 mkdir build-gdbserver-aarch64-linux-android
 pushd build-gdbserver-aarch64-linux-android
