@@ -3,7 +3,7 @@ NDK=/opt/android-ndk-r21d
 GDB_VERSION=10.1
 PYTHON_VERSION=3.8
 GUILE_VERSION=2.0
-sudo apt-get install libipt-dev gcc-arm-linux-gnueabi g++-arm-linux-gnueabi gcc-multilib guile-$GUILE_VERSION guile-$GUILE_VERSION-dev guile-$GUILE_VERSION-libs python$PYTHON_VERSION-dev
+sudo apt-get install libipt-dev gcc-arm-linux-gnueabi g++-arm-linux-gnueabi gcc-multilib guile-$GUILE_VERSION guile-$GUILE_VERSION-dev guile-$GUILE_VERSION-libs python$PYTHON_VERSION-dev libmpfr-dev
 # to check --enable-gdbtk --enable-tui, --enable-gtk
 rm gdb-$GDB_VERSION.tar gdb-$GDB_VERSION.tar.xz
 wget https://ftp.gnu.org/gnu/gdb/gdb-$GDB_VERSION.tar.xz
