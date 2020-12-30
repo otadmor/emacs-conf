@@ -1,9 +1,15 @@
 #!/bin/bash
 NDK=/opt/android-ndk-r21d
+if [[ ! -d $NDK ]]; then
+    echo Missing ndk $NDK
+    exit 1
+fi
 GDB_VERSION=10.1
 PYTHON_VERSION=3.8
 GUILE_VERSION=2.0
-sudo apt-get install libipt-dev gcc-arm-linux-gnueabi g++-arm-linux-gnueabi gcc-multilib guile-$GUILE_VERSION guile-$GUILE_VERSION-dev guile-$GUILE_VERSION-libs python$PYTHON_VERSION-dev libmpfr-dev
+sudo apt-get install libipt-dev gcc-multilib guile-${GUILE_VERSION} guile-${GUILE_VERSION}-dev guile-${GUILE_VERSION}-libs python${PYTHON_VERSION}-dev libmpfr-dev || exit 1
+sudo apt-get install gcc-arm-linux-gnueabi g++-arm-linux-gnueabi || exit 1
+
 # to check --enable-gdbtk --enable-tui, --enable-gtk
 rm gdb-$GDB_VERSION.tar gdb-$GDB_VERSION.tar.xz
 wget https://ftp.gnu.org/gnu/gdb/gdb-$GDB_VERSION.tar.xz
@@ -12,14 +18,14 @@ xz -dk gdb-$GDB_VERSION.tar.xz
 tar -xf gdb-$GDB_VERSION.tar
 gdb_prefix=/opt/gdb
 
-cd gdb-$GDB_VERSION
+cd gdb-${GDB_VERSION}
 
 
 mkdir build-multiarch
 cd build-multiarch && ../configure \
-                          --enable-tui --with-guile=guile-$GUILE_VERSION --with-mpfr --with-expat \
-                          --with-zlib --with-lzma --with-python=python$PYTHON_VERSION \
-                          --prefix=$gdb_prefix --enable-targets=all && \
+                          --enable-tui --with-guile=guile-${GUILE_VERSION} --with-mpfr --with-expat \
+                          --with-zlib --with-lzma --with-python=python${PYTHON_VERSION} \
+                          --prefix=${gdb_prefix} --enable-targets=all && \
     make && sudo make install && cd .. || exit 1
 
 
@@ -29,15 +35,15 @@ if [[ "$?" != "0" ]] ; then
     if [[ "$GDB" != "" ]]; then
         GDB_NEW_NAME=$(dirname $GDB)/gdb-$(gdb --version | sed -rn 's/.*gdb.*\) (.*?)/\1/p')
         if [[ ! -f $GDB_NEW_NAME ]]; then
-            sudo mv $GDB $GDB_NEW_NAME
+            sudo mv $GDB ${GDB_NEW_NAME}
         fi
-        sudo update-alternatives --install $GDB gdb $GDB_NEW_NAME 10
+        sudo update-alternatives --install $GDB gdb ${GDB_NEW_NAME} 10
     fi
 fi
 if [[ "$GDB" == "" ]]; then
     GDB=/usr/local/bin/gdb
 fi
-sudo update-alternatives --install $GDB gdb $gdb_prefix/bin/gdb 20
+sudo update-alternatives --install $GDB gdb ${gdb_prefix}/bin/gdb 20
 
 mkdir build-gdbserver-arm-linux-gnueabi && cd build-gdbserver-arm-linux-gnueabi || exit 1
 
