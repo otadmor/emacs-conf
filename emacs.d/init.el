@@ -248,6 +248,7 @@
   )
 
 (with-eval-after-load 'ivy
+  (setq enable-recursive-minibuffers t)
   (ido-mode nil)
   (ivy-mode nil)
   (setq ivy-do-completion-in-region nil)
