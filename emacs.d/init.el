@@ -127,7 +127,7 @@
 (defvar pop-key (kbd "C-M-p"))
 (defvar goto-def-key (kbd "C-M-g"))
 (defvar find-ref-key (kbd "C-M-x"))
-(defvar complete-key (kbd "C-SPC"))
+;; (defvar complete-key (kbd "C-SPC"))
 (defvar sc-status-key (kbd "M-h"))
 
 (global-set-key [f4] 'next-error)
@@ -181,9 +181,10 @@
 (global-set-key (kbd "M-d") 'switch-to-minibuffer)
 
 
-(require 'redo+)
-(global-set-key [(control z)] 'undo)
-(global-set-key [(control y)] 'redo)
+
+;; (require 'redo+)
+;; (global-set-key [(control z)] 'undo)
+;; (global-set-key [(control y)] 'redo)
 
 
 (require 'comint) ; to set comint-output-filter-functions
