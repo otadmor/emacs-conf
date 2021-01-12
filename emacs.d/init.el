@@ -475,7 +475,7 @@
 (with-eval-after-load 'company
   (require 'company-ext))
 
-(global-set-key complete-key 'completion-at-point)
+;; (global-set-key complete-key 'completion-at-point)
 
 ;;(with-eval-after-load 'bash-completion
 ;;  (bash-completion-setup))
