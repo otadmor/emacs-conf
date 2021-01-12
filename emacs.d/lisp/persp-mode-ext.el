@@ -59,8 +59,9 @@ of the perspective %s can't be saved."
 (defun switch-to-persp1-after-load-state (persp-file phash persp-names)
   (remove-hook 'persp-after-load-state-functions
                'switch-to-persp1-after-load-state)
-  (perspsw1)
-  (run-with-idle-timer 5 t 'persp-mode-try-save))
+  (when server-inside-emacs-client
+    (perspsw1)
+    (run-with-idle-timer 5 t 'persp-mode-try-save)))
 
 (setq persp-mode-hide-autosave-errors t)
 
@@ -206,7 +207,8 @@ of the perspective %s can't be saved."
             (lambda ()
               (add-hook 'persp-after-load-state-functions
                         'switch-to-persp1-after-load-state)
-              (persp-mode 1)))
+              (when server-inside-emacs-client
+                (persp-mode 1))))
 
   (setq persp-autokill-buffer-on-remove nil)
   (setq persp-auto-resume-time 0.01)
