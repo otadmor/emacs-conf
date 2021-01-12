@@ -173,10 +173,10 @@
 (define-key shell-mode-map [(shift return)] 'newline)
 
 (require 'windmove)
-(global-set-key (kbd "C-M-<left>") 'windmove-left)
-(global-set-key (kbd "C-M-<right>") 'windmove-right)
-(global-set-key (kbd "C-M-<up>") 'windmove-up)
-(global-set-key (kbd "C-M-<down>") 'windmove-down)
+(global-set-key (kbd "C-x <left>") 'windmove-left)
+(global-set-key (kbd "C-x <right>") 'windmove-right)
+(global-set-key (kbd "C-x <up>") 'windmove-up)
+(global-set-key (kbd "C-x <down>") 'windmove-down)
 
 (global-set-key (kbd "M-d") 'switch-to-minibuffer)
 
