@@ -476,8 +476,8 @@
 
 (global-set-key complete-key 'completion-at-point)
 
-(with-eval-after-load 'bash-completion
-  (bash-completion-setup))
+;;(with-eval-after-load 'bash-completion
+;;  (bash-completion-setup))
 ;; (require 'bash-completion)
 
 (with-eval-after-load 'speedbar
