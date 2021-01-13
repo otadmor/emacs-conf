@@ -26,7 +26,7 @@ wget https://ftp.gnu.org/gnu/emacs/emacs-27.1.tar.xz
 tar -xf emacs-27.1.tar.xz
 cd emacs-27.1
 git apply xterm.c.27.1.patch
-./configure --with-x-toolkit=lucid --with-kerberos --with-kerberos5 --with-wide-int --with-mailutils
+./configure --with-x-toolkit=lucid --with-kerberos --with-kerberos5 --with-wide-int --with-mailutils --with-modules
 make
 sudo make install
 systemctl --user enable emacs
