@@ -1637,12 +1637,14 @@ is switching between candidates."
   (funcall orig-fun beg end face wnd (+ priority 900)))
 
 (defun swiper--add-line-overlay-hook (orig-fun &rest args)
-  (let ((str (ivy-state-current ivy-last)))
-    (when (and (>= (swiper--get-begin str) (window-start))
-               (<= (swiper--get-end str) (window-end)))
-      (save-excursion
-        (goto-char (swiper--get-begin str))
-        (apply orig-fun args)))))
+  (if (eq (ivy-state-caller ivy-last) 'swiper-async)
+      (let ((str (ivy-state-current ivy-last)))
+        (when (and (>= (swiper--get-begin str) (window-start))
+                   (<= (swiper--get-end str) (window-end)))
+          (save-excursion
+            (goto-char (swiper--get-begin str))
+            (apply orig-fun args))))
+    (apply orig-fun args)))
 
 (with-eval-after-load 'swiper
   (ivy-set-display-transformer 'swiper-async 'swiper-line-transformer)
