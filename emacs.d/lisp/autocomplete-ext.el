@@ -177,7 +177,8 @@
   (setq auto-complete-orig--completion-in-region-function
         'completion--in-region)
   (defun completion-in-region-auto-complete-or-ivy (start end collection &optional predicate)
-    (if (eq (selected-window) (active-minibuffer-window))
+    (if (or (not auto-complete-mode)
+            (eq (selected-window) (active-minibuffer-window)))
         (funcall auto-complete-orig--completion-in-region-function
                  start end collection predicate)
       (auto-complete-completion-in-region start end collection predicate)))

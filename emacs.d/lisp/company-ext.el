@@ -62,7 +62,8 @@
   (setq company-orig--completion-in-region-function
         'completion--in-region)
   (defun completion-in-region-company-or-ivy (start end collection &optional predicate)
-    (if (eq (selected-window) (active-minibuffer-window))
+    (if (or (not company-mode)
+            (eq (selected-window) (active-minibuffer-window)))
         (funcall company-orig--completion-in-region-function
                  start end collection predicate)
       (company-completion-in-region start end collection predicate)))
