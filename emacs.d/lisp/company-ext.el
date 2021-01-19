@@ -50,7 +50,11 @@
               (sorted t))
             ))
          )
-    (company-begin-backend fixed-candidate-source)))
+    (when (company-begin-backend fixed-candidate-source)
+      (if (and (not (cdr company-candidates))
+               (equal company-common (car company-candidates)))
+          (company-complete-selection)
+        (company--insert-candidate company-common)))))
 
 (with-eval-after-load 'company
   (add-hook 'after-init-hook 'global-company-mode)
