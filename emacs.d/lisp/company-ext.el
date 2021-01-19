@@ -12,7 +12,8 @@
   (if (and company--return-fullpath
            (eq action t))
       (let ((res (funcall orig-fun string pred action)))
-        (mapcar (lambda (a) (concat (file-name-directory string) a)) res))
+        (mapcar (lambda (a) (concat (file-name-directory string) a))
+                (-remove (lambda (x) (or (string= x "./") (string= x "../"))) res)))
     (funcall orig-fun string pred action)))
 
 (defun company-completion-in-region (start end collection &optional predicate)
