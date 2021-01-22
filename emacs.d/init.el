@@ -226,6 +226,9 @@
 (require 'simple)
 ; ess-smart-underscore ess-smart-equals  exwm xelb perspective fuzzy
 
+(require 'too-long-lines-mode)
+(too-long-lines-mode)
+
 (with-eval-after-load 'org
   (setq org-support-shift-select t)
   (setq org-replace-disputed-keys t)
