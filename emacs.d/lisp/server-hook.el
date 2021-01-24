@@ -58,6 +58,16 @@
                              (lockstep-and-prepare-persp))))
       frame)))
 
+(defun server-create-tty-frame-hook(orig-fun &rest args)
+  (setq server-inside-emacs-client t)
+  (let (
+        (frame (apply orig-fun args))
+        )
+    (run-at-time 0 nil (lambda ()
+                         (with-selected-frame frame
+                           (lockstep-and-prepare-persp))))
+    frame))
+
 (defun save-persp-on-delete-frame (frame)
   (condition-case nil
       (persp-save-state-to-file)
@@ -92,6 +102,7 @@
 (with-eval-after-load 'server
   (advice-add 'server-sentinel :before #'server-sentinel-hook)
   (advice-add 'server-create-window-system-frame :around #'server-create-window-system-frame-hook)
+  (advice-add 'server-create-tty-frame :around #'server-create-tty-frame-hook)
   (setq initial-buffer-choice (lambda () (current-buffer)))
 
   (with-eval-after-load 'persp-mode
