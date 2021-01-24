@@ -104,6 +104,8 @@
 
 (xterm-mouse-mode)
 
+(define-key function-key-map [select] [end])
+
 (require 'server-hook)
 
 (find-file (expand-file-name "~/.emacs.d/server.log"))
