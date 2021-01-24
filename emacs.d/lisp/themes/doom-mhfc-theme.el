@@ -32,8 +32,8 @@ determine the exact padding."
   "mhfc theme!"
 
   ;; name        default   256       16
-  ((bg         '("#101010" nil       nil            ))
-   (bg-alt     '("#282725" nil       nil            )) ;; arbitrarily picked this colour to change hline
+  ((bg         '("#101010" "#101010" "#101010"      ))
+   (bg-alt     '("#282725" "#282725" "#282725"      )) ;; arbitrarily picked this colour to change hline
    (base0      '("#2b2a27" "black"   "black"        ))
    (base1      '("#1c1f24" "#1e1e1e" "brightblack"  ))
    (base2      '("#202328" "#2e2e2e" "brightblack"  ))
@@ -43,10 +43,10 @@ determine the exact padding."
    (base6      '("#73797e" "#6b6b6b" "brightblack"  ))
    (base7      '("#9ca0a4" "#979797" "brightblack"  ))
    (base8      '("#DFDFDF" "#dfdfdf" "white"        ))
-   (fg         '("#ede0ce" "#bfbfbf" "brightwhite"  ))
+   (fg         '("#bfbfbf" "#bfbfbf" "brightwhite"  ))
    (fg-alt     '("#5B6268" "#2d2d2d" "white"        ))
 
-   (grey       base4)
+   (grey       "base4")
    (white      '("#f8f8f0" "base4"   "base4"        ))
    (red        '("#ff5d38" "#ff6655" "red"          )) ;; peacock todo 16
    (orange     '("#cb4b16" "#dd8844" "brightred"    ))
