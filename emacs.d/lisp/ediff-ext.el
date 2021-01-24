@@ -687,7 +687,8 @@
       (define-key ediff-mode-map (kbd "<tab>") (ediff-wrap-interactive #'indent-for-tab-command))
 
       (define-key ediff-mode-map [(control z)] (ediff-wrap-interactive #'undo))
-      (define-key ediff-mode-map [(control y)] (ediff-wrap-interactive #'redo))
+      (when (functionp 'redo)
+        (define-key ediff-mode-map [(control y)] (ediff-wrap-interactive #'redo)))
 
       (define-key ediff-mode-map (kbd "C-<insert>") (ediff-wrap-interactive #'kill-ring-save))
       (define-key ediff-mode-map (kbd "S-<insert>") (ediff-wrap-interactive #'yank))
