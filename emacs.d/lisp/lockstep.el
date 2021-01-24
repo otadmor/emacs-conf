@@ -65,7 +65,7 @@
                      (while this-frame-windows
                        (let ((this-frame-window (pop this-frame-windows))
                              (other-frame-window (pop other-frame-windows)))
-                         (lockstep-window-state-put (window-state-get this-frame-window) other-frame-window)
+                         (lockstep-window-state-put (window-state-get this-frame-window) other-frame-window t)
                          (when master-frame
                            ;; if called from turn-on-lockstep, synchronize point as well
                            (set-window-start other-frame-window (window-start this-frame-window))

@@ -179,6 +179,14 @@ of the perspective %s can't be saved."
   (setq wg-morph-on nil)
   (set-persp-parameter 'dont-save-to-file t nil)
 
+  (with-eval-after-load 'lockstep
+    (setq persp-window-state-put-function
+      (lambda (pwc &optional frame rwin)
+        (when (or rwin (setq rwin (frame-root-window
+                                   (or frame (selected-frame)))))
+          (when (fboundp 'lockstep-window-state-put)
+            (lockstep-window-state-put pwc rwin t))))))
+
   (with-eval-after-load 'ivy
     (add-hook 'ivy-ignore-buffers
               #'(lambda (b)
