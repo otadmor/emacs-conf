@@ -102,6 +102,8 @@
 (setenv "EDITOR" "emacsclient")
 (setenv "VISUAL" "emacsclient")
 
+(xterm-mouse-mode)
+
 (require 'server-hook)
 
 (find-file (expand-file-name "~/.emacs.d/server.log"))
