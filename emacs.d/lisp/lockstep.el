@@ -34,7 +34,7 @@
 (setq lockstep--recursion-protect t)
 (defun lockstep-needed ()
   (setq lockstep-frames (remove-if-not 'frame-live-p lockstep-frames))
-  (setq lockstep-frames (remove-if-not (lambda (frame) (eq (framep frame) 'x)) lockstep-frames))
+  ;; (setq lockstep-frames (remove-if-not (lambda (frame) (eq (framep frame) 'x)) lockstep-frames))
   (and lockstep--recursion-protect
        (> (length lockstep-frames) 1)
        (memq (selected-frame) lockstep-frames)))

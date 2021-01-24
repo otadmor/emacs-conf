@@ -70,7 +70,8 @@
 
 (defun save-persp-on-delete-frame (frame)
   (condition-case nil
-      (persp-save-state-to-file)
+      (when persp-mode
+        (persp-save-state-to-file))
     (error nil)))
 
 
@@ -85,14 +86,15 @@
                                               (equal this-frame frame)))
                           (frame-list)))
            )
-      (if (null x-frame-list)
-          (perspsw1)
-        (let* (
-               (first-frame (car x-frame-list))
-               (persp (get-frame-persp first-frame))
-               (persp-name (safe-persp-name persp))
-               )
-          (persp-switch persp-name)))))
+      (when persp-mode
+        (if (null x-frame-list)
+            (perspsw1)
+          (let* (
+                 (first-frame (car x-frame-list))
+                 (persp (get-frame-persp first-frame))
+                 (persp-name (safe-persp-name persp))
+                 )
+            (persp-switch persp-name))))))
   (with-eval-after-load 'lockstep
     (lockstep)))
 

@@ -59,9 +59,7 @@ of the perspective %s can't be saved."
 (defun switch-to-persp1-after-load-state (persp-file phash persp-names)
   (remove-hook 'persp-after-load-state-functions
                'switch-to-persp1-after-load-state)
-  (when server-inside-emacs-client
-    (perspsw1)
-    (run-with-idle-timer 5 t 'persp-mode-try-save)))
+  (run-with-idle-timer 5 t 'persp-mode-try-save))
 
 (setq persp-mode-hide-autosave-errors t)
 
@@ -158,16 +156,17 @@ of the perspective %s can't be saved."
   (setq this-command 'persp-switch))
 
 (defun persp-mode-try-save ()
-  (let (
-        (inhibit-message persp-mode-hide-autosave-errors)
-        (save-silently t)
-        )
-    (condition-case err
-        (persp-save-state-to-file)
-      (error
-       (remove-hook 'persp-after-load-state-functions
-                    'switch-to-persp1-after-load-state)
-       (message "failed to save persp %S" err) nil))))
+  (when persp-mode
+    (let (
+          (inhibit-message persp-mode-hide-autosave-errors)
+          (save-silently t)
+          )
+      (condition-case err
+          (persp-save-state-to-file)
+        (error
+         (remove-hook 'persp-after-load-state-functions
+                      'switch-to-persp1-after-load-state)
+         (message "failed to save persp %S" err) nil)))))
 
 (with-eval-after-load "persp-mode-autoloads"
   (advice-add 'set-frame-persp :around #'persp-mode-add-shared-buffers)

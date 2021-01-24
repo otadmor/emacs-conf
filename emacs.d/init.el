@@ -215,8 +215,6 @@
 (global-set-key (kbd "C-/") 'my-comment-or-uncomment-region)
 
 (require 'lockstep)
-(unless server-inside-emacs-client
-  (lockstep))
 
 (require 'term)
 (define-key term-mode-map [(control tab)] 'next-buff)
@@ -549,16 +547,16 @@
 
 ;; (require 'persp-mode)
 (with-eval-after-load 'persp-mode
-  (global-set-key (kbd "M-1") (defun perspsw1() (interactive) (persp-switch "1")))
-  (global-set-key (kbd "M-2") (defun perspsw2() (interactive) (persp-switch "2")))
-  (global-set-key (kbd "M-3") (defun perspsw3() (interactive) (persp-switch "3")))
-  (global-set-key (kbd "M-4") (defun perspsw4() (interactive) (persp-switch "4")))
-  (global-set-key (kbd "M-5") (defun perspsw5() (interactive) (persp-switch "5")))
-  (global-set-key (kbd "M-6") (defun perspsw6() (interactive) (persp-switch "6")))
-  (global-set-key (kbd "M-7") (defun perspsw7() (interactive) (persp-switch "7")))
-  (global-set-key (kbd "M-8") (defun perspsw8() (interactive) (persp-switch "8")))
-  (global-set-key (kbd "M-9") (defun perspsw9() (interactive) (persp-switch "9")))
-  (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (persp-switch "0")))
+  (global-set-key (kbd "M-1") (defun perspsw1() (interactive) (when persp-mode (persp-switch "1"))))
+  (global-set-key (kbd "M-2") (defun perspsw2() (interactive) (when persp-mode (persp-switch "2"))))
+  (global-set-key (kbd "M-3") (defun perspsw3() (interactive) (when persp-mode (persp-switch "3"))))
+  (global-set-key (kbd "M-4") (defun perspsw4() (interactive) (when persp-mode (persp-switch "4"))))
+  (global-set-key (kbd "M-5") (defun perspsw5() (interactive) (when persp-mode (persp-switch "5"))))
+  (global-set-key (kbd "M-6") (defun perspsw6() (interactive) (when persp-mode (persp-switch "6"))))
+  (global-set-key (kbd "M-7") (defun perspsw7() (interactive) (when persp-mode (persp-switch "7"))))
+  (global-set-key (kbd "M-8") (defun perspsw8() (interactive) (when persp-mode (persp-switch "8"))))
+  (global-set-key (kbd "M-9") (defun perspsw9() (interactive) (when persp-mode (persp-switch "9"))))
+  (global-set-key (kbd "M-0") (defun perspsw0() (interactive) (when persp-mode (persp-switch "0"))))
 
   (define-key term-mode-map (kbd "M-1") 'perspsw1)
   (define-key term-mode-map (kbd "M-2") 'perspsw2)
