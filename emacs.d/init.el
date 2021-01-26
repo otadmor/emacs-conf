@@ -578,6 +578,9 @@
 (with-eval-after-load 'ediff
   (require 'ediff-ext))
 
+(with-eval-after-load 'vdiff
+  (require 'vdiff-ext))
+
 (with-eval-after-load 'tern
   (add-hook 'js-mode-hook 'tern-mode)
   (add-hook 'js2-mode-hook 'tern-mode)
