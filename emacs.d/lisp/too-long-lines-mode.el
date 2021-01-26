@@ -107,11 +107,11 @@ See also `too-long-lines-threshold', `too-long-lines-show-number-of-characters',
               (if already-hidden
                   (move-overlay already-hidden (+ line-beg too-long-lines-show-number-of-characters) line-end)
                 (lexical-let (
-                      (ov (make-overlay (+ line-beg too-long-lines-show-number-of-characters) line-end (current-buffer)))
-                      (too-long-keymap (make-sparse-keymap))
-                      (line-length line-length)
-                      (too-long-lines-overlay-display too-long-lines-overlay-display)
-                      )
+                              (ov (make-overlay (+ line-beg too-long-lines-show-number-of-characters) line-end (current-buffer)))
+                              (too-long-keymap (make-sparse-keymap))
+                              (line-length line-length)
+                              (too-long-lines-overlay-display too-long-lines-overlay-display)
+                              )
                   (setq already-hidden ov)
                   (define-key too-long-keymap too-long-lines-toggle-key
                     (lambda () (interactive)
