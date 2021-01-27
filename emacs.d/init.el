@@ -78,6 +78,7 @@
 
 (column-number-mode t)
 (line-number-mode t)
+(global-linum-mode 1)
 
 (set-default 'fill-column 80)
 

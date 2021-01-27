@@ -27,6 +27,10 @@ determine the exact padding."
   :group 'doom-mhfc-theme
   :type '(or integer boolean))
 
+(defcustom doom-mhfc-linum-height 1.1
+  "The :height to render line numbers with."
+  :group 'doom-one-theme
+  :type 'boolean)
 ;;
 (def-doom-theme doom-mhfc
   "mhfc theme!"
@@ -109,6 +113,12 @@ determine the exact padding."
 
   ;; --- extra faces ------------------------
   ((elscreen-tab-other-screen-face :background "#353a42" :foreground "#1e2022")
+
+   (linum :foreground (doom-lighten grey 0.14)
+          :background "#282828"
+          :distant-foreground nil
+          :bold nil
+          :height doom-mhfc-linum-height)
 
    (font-lock-comment-face
     :foreground comments
