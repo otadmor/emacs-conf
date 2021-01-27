@@ -36,9 +36,9 @@ determine the exact padding."
   "mhfc theme!"
 
   ;; name        default   256       16
-  ((bg          '("#101010" "#101010" "#101010"      ))
-   (bg-alt      '("#282725" "#282725" "#282725"      )) ;; arbitrarily picked this colour to change hline
-   (base0       '("black"   "black"   "black"        ))
+  ((bg          '("#101010" "#101010" "black"        ))
+   (bg-alt      '("#282725" "#282725" "black"        )) ;; arbitrarily picked this colour to change hline
+   (base0       '("#2b2a27" "#2b2a27" "grey"         ))
    (base1       '("#1e1e1e" "#1e1e1e" "brightblack"  ))
    (base2       '("#2e2e2e" "#2e2e2e" "brightblack"  ))
    (base3       '("#262626" "#262626" "brightblack"  ))
@@ -82,7 +82,7 @@ determine the exact padding."
    (variables      white)      ;; done
    (numbers        red)        ;; done
 
-   (region         `(,(doom-lighten (car bg-alt) 0.05) ,@(doom-lighten (cdr base0) 0.35)))
+   (region         `(,(doom-lighten (car bg-alt) 0.05) ,@(doom-lighten (cdr bg-alt) 0.05)))
    (error          red)
    (warning        yellow)
    (success        green)
