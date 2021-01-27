@@ -48,6 +48,10 @@
 (setq helm-alive-p nil) ; fix sr-speedbur bug
 
 (tool-bar-mode -1)
+(menu-bar-mode -1)
+(scroll-bar-mode -1)
+(set-fringe-style '(0 . 0))
+(setq frame-resize-pixelwise nil)
 (setq inhibit-splash-screen t)
 
 ;; Prevent the annoying beep on errors
@@ -78,7 +82,7 @@
 
 (column-number-mode t)
 (line-number-mode t)
-(global-linum-mode 1)
+;; (global-linum-mode 1)
 
 (set-default 'fill-column 80)
 
