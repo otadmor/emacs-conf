@@ -36,34 +36,34 @@ determine the exact padding."
   "mhfc theme!"
 
   ;; name        default   256       16
-  ((bg         '("#101010" "#101010" "#101010"      ))
-   (bg-alt     '("#282725" "#282725" "#282725"      )) ;; arbitrarily picked this colour to change hline
-   (base0      '("#2b2a27" "black"   "black"        ))
-   (base1      '("#1c1f24" "#1e1e1e" "brightblack"  ))
-   (base2      '("#202328" "#2e2e2e" "brightblack"  ))
-   (base3      '("#23272e" "#262626" "brightblack"  ))
-   (base4      '("#3f444a" "#3f3f3f" "brightblack"  ))
-   (base5      '("#5B6268" "#525252" "brightblack"  ))
-   (base6      '("#73797e" "#6b6b6b" "brightblack"  ))
-   (base7      '("#9ca0a4" "#979797" "brightblack"  ))
-   (base8      '("#DFDFDF" "#dfdfdf" "white"        ))
-   (fg         '("#bfbfbf" "#bfbfbf" "brightwhite"  ))
-   (fg-alt     '("#5B6268" "#2d2d2d" "white"        ))
+  ((bg          '("#101010" "#101010" "#101010"      ))
+   (bg-alt      '("#282725" "#282725" "#282725"      )) ;; arbitrarily picked this colour to change hline
+   (base0       '("black"   "black"   "black"        ))
+   (base1       '("#1e1e1e" "#1e1e1e" "brightblack"  ))
+   (base2       '("#2e2e2e" "#2e2e2e" "brightblack"  ))
+   (base3       '("#262626" "#262626" "brightblack"  ))
+   (base4       '("#3f3f3f" "#3f3f3f" "brightblack"  ))
+   (base5       '("#525252" "#525252" "brightblack"  ))
+   (base6       '("#6b6b6b" "#6b6b6b" "brightblack"  ))
+   (base7       '("#979797" "#979797" "brightblack"  ))
+   (base8       '("#dfdfdf" "#dfdfdf" "white"        ))
+   (fg          '("#bfbfbf" "#bfbfbf" "brightwhite"  ))
+   (fg-alt      '("#2d2d2d" "#2d2d2d" "white"        ))
 
-   (grey       "base4")
-   (white      '("#f8f8f0" "base4"   "base4"        ))
-   (red        '("#ff5d38" "#ff6655" "red"          )) ;; peacock todo 16
-   (orange     '("#cb4b16" "#dd8844" "brightred"    ))
-   (green      '("#98d265" "#99bb66" "green"        ))
-   (teal       '("#26a6a6" "#44b9b1" "brightgreen"  )) ;; peacock
-   (yellow     '("#a0bb38" "#ECBE7B" "yellow"       )) ;; peacock, todo 16
-   (blue       '("#51afef" "#51afef" "brightblue"   ))
-   (dark-blue  '("#2257A0" "#2257A0" "blue"         ))
-   (magenta    '("#c678dd" "#c678dd" "magenta"      ))
-   (violet     '("#a9a1e1" "#a9a1e1" "brightmagenta"))
-   (cyan       '("#46D9FF" "#46D9FF" "brightcyan"   ))
-   (dark-cyan  '("#5699AF" "#5699AF" "cyan"         ))
-   (coral-popup  '("#a60033" "#f6bfbc" "coral-popup"         ))
+   (grey        "base4")
+   (white       '("base4"   "base4"   "base4"        ))
+   (red         '("#ff6655" "#ff6655" "red"          )) ;; peacock todo 16
+   (orange      '("#dd8844" "#dd8844" "brightred"    ))
+   (green       '("#98d265" "#98d265" "green"        ))
+   (teal        '("#44b9b1" "#44b9b1" "brightgreen"  )) ;; peacock
+   (yellow      '("#a0bb38" "#a0bb38" "yellow"       )) ;; peacock, todo 16
+   (blue        '("#51afef" "#51afef" "brightblue"   ))
+   (dark-blue   '("#2257a0" "#2257a0" "blue"         ))
+   (magenta     '("#c678dd" "#c678dd" "magenta"      ))
+   (violet      '("#a9a1e1" "#a9a1e1" "brightmagenta"))
+   (cyan        '("#46d9ff" "#46d9ff" "brightcyan"   ))
+   (dark-cyan   '("#5699af" "#5699af" "cyan"         ))
+   (coral-popup  '("#a60033" "#f6bfbc" "coral-popup" ))
 
    ;; face categories -- required for all themes
    (highlight      green)
