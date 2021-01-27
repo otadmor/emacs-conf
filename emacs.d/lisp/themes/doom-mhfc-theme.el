@@ -56,7 +56,7 @@ determine the exact padding."
    (orange     '("#cb4b16" "#dd8844" "brightred"    ))
    (green      '("#98d265" "#99bb66" "green"        ))
    (teal       '("#26a6a6" "#44b9b1" "brightgreen"  )) ;; peacock
-   (yellow     '("#bcd42a" "#ECBE7B" "yellow"       )) ;; peacock, todo 16
+   (yellow     '("#a0bb38" "#ECBE7B" "yellow"       )) ;; peacock, todo 16
    (blue       '("#51afef" "#51afef" "brightblue"   ))
    (dark-blue  '("#2257A0" "#2257A0" "blue"         ))
    (magenta    '("#c678dd" "#c678dd" "magenta"      ))
