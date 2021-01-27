@@ -172,7 +172,7 @@ determine the exact padding."
      :weight 'light)
     (ivy-minibuffer-match-face-2
      :inherit 'ivy-minibuffer-match-face-1
-     :foreground red :weight 'semi-bold)
+     :foreground red :weight 'light)
     (ivy-minibuffer-match-face-3
      :inherit 'ivy-minibuffer-match-face-2
      :foreground green :weight 'semi-bold)
