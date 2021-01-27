@@ -29,8 +29,8 @@ determine the exact padding."
 
 (defcustom doom-mhfc-linum-height 1.1
   "The :height to render line numbers with."
-  :group 'doom-one-theme
-  :type 'boolean)
+  :group 'doom-mhfc-theme
+  :type 'integer)
 ;;
 (def-doom-theme doom-mhfc
   "mhfc theme!"
