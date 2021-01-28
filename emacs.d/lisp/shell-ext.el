@@ -80,7 +80,11 @@
                                                 (current-buffer)))))))))
             nil t))
 
+(defun shell-system-prompt-color()
+  (face-remap-set-base 'comint-highlight-prompt :inherit nil))
+
 (with-eval-after-load 'shell
-  (add-hook 'shell-mode-hook 'track-shell-directory/procfs))
+  (add-hook 'shell-mode-hook 'track-shell-directory/procfs)
+  (add-hook 'shell-mode-hook 'shell-system-prompt-color))
 
 (provide 'shell-ext)
