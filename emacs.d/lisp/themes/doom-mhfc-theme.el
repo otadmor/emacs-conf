@@ -63,7 +63,7 @@ determine the exact padding."
    (violet      '("#a9a1e1" "#a9a1e1" "brightmagenta"))
    (cyan        '("#46d9ff" "#46d9ff" "brightcyan"   ))
    (dark-cyan   '("#5699af" "#5699af" "cyan"         ))
-   (coral-popup  '("#a60033" "#f6bfbc" "coral-popup" ))
+   (coral-popup  '("#f6bfbc" "#f6bfbc" "coral-popup" ))
 
    ;; face categories -- required for all themes
    (highlight      green)
