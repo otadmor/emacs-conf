@@ -595,6 +595,9 @@
 (with-eval-after-load 'which-key
   (which-key-mode))
 
+(setq vterm-always-compile-module nil)
+(require 'vterm)
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
