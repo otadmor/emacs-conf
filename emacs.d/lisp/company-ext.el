@@ -12,56 +12,53 @@
   (if (and company--return-fullpath
            (eq action t))
       (let ((res (funcall orig-fun string pred action)))
-        (mapcar (lambda (a) (concat (file-name-directory string) a))
-                (-remove (lambda (x) (or (string= x "./") (string= x "../"))) res)))
+        (-remove (lambda (x) (or (string= x "./") (string= x "../"))) res))
     (funcall orig-fun string pred action)))
 
 (defun company-completion-in-region (start end collection &optional predicate)
-  (let* (
-         (fixed-candidate-source
-          (lambda (command &optional arg &rest ignored)
-            (interactive (list 'interactive))
-            (cl-case command
-              ;; (interactive (company-begin-backend 'fixed-candidate-source))
-              (prefix (buffer-substring-no-properties
-                       (min start (buffer-end 1))
-                       (min end (buffer-end 1))))
-              (candidates (progn (let* (
-                                        (cands
-                                         (let ((company--return-fullpath t))
-                                           (completion-all-completions
-                                            arg
-                                            collection predicate
-                                            (length arg)))
-                                         )
-                                        (rev-arg (string-reverse arg))
+  (lexical-let (
+                (company-minimum-prefix-length 0)
+                (company-idle-delay 0)
+                (company-backend
+                 (lambda (command &optional arg &rest ignored)
+                   (interactive (list 'interactive))
+                   (cl-case command
+                     ;; (interactive (company-begin-backend 'fixed-candidate-source))
+                     (prefix (buffer-substring-no-properties
+                              (min start (buffer-end 1))
+                              (min end (buffer-end 1))))
+                     (candidates (let (
+                                       (cands
+                                        (let ((company--return-fullpath t))
+                                          (completion-all-completions
+                                           arg
+                                           collection predicate
+                                           (length arg)))
                                         )
+                                       (rev-arg (string-reverse arg))
+                                       )
                                    (unless (null cands)
                                      (setcdr (last cands) nil))
                                    (dolist (s cands)
                                      (company-ext--remove-props s 'face))
-                                   cands)))
-              (meta (if (stringp arg) (get-text-property 0 'symbol arg)))
-              (doc-buffer (company-doc-buffer
-                           (if (stringp arg) (get-text-property 0 'document arg))))
-              (annotation (if (stringp arg) (get-text-property 0 'summary arg)))
-              (location nil)
-              (no-cache t)
-              (sorted t))
-            ))
-         )
-    (when (company-begin-backend fixed-candidate-source)
-      (if (and (not (cdr company-candidates))
-               (equal company-common (car company-candidates)))
-          (company-complete-selection)
-        (company--insert-candidate company-common)))))
+                                   cands))
+                     (meta (if (stringp arg) (get-text-property 0 'symbol arg)))
+                     (doc-buffer (company-doc-buffer
+                                  (if (stringp arg) (get-text-property 0 'document arg))))
+                     (annotation (if (stringp arg) (get-text-property 0 'summary arg)))
+                     (location nil)
+                     (no-cache t)
+                     (sorted t))
+                   ))
+                )
+    (company-complete-common)))
 
 (with-eval-after-load 'company
   (add-hook 'after-init-hook 'global-company-mode)
   (add-to-list 'company-continue-commands 'comint-previous-matching-input-from-input t)
   (add-to-list 'company-continue-commands 'comint-next-matching-input-from-input t)
   (advice-add 'completion-file-name-table :around #'completion-file-name-table-fullpath-hook)
-  (setq company-minimum-prefix-length 100)
+  (setq company-idle-delay nil)
   (setq company-require-match nil)
 
   (setq company-orig--completion-in-region-function
