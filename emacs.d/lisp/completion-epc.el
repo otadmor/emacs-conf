@@ -581,6 +581,47 @@
         )
     (add-hook 'completion-at-point-functions epc-completion-at-point nil t)))
 
+
+(defun epc-completion-build-completion-results (res)
+  (cl-remove-if
+   'null
+   (mapcar
+    (lambda (x)
+      (unless (null x)
+        (if (stringp x)
+            (popup-make-item x)
+          (condition-case nil
+              (let* (
+                     (word (plist-get x :word))
+                     (doc-or-empty (plist-get x :doc))
+                     (doc (unless (equal doc-or-empty "")
+                            doc-or-empty))
+                     (description (plist-get x :description))
+                     (symbol (plist-get x :symbol))
+                     (pos (plist-get x :pos))
+                     )
+                (if (functionp 'popup-make-item)
+                    (let (
+                          (i (popup-make-item
+                              word
+                              :symbol symbol
+                              :document doc
+                              :summary description))
+                          )
+                      (put-text-property 0 1 :pos pos i)
+                      i)
+                  (let (
+                        (i (propertize
+                            word
+                            'symbol symbol
+                            'document doc
+                            'summary description))
+                        )
+                    (put-text-property 0 1 :pos pos i)
+                    i)))
+            (error nil)))))
+    res)))
+
 (defun epc-completion-add (completion-mode hook prefix-cb)
   (add-hook
    hook
@@ -600,6 +641,14 @@
            (epc-completion--working-buffer (current-buffer))
            )
        (let* (
+              (epc-prefix
+               (lambda ()
+                 (with-current-buffer epc-completion--working-buffer
+                   (unless (null mngr-complete-epc)
+                     (if (string= (epc:manager-status-connection-process mngr-complete-epc) "closed")
+                         (setq mngr-complete-epc nil)
+                       (funcall prefix-cb))))))
+
               (epc-matches
                (lambda ()
                  (with-current-buffer epc-completion--working-buffer
@@ -608,44 +657,8 @@
                    (setq epc-completion--deferred nil)
                    (unless (null epc-completion--complete-reply)
                      ;; should we creat ea timer and wait for responses
-                     (cl-remove-if
-                      'null
-                      (mapcar
-                       (lambda (x)
-                         (unless (null x)
-                           (if (stringp x)
-                               (popup-make-item x)
-                             (condition-case nil
-                                 (let* (
-                                        (word (plist-get x :word))
-                                        (doc-or-empty (plist-get x :doc))
-                                        (doc (unless (equal doc-or-empty "")
-                                               doc-or-empty))
-                                        (description (plist-get x :description))
-                                        (symbol (plist-get x :symbol))
-                                        (pos (plist-get x :pos))
-                                       )
-                                   (if (functionp 'popup-make-item)
-                                       (let (
-                                             (i (popup-make-item
-                                                 word
-                                                 :symbol symbol
-                                                 :document doc
-                                                 :summary description))
-                                             )
-                                         (put-text-property 0 1 :pos pos i)
-                                         i)
-                                     (let (
-                                           (i (propertize
-                                               word
-                                               'symbol symbol
-                                               'document doc
-                                               'summary description))
-                                           )
-                                       (put-text-property 0 1 :pos pos i)
-                                       i)))
-                               (error nil)))))
-                       epc-completion--complete-reply))))))
+                     (epc-completion-build-completion-results
+                      epc-completion--complete-reply)))))
 
               (epc-complete-request
                (lambda (&optional prefix)
@@ -682,13 +695,13 @@
                                    ;; err: (cadr err) -> error information
                                    (message "error completion epc2 %S" (cadr err))))))))))))
               )
-         (epc-completion-add-company prefix-cb)
+         (epc-completion-add-company epc-prefix)
          (epc-completion-add-auto-complete
           completion-mode epc-completion--working-buffer
-          prefix-cb epc-complete-request epc-matches)
+          epc-prefix epc-complete-request epc-matches)
          (epc-completion-add-completion-at-point
           epc-completion--working-buffer
-          prefix-cb epc-complete-request epc-matches))))))
+          epc-prefix epc-complete-request epc-matches))))))
 
 
 (provide 'completion-epc)
