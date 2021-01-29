@@ -36,10 +36,10 @@ Put the content of .gdbinit in ~/.gdbinit.
 - *Ctrl-"*: Multiple-Cursors mark all
 - *Ctrl-l*: Truncate lines on/off
 ### Shell Keys
-- *Ctrl-<up>*: Previous history
-- *Ctrl-<down>*: Next history
+- *Ctrl-up*: Previous history
+- *Ctrl-down*: Next history
 - *Meta-r*: Bash history
-- *Shift-<return>*: Insert new-lines in the shell
+- *Shift-return*: Insert new-lines in the shell
 - *Tab*: Expand / Shrink long lines
 ## Emacs compilation
 A wild tale tells lucid works better than gtk3 when using emacs daemon. These are the suggested compilation flags:
