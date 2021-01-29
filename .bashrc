@@ -8,8 +8,8 @@ export EDITOR="emacsclient -t -a emacs"                  # $EDITOR should open i
 export VISUAL="emacsclient -c -a emacs --display=localhost:current -a emacs" #  $VISUAL opens in GUI with non-daemon as alternate
 
 
-export EDITOR="emacsclient"
-export VISUAL="emacsclient -c"
+# export EDITOR="emacsclient"
+# export VISUAL="emacsclient -c"
 
 if [[ "$TERM" == "dumb" ]] ; then
     export COLORTERM=1
