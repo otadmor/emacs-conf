@@ -12,12 +12,35 @@ chmod +x  ~/.local/share/applications/emacsclient.desktop
 Put the content of .gdbinit in ~/.gdbinit.
 ## Keys
 ### Global Keys
-- *Ctrl-x c*: leave emacs (the default Ctrl-x Ctrl-c is disabled on purpose)
-- *Ctrl-Alt-k*: kill current buffer (or Ctrl-Alt-k)
-- *Ctrl-Tab*: switch to other window (or Alt-<arrow>)
-- *Ctrl-z*: undo last edit
-- *Ctrl-y*: redo last edit
-- *f5*: maximize window to frame
+- *Ctrl-x c*: Leave emacs (the default Ctrl-x Ctrl-c is disabled on purpose)
+- *M-d*: Focus in/out minibuffer
+- *Ctrl-Alt-k*: Kill current buffer
+- *Ctrl-Tab*: Switch to other window (or Ctrl-x <arrow>)
+- *Ctrl-Shift-t*: New shell in current folder
+- *Meta-h*: Magit
+- *Meta-r*: Switch search method in swiper (ivy/regexp/fixed)
+- *Meta-c*: Restore last minibuffer interaction
+- *Meta-1 to Meta-9*: Switch to other perspective (on emacs client only)
+### Editing
+- *Ctrl-z*: Undo
+- *Meta-f*: Grep in current project
+- *Ctrl-x p*: Search file in project (current repository)
+- *Ctrl-x a*: Locate file
+- *Meta-.*: Goto Definition
+- *Ctrl-Meta-p*: Previous location in file
+- *Ctrl-Meta-n*: Next location in file
+- *Ctrl-/*: Comment current line / region
+- *Ctrl-k*: Delete whole line
+- *Ctrl->*: Multiple-Cursors mark next
+- *Ctrl-<*: Multiple-Cursors mark previous
+- *Ctrl-"*: Multiple-Cursors mark all
+- *Ctrl-l*: Truncate lines on/off
+### Shell Keys
+- *Ctrl-<up>*: Previous history
+- *Ctrl-<down>*: Next history
+- *Meta-r*: Bash history
+- *Shift-<return>*: Insert new-lines in the shell
+- *Tab*: Expand / Shrink long lines
 ## Emacs compilation
 A wild tale tells lucid works better than gtk3 when using emacs daemon. These are the suggested compilation flags:
 ```
