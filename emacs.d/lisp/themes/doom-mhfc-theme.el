@@ -90,6 +90,14 @@ determine the exact padding."
    (vc-added       green)
    (vc-deleted     red)
 
+   (magit-diff-added-bg             `(,(doom-blend (car green)  (car bg) 0.1) "#262626"))
+   (magit-diff-added-highlight-bg   `(,(doom-blend (car green)  (car bg) 0.2) "#303030"))
+   (magit-diff-base-bg              `(,(doom-blend (car orange) (car bg) 0.1) "#262626"))
+   (magit-diff-base-highlight-bg    `(,(doom-blend (car orange) (car bg) 0.2) "#303030"))
+   (magit-diff-hunk-heading-bg      `(,(doom-blend (car violet) (car bg) 0.3) "#262626"))
+   (magit-diff-removed-bg           `(,(doom-blend (car red) (car base3) 0.1) "#262626"))
+   (magit-diff-removed-highlight-bg `(,(doom-blend (car red) (car base3) 0.2) "#303030"))
+
    ;; custom categories
    (-modeline-bright doom-mhfc-brighter-modeline)
    (-modeline-pad
@@ -189,6 +197,14 @@ determine the exact padding."
     ;; ivy-posframe
     (ivy-posframe :background (doom-darken bg-alt 0.2))
 
+    ;; magit
+    (magit-diff-added             :foreground (doom-darken green 0.2) :background magit-diff-added-bg             )
+    (magit-diff-added-highlight   :foreground green   :weight 'bold   :background magit-diff-added-highlight-bg   )
+    (magit-diff-base              :foreground (doom-darken orange 0.2):background magit-diff-base-bg              )
+    (magit-diff-base-highlight    :foreground orange  :weight 'bold   :background magit-diff-base-highlight-bg    )
+    (magit-diff-hunk-heading      :foreground bg                      :background magit-diff-hunk-heading-bg      )
+    (magit-diff-removed           :foreground (doom-darken red 0.2)   :background magit-diff-removed-bg           )
+    (magit-diff-removed-highlight :foreground red     :weight 'bold   :background magit-diff-removed-highlight-bg )
 
    (mode-line
     :background modeline-bg :foreground modeline-fg
