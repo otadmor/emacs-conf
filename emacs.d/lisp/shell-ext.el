@@ -80,11 +80,16 @@
                                                 (current-buffer)))))))))
             nil t))
 
+(defun text-has-property (START END PROP &optional OBJECT)
+  (let ((first-change (next-property-change START OBJECT END)))
+    (or (< first-change END)
+        (not (null (get-char-property START PROP OBJECT))))))
+
 (defun font-lock-prepend-text-property--hook (orig-fun START END PROP VALUE &optional OBJECT)
   (when (or (not (eq major-mode 'shell-mode))
             (not (and (eq PROP 'font-lock-face)
                       (eq VALUE 'comint-highlight-prompt)))
-            (= (next-property-change START nil END) END))
+            (null (text-has-property START END 'ansi-color-face)))
     (funcall orig-fun START END PROP VALUE OBJECT)))
 
 (with-eval-after-load 'shell
