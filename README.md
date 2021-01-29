@@ -15,7 +15,7 @@ Put the content of .gdbinit in ~/.gdbinit.
 - *Ctrl-x c*: Leave emacs (the default Ctrl-x Ctrl-c is disabled on purpose)
 - *M-d*: Focus in/out minibuffer
 - *Ctrl-Alt-k*: Kill current buffer
-- *Ctrl-Tab*: Switch to other window (or Ctrl-x <arrow>)
+- *Ctrl-Tab*: Switch to other window (or Ctrl-x arrow)
 - *Ctrl-Shift-t*: New shell in current folder
 - *Meta-h*: Magit
 - *Meta-r*: Switch search method in swiper (ivy/regexp/fixed)
