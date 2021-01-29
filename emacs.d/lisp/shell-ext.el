@@ -81,9 +81,8 @@
             nil t))
 
 (defun text-has-property (START END PROP &optional OBJECT)
-  (let ((first-change (next-property-change START OBJECT END)))
-    (or (< first-change END)
-        (not (null (get-char-property START PROP OBJECT))))))
+  (or (not (null (get-char-property START PROP OBJECT)))
+      (< (next-property-change START OBJECT END) END)))
 
 (defun font-lock-prepend-text-property--hook (orig-fun START END PROP VALUE &optional OBJECT)
   (when (or (not (eq major-mode 'shell-mode))
