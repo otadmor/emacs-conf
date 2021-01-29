@@ -13,7 +13,8 @@ export VISUAL="emacsclient -c"
 
 if [[ "$TERM" == "dumb" ]] ; then
     export COLORTERM=1
-    alias ipython='ipython --simple-prompt'
+    export PYTHONPATH=~/.emacs.d/lisp:$PYTHONPATH
+    alias ipython='ipython --colors=LightBG --ext=ipython_emacs_colors'
     # export PYTHONSTARTUP=~/.emacs.d/lisp/py_epc_completion.py
 fi
 
