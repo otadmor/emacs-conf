@@ -80,11 +80,15 @@
                                                 (current-buffer)))))))))
             nil t))
 
-(defun shell-system-prompt-color()
-  (face-remap-set-base 'comint-highlight-prompt :inherit nil))
+(defun font-lock-prepend-text-property--hook (orig-fun START END PROP VALUE &optional OBJECT)
+  (when (or (not (eq major-mode 'shell-mode))
+            (not (and (eq PROP 'font-lock-face)
+                      (eq VALUE 'comint-highlight-prompt)))
+            (= (next-property-change START nil END) END))
+    (funcall orig-fun START END PROP VALUE OBJECT)))
 
 (with-eval-after-load 'shell
   (add-hook 'shell-mode-hook 'track-shell-directory/procfs)
-  (add-hook 'shell-mode-hook 'shell-system-prompt-color))
+  (advice-add 'font-lock-prepend-text-property :around #'font-lock-prepend-text-property--hook))
 
 (provide 'shell-ext)
