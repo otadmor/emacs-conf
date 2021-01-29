@@ -412,6 +412,8 @@ Use `winstack-push' and
 
 (with-eval-after-load 'dumb-jump
   (advice-add 'dumb-jump-goto-file-line :around #'wrap-winstack-hook))
+(with-eval-after-load 'anaconda
+  (advice-add 'anaconda-mode-find-definitions :around #'wrap-winstack-hook))
 (with-eval-after-load 'jedi
   (advice-add 'jedi:goto-definition--nth :around #'wrap-winstack-hook))
 (with-eval-after-load 'swiper-async
