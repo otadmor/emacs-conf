@@ -276,8 +276,6 @@
 (require 'winstack-list)
 
 (with-eval-after-load 'doom-themes
-;; (require 'doom-themes)
-
   ;; Global settings (defaults)
   (setq doom-themes-enable-bold t)   ; if nil, bold is universally disabled
   (setq doom-themes-enable-italic t) ; if nil, italics is universally disabled
