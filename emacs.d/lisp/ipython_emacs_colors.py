@@ -4,6 +4,7 @@ from io import StringIO, BytesIO
 from functools import partial
 from prompt_toolkit.renderer import print_formatted_text
 from prompt_toolkit.output.vt100 import Vt100_Output
+from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.styles import DynamicStyle
 from prompt_toolkit.formatted_text import PygmentsTokens
 
@@ -16,10 +17,19 @@ def create_ansi_prompt(ipython):
     def _get_size():
         x=os.get_terminal_size()
         return x.lines, x.columns
-    output = Vt100_Output(stdout=output_buffer, get_size=_get_size,
-                          default_color_depth=ipython.color_depth)
+    if 'default_color_depth' in Vt100_Output.__init__.__code__.co_varnames:
+        output = Vt100_Output(stdout=output_buffer, get_size=_get_size,
+                              default_color_depth=ipython.color_depth)
+        print_with_depth = False
+    else:
+        output = Vt100_Output(stdout=output_buffer, get_size=_get_size)
+        print_with_depth = True
     def get_formatted_text(tokens):
-        print_formatted_text(output, tokens, ipython.style)
+        if not print_with_depth:
+            print_formatted_text(output, tokens, ipython.style)
+        else:
+            print_formatted_text(output, tokens, ipython.style,
+                                 color_depth=ColorDepth.DEPTH_8_BIT)
         res = output_buffer.getvalue()
         output_buffer.seek(0)
         output_buffer.truncate(0)
