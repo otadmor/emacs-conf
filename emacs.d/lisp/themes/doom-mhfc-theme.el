@@ -70,8 +70,8 @@ determine the exact padding."
    (vertical-bar   (doom-lighten bg 0.1))
    (selection      base1)
    (builtin        green)
-   (comments       (if doom-mhfc-brighter-comments dark-cyan base5)) ;; TODO
-   (doc-comments   (doom-lighten (if doom-mhfc-brighter-comments dark-cyan base5) 0.25)) ;; TODO
+   (comments       (if doom-mhfc-brighter-comments dark-cyan base6)) ;; TODO
+   (doc-comments   (doom-lighten (if doom-mhfc-brighter-comments dark-cyan base6) 0.25)) ;; TODO
    (constants      red)        ;; done
    (functions      yellow)     ;; done
    (keywords       teal)       ;; done

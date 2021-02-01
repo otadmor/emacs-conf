@@ -281,6 +281,8 @@
   (setq doom-themes-enable-italic t) ; if nil, italics is universally disabled
 
   ;; Load the theme
+  ;; (setq doom-mhfc-brighter-comments t)
+  ;; (setq doom-mhfc-brighter-modeline t)
   (load-theme 'doom-mhfc t)
 
   ;; Enable flashing mode-line on errors
