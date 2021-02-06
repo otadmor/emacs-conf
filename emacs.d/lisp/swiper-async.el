@@ -599,6 +599,16 @@ from"
   "A temporary var used in persp-mode to restore the ivy search with.")
 (defvar ivy-index--persp-variables nil
   "A temporary var used in persp-mode to restore the ivy search with.")
+
+(defun swiper--async-verify-regexp (regex &optional string limit)
+  (save-match-data
+    (let ((string (or string "     ")))
+      (> (recursive-reverse-count regex string 0 (or limit (length string))) 1))))
+(defun recursive-reverse-count (regex string start counter)
+  (if (and (> counter 1) (string-match regex string start))
+      (recursive-reverse-count regex string (match-end 0) (1- counter))
+    counter))
+
 (defun swiper-async-function (string)
   "Start searching in the current buffer for STRING."
   (with-ivy-window
@@ -1052,9 +1062,7 @@ candidates in the minibuffer asynchrounouosly."
                          (not (swiper--async-same-as-disk)))
                 (save-excursion
                   (counsel-delete-process swiper--async-process-name)
-                  (let (
-                        (re-str swiper--async-to-search-re)
-                        )
+                  (when (swiper--async-verify-regexp swiper--async-to-search-positive-re)
                     (let (
                           (positive-re swiper--async-to-search-positive-re)
                           (searched-bytes 0)
