@@ -1086,7 +1086,9 @@ candidates in the minibuffer asynchrounouosly."
                                                                                                 (swiper--async-should-quit-async)))
                                                                                       (>= matches-found
                                                                                           swiper--async-max-matches-per-search)
-                                                                                      (>= searched-bytes swiper--max-search-length))))
+                                                                                      (>= searched-bytes swiper--max-search-length)
+                                                                                      (and (not (null last-found))
+                                                                                           (null ivy--orig-cands)))))
                                                                            (setq last-found
                                                                                  (re-search-forward
                                                                                   positive-re
@@ -1121,7 +1123,9 @@ candidates in the minibuffer asynchrounouosly."
                                                                                             (swiper--async-should-quit-async)))
                                                                                   (>= matches-found
                                                                                       swiper--async-max-matches-per-search)
-                                                                                  (>= searched-bytes swiper--max-search-length))))
+                                                                                  (>= searched-bytes swiper--max-search-length)
+                                                                                  (and (not (null last-found))
+                                                                                           (null ivy--orig-cands)))))
                                                                        (setq last-found
                                                                              (re-search-backward
                                                                               positive-re
