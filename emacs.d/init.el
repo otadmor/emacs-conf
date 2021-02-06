@@ -613,7 +613,7 @@
 (let (
       (need-install nil)
       )
-  (dolist (package package-selected-packages)
+  (dolist (package (reverse package-selected-packages))
     (condition-case err
         (require package)
       (error (message "Error when loading %S: %S" package err) (setq need-install t))))
