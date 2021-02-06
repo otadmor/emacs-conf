@@ -334,6 +334,8 @@
     (define-key swiper-map (kbd "C-<up>") 'ivy-previous-line)
     (define-key swiper-map (kbd "C-<down>") 'ivy-next-line)
     (define-key swiper-map (kbd "M-r") 'ivy-rotate-preferred-builders)
+    (define-key swiper-map (kbd "C-s") 'ivy-next-line-or-history-and-call)
+    (define-key swiper-map (kbd "C-r") 'ivy-previous-line-or-history-and-call)
 
     (define-key swiper-map (kbd "C-l") 'my-toggle-truncate-lines)
     (define-key swiper-map (kbd "M-C-p") 'swiper--goto-original-point))

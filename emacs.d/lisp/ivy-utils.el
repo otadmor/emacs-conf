@@ -81,6 +81,22 @@ If the input is empty, select the previous history element instead."
     (ivy-previous-history-element 1))
   (ivy-previous-line arg))
 
+(defun ivy-next-line-or-history-and-call (&optional arg)
+  "Move cursor vertically down ARG candidates.
+Call the permanent action if possible."
+  (interactive "p")
+  (ivy-next-line-or-history arg)
+  (ivy--exhibit)
+  (ivy-call))
+
+(defun ivy-previous-line-or-history-and-call (&optional arg)
+  "Move cursor vertically up ARG candidates.
+Call the permanent action if possible."
+  (interactive "p")
+  (ivy-previous-line-or-history-2 arg)
+  (ivy--exhibit)
+  (ivy-call))
+
 (defun counsel-find-file-occur-hook(orig-fun &rest args)
   (let (
         (res (apply orig-fun args))
