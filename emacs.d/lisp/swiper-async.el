@@ -1248,12 +1248,13 @@ directly into `ivy--orig-cands'."
 (defun swiper--async-format-spec ()
   "Creates `/swiper--format-spec',"
   (let* ((n-lines (count-lines (point-min) (point-max))))
-    (let (
-          (width (1+ (floor (log n-lines 10))))
-          )
-      (when (or (null swiper--width) (/= swiper--width width))
-        (setq swiper--width width)
-        (setq swiper--format-spec (format "%%-%dd: " swiper--width))))))
+    (when (/= n-lines 0)
+      (let (
+            (width (1+ (floor (log n-lines 10))))
+            )
+        (when (or (null swiper--width) (/= swiper--width width))
+          (setq swiper--width width)
+          (setq swiper--format-spec (format "%%-%dd: " swiper--width)))))))
 
 (defun swiper--async-create-overlay (start end)
   (let (
