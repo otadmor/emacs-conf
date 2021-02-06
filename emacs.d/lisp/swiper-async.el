@@ -184,30 +184,31 @@ on the current search.")
 (defun swiper--async-action(x &optional dont-update-action)
   "goto the candidate position in the file and mark it for a second for the
 user to see where it is."
-  (let (
-        (res (let (
-                   (swiper--async-ivy-text-re
-                    (funcall ivy--regex-function ivy-text))
-                   )
-               (swiper--async-match-in-buffer x)))
-        )
-    (unless (null res)
-      (unless dont-update-action
-        (setq swiper--async-did-action t))
-      (let (
-            (beg (car res))
-            (pos (cdr res))
-            )
-        (save-restriction
-          (widen)
-          (if (or (eq this-command 'ivy-alt-done)
-                  (eq this-command 'ivy-done))
-              (ivy--pulse-region beg pos)
-            (let (
-                  (search-highlight t)
-                  )
-              (isearch-highlight beg pos)))
-          (goto-char pos))))))
+  (unless (string= x "")
+    (let (
+          (res (let (
+                     (swiper--async-ivy-text-re
+                      (funcall ivy--regex-function ivy-text))
+                     )
+                 (swiper--async-match-in-buffer x)))
+          )
+      (unless (null res)
+        (unless dont-update-action
+          (setq swiper--async-did-action t))
+        (let (
+              (beg (car res))
+              (pos (cdr res))
+              )
+          (save-restriction
+            (widen)
+            (if (or (eq this-command 'ivy-alt-done)
+                    (eq this-command 'ivy-done))
+                (ivy--pulse-region beg pos)
+              (let (
+                    (search-highlight t)
+                    )
+                (isearch-highlight beg pos)))
+            (goto-char pos)))))))
 
 (defcustom swiper-async-filter-update-time 50
   "The amount of microseconds to wait until updating `swiper--async-filter'."
