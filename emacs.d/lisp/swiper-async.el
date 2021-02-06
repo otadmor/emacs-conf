@@ -602,8 +602,11 @@ from"
 
 (defun swiper--async-verify-regexp (regex &optional string limit)
   (save-match-data
-    (let ((string (or string "     ")))
-      (> (recursive-reverse-count regex string 0 (or limit (length string))) 1))))
+    (let* (
+           (string (or string "                "))
+           (limit (or limit (max 1 (sqrt (length string)))))
+          )
+      (> (recursive-reverse-count regex string 0 limit) 1))))
 (defun recursive-reverse-count (regex string start counter)
   (if (and (> counter 1) (string-match regex string start))
       (recursive-reverse-count regex string (match-end 0) (1- counter))
