@@ -284,7 +284,9 @@ windows can get as small as `window-safe-min-height' and
              (lockstep--recursion-protect nil)
              (persp (get-current-persp this-frame))
              )
-        (persp-restore-window-conf this-frame))))
+        (if (null (safe-persp-window-conf (get-frame-persp this-frame)))
+            (switch-to-buffer "*scratch*" nil t)
+          (persp-restore-window-conf this-frame)))))
   (defalias 'lockstep-load 'lockstep-load-use-persp))
 
 
