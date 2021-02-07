@@ -595,8 +595,8 @@
   (add-hook 'js2-mode-hook 'tern-mode)
   (add-hook 'web-mode-hook 'tern-mode))
 
-(with-eval-after-load 'which-key
-  (which-key-mode))
+;; (with-eval-after-load 'which-key
+;;   (which-key-mode))
 
 (setq vterm-always-compile-module nil)
 (require 'vterm)
