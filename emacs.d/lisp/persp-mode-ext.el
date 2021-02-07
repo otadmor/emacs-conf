@@ -30,7 +30,7 @@
     (let ((buf-mmode (alist-get 'major-mode vars-list)))
       (eq buf-mmode mode))))
 
-(setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*" " *server*" "server.log"))
+(setq persp-shared-buffers '("*scratch*" "*Messages*" "*Backtrace*" " *server*"))
 (defun persp-mode-add-shared-buffers (orig-fun &rest args)
   (let (
         (res (apply orig-fun args))

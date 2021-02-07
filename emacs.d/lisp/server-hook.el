@@ -70,8 +70,11 @@
 
 (defun save-persp-on-delete-frame (frame)
   (condition-case nil
-      (when persp-mode
-        (persp-save-state-to-file))
+      (if persp-mode
+          (persp-save-state-to-file)
+        (when (functionp 'lockstep-store)
+          (lockstep-store)
+          (turn-off-lockstep)))
     (error nil)))
 
 

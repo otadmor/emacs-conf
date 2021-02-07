@@ -21,6 +21,8 @@
   (interactive)
   (when lockstep-show-cursor-on-all-frames
     (setq cursor-type nil))
+  (unless lockstep-frames
+    (lockstep-load))
   (when (not (memq (selected-frame) lockstep-frames))
     (let ((a-lockstep-frame (when lockstep-frames (car lockstep-frames))))
       (push (selected-frame) lockstep-frames)
@@ -185,7 +187,43 @@ windows can get as small as `window-safe-min-height' and
                     (delete-window window))))
       (window--check frame))))
 
-;; (require 'persp-mode)
+
+(setq lockstep--windows-backup nil)
+(defun lockstep-store ()
+  (interactive)
+  (let ((windows-list))
+    (dolist (master-frame-window
+             (remove-if-not 'window-live-p (remove-if 'window-minibuffer-p (window-list (car lockstep-frames))))
+             windows-list)
+      (push (list
+             (window-state-get master-frame-window)
+             (window-start master-frame-window)
+             (window-point master-frame-window)) windows-list))
+    (setq lockstep--windows-backup windows-list)))
+
+(defun lockstep-load ()
+  (interactive)
+  (let* ((other-frame (selected-frame))
+         (other-frame-windows
+          (remove-if-not 'window-live-p (remove-if 'window-minibuffer-p (window-list other-frame)))))
+    (while (not (equal (length lockstep--windows-backup) (length other-frame-windows)))
+      (when (< (length lockstep--windows-backup) (length other-frame-windows))
+        (delete-window (pop other-frame-windows)))
+      (when (> (length lockstep--windows-backup) (length other-frame-windows))
+        (split-window (car other-frame-windows))
+        (setq other-frame-windows (remove-if 'window-minibuffer-p (window-list other-frame)))))
+    ;; force this-frame-windows and other-frame-windows to have same configurations
+    (while lockstep--windows-backup
+      (let* ((this-frame-window (pop lockstep--windows-backup))
+             (this-window-state (car this-frame-window))
+             (this-window-start (cadr this-frame-window))
+             (this-window-point (caddr this-frame-window))
+             (other-frame-window (pop other-frame-windows)))
+        (lockstep-window-state-put this-window-state other-frame-window t)
+        ;; if called from turn-on-lockstep, synchronize point as well
+        (set-window-start other-frame-window this-window-start)
+        (set-window-point other-frame-window this-window-point)))))
+
 (with-eval-after-load 'persp-mode
 
   (defun* lockstep-persp-before-switch (frame-or-window)
@@ -225,8 +263,29 @@ windows can get as small as `window-safe-min-height' and
                   do (progn
                        (with-selected-frame frame
                          (persp-restore-window-conf frame persp))))))))
+  (defalias 'lockstep-frame 'lockstep-frame-use-persp)
 
-  (defalias 'lockstep-frame 'lockstep-frame-use-persp))
+  (defun lockstep-store-use-persp (&optional frame)
+    (when (and (= (length lockstep-frames) 1)
+               (not (eq this-command 'persp-switch)))
+      (let* (
+             (this-frame (or frame (selected-frame)))
+             (lockstep--recursion-protect nil)
+             (persp (get-current-persp this-frame))
+             )
+        (persp-frame-save-state this-frame))))
+  (defalias 'lockstep-store 'lockstep-store-use-persp)
+
+  (defun lockstep-load-use-persp (&optional frame)
+    (when (and (= (length lockstep-frames) 0)
+               (not (eq this-command 'persp-switch)))
+      (let* (
+             (this-frame (or frame (selected-frame)))
+             (lockstep--recursion-protect nil)
+             (persp (get-current-persp this-frame))
+             )
+        (persp-restore-window-conf this-frame))))
+  (defalias 'lockstep-load 'lockstep-load-use-persp))
 
 
 ;; a fix for having lockstep with emacs server.
