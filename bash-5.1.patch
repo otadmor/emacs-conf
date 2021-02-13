@@ -1,9 +1,9 @@
 diff --git a/examples/loadables/epc_completion.c b/examples/loadables/epc_completion.c
 new file mode 100644
-index 0000000..c5a808a
+index 0000000..901bc68
 --- /dev/null
 +++ b/examples/loadables/epc_completion.c
-@@ -0,0 +1,931 @@
+@@ -0,0 +1,953 @@
 +#define DISABLE_MALLOC_WRAPPERS
 +
 +#include <limits.h>
@@ -837,27 +837,37 @@ index 0000000..c5a808a
 +
 +    char *epc_port_str = getenv("EPC_COMPLETION_SERVER_PORT");
 +    if (epc_port_str == NULL) {
++#ifdef DEBUG
 +        fprintf(stderr, "missing \"EPC_COMPLETION_SERVER_PORT\"\n");
++#endif
 +        return 0;
 +    }
 +
 +    long int epc_port = strtol(epc_port_str, NULL, 10);
 +    if (epc_port == LONG_MIN || epc_port == LONG_MAX) {
++#ifdef DEBUG
 +        perror("invalid port");
++#endif
 +        return 0;
 +    }
 +    if (epc_port < 1000) {
++#ifdef DEBUG
 +        fprintf(stderr, "invalid root port\n");
++#endif
 +        return 0;
 +    }
 +    if (epc_port > ((1 << 16) - 1)) {
++#ifdef DEBUG
 +        fprintf(stderr, "not a valid port\n");
++#endif
 +        return 0;
 +    }
 +
 +    int s = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
 +    if (s < 0) {
++#ifdef DEBUG
 +        perror("cant create socket");
++#endif
 +        return 0;
 +    }
 +
@@ -868,18 +878,26 @@ index 0000000..c5a808a
 +    inet_aton("127.0.0.1", &server_addr.sin_addr);
 +
 +    if (connect(s, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
++#ifdef DEBUG
 +        perror("connect error");
++#endif
 +        return 0;
 +    }
 +
++#ifdef DEBUG
 +    printf("connected to epc completion server\n");
++#endif
 +    pthread_mutex_lock(&lock);
 +    epc_completion_socket=s;
 +    pthread_mutex_unlock(&lock);
 +
++#ifdef DEBUG
 +    printf("starting epc_completion thread\n");
++#endif
 +    if (pthread_create(&epc_completion_thread, NULL, &epc_completion, NULL) != 0) {
++#ifdef DEBUG
 +        perror("error starting epc_completion thread");
++#endif
 +        fflush(stdout);
 +        pthread_mutex_lock(&lock);
 +        epc_completion_socket=-1;
@@ -891,7 +909,9 @@ index 0000000..c5a808a
 +
 +        return 0;
 +    }
++#ifdef DEBUG
 +    printf("epc_completion thread started\n");
++#endif
 +    fflush(stdout);
 +    return 1;
 +}
@@ -916,7 +936,9 @@ index 0000000..c5a808a
 +        epc_completion_socket = -1;
 +        pthread_mutex_unlock(&lock);
 +    }
++#ifdef DEBUG
 +    printf("epc_completion builtin unloaded\n");
++#endif
 +    fflush(stdout);
 +}
 +

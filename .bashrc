@@ -15,6 +15,9 @@ if [[ "$TERM" == "dumb" ]] ; then
     export COLORTERM=1
     export PYTHONPATH=~/.emacs.d/lisp:$PYTHONPATH
     alias ipython='ipython --colors=LightBG --ext=ipython_emacs_colors'
+    if [[ -f ~/.emacs.d/lisp/bash_epc_completion ]]; then
+        enable -f ~/.emacs.d/lisp/bash_epc_completion epc_completion
+    fi
     # export PYTHONSTARTUP=~/.emacs.d/lisp/py_epc_completion.py
 fi
 

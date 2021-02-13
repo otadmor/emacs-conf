@@ -74,6 +74,7 @@ git apply bash_epc_completion.patch
 make pathnames.h
 cd examples/loadables
 make epc_completion
+cp epc_completion ~/.emacs.d/lisp/bash_epc_completion
 # enable -f ./epc_completion epc_completion
 # enable -d epc_completion
 ```
