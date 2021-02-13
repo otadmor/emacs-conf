@@ -957,7 +957,7 @@ index 0000000..901bc68
 +    "epc_completion",
 +    0
 +};
-diff --git a/examples/loadables/Makefile.in b/../bash-5.1-good/examples/loadables/Makefile.in
+diff --git a/examples/loadables/Makefile.in b/examples/loadables/Makefile.in
 index be46121..e1c919f 100644
 --- a/examples/loadables/Makefile.in
 +++ b/examples/loadables/Makefile.in
