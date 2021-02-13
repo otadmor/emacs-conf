@@ -66,6 +66,18 @@ cp vterm-module.so ~/.emacs.d/lisp/vterm-module.so
 cp vterm.el ~/.emacs.d/lisp/vterm.el
 cp etc/emacs-vterm-bash.sh ~/.emacs.d/lisp/emacs-vterm-bash.sh
 ```
+## Bash epc completion
+```
+cd bash-5.1
+git apply bash_epc_completion.patch
+./configure
+make pathnames.h
+cd examples/loadables
+make epc_completion
+# enable -f ./epc_completion epc_completion
+# enable -d epc_completion
+```
+
 ## GDB completion / context
 The context command is provided by GEF and then sent to emacs using epc.
 ![](gdb.gif)
