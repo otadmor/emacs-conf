@@ -18,6 +18,8 @@ if [[ "$TERM" == "dumb" ]] ; then
     if [[ -f ~/.emacs.d/lisp/bash_epc_completion ]]; then
         enable -f ~/.emacs.d/lisp/bash_epc_completion epc_completion
     fi
+    # ssh -R 12345:127.0.0.1:$EPC_COMPLETION_SERVER_PORT -o 'SetEnv EPC_COMPLETION_SERVER_PORT=12345' localhost
+    # echo "AcceptEnv EPC_COMPLETION_SERVER_PORT" >> /etc/ssh/sshd_config
     # export PYTHONSTARTUP=~/.emacs.d/lisp/py_epc_completion.py
 fi
 
