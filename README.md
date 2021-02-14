@@ -68,6 +68,8 @@ cp etc/emacs-vterm-bash.sh ~/.emacs.d/lisp/emacs-vterm-bash.sh
 ```
 ## Bash epc completion
 ```
+wget https://ftp.gnu.org/gnu/bash/bash-5.1.tar.gz
+tar -xf bash-5.1.tar.gz
 cd bash-5.1
 git apply bash_epc_completion.patch
 ./configure
