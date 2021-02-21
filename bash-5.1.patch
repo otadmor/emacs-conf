@@ -1,9 +1,9 @@
 diff --git a/examples/loadables/epc_completion.c b/examples/loadables/epc_completion.c
 new file mode 100644
-index 0000000..901bc68
+index 0000000..edb62e1
 --- /dev/null
 +++ b/examples/loadables/epc_completion.c
-@@ -0,0 +1,953 @@
+@@ -0,0 +1,946 @@
 +#define DISABLE_MALLOC_WRAPPERS
 +
 +#include <limits.h>
@@ -24,13 +24,6 @@ index 0000000..901bc68
 +#include "loadables.h"
 +#include "bashline.h"
 +
-+#include <readline/readline.h>
-+#include <readline/rlprivate.h>
-+// non exported from readline
-+char _rl_find_completion_word (int *fp, int *dp);
-+void _rl_free_match_list (char **matches);
-+/* int rl_complete_internal (int what_to_do); */
-+
 +#define MAX_REQUEST 0x1000
 +#define MAX_RESPONSE 0x10000
 +
@@ -42,494 +35,25 @@ index 0000000..901bc68
 +static pthread_t epc_completion_thread = { 0 };
 +static int epc_completion_socket=-1;
 +static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-+
 +static char **(*p_bashline_rl_completion)(const char *, int, int);
 +
-+
-+/* Find the common prefix of the list of matches, and put it into
-+   matches[0]. */
-+static int
-+compute_lcd_of_matches (char **match_list, int matches, const char *text)
-+{
-+  register int i, c1, c2, si;
-+  int low;		/* Count of max-matched characters. */
-+  int lx;
-+  char *dtext;		/* dequoted TEXT, if needed */
-+#if defined (HANDLE_MULTIBYTE)
-+  int v;
-+  size_t v1, v2;
-+  mbstate_t ps1, ps2;
-+  wchar_t wc1, wc2;
-+#endif
-+
-+  /* If only one match, just use that.  Otherwise, compare each
-+     member of the list with the next, finding out where they
-+     stop matching. */
-+  if (matches == 1)
-+    {
-+      match_list[0] = match_list[1];
-+      match_list[1] = (char *)NULL;
-+      return 1;
-+    }
-+
-+  for (i = 1, low = 100000; i < matches; i++)
-+    {
-+#if defined (HANDLE_MULTIBYTE)
-+      if (MB_CUR_MAX > 1 && rl_byte_oriented == 0)
-+	{
-+	  memset (&ps1, 0, sizeof (mbstate_t));
-+	  memset (&ps2, 0, sizeof (mbstate_t));
-+	}
-+#endif
-+      for (si = 0; (c1 = match_list[i][si]) && (c2 = match_list[i + 1][si]); si++)
-+	{
-+	    if (_rl_completion_case_fold)
-+	      {
-+	        c1 = _rl_to_lower (c1);
-+	        c2 = _rl_to_lower (c2);
-+	      }
-+#if defined (HANDLE_MULTIBYTE)
-+	    if (MB_CUR_MAX > 1 && rl_byte_oriented == 0)
-+	      {
-+		v1 = mbrtowc(&wc1, match_list[i]+si, strlen (match_list[i]+si), &ps1);
-+		v2 = mbrtowc (&wc2, match_list[i+1]+si, strlen (match_list[i+1]+si), &ps2);
-+		if (MB_INVALIDCH (v1) || MB_INVALIDCH (v2))
-+		  {
-+		    if (c1 != c2)	/* do byte comparison */
-+		      break;
-+		    continue;
-+		  }
-+		if (_rl_completion_case_fold)
-+		  {
-+		    wc1 = towlower (wc1);
-+		   wc2 = towlower (wc2);
-+		  }
-+		if (wc1 != wc2)
-+		  break;
-+		else if (v1 > 1)
-+		  si += v1 - 1;
-+	      }
-+	    else
-+#endif
-+	    if (c1 != c2)
-+	      break;
-+	}
-+
-+      if (low > si)
-+	low = si;
-+    }
-+
-+  /* If there were multiple matches, but none matched up to even the
-+     first character, and the user typed something, use that as the
-+     value of matches[0]. */
-+  if (low == 0 && text && *text)
-+    {
-+      match_list[0] = (char *)malloc (strlen (text) + 1);
-+      strcpy (match_list[0], text);
-+    }
-+  else
-+    {
-+      match_list[0] = (char *)malloc (low + 1);
-+
-+      /* XXX - this might need changes in the presence of multibyte chars */
-+
-+      /* If we are ignoring case, try to preserve the case of the string
-+	 the user typed in the face of multiple matches differing in case. */
-+      if (_rl_completion_case_fold)
-+	{
-+	  /* We're making an assumption here:
-+		IF we're completing filenames AND
-+		   the application has defined a filename dequoting function AND
-+		   we found a quote character AND
-+		   the application has requested filename quoting
-+		THEN
-+		   we assume that TEXT was dequoted before checking against
-+		   the file system and needs to be dequoted here before we
-+		   check against the list of matches
-+		FI */
-+	  dtext = (char *)NULL;
-+	  if (rl_filename_completion_desired &&
-+	      rl_filename_dequoting_function &&
-+	      rl_completion_found_quote &&
-+	      rl_filename_quoting_desired)
-+	    {
-+	      dtext = (*rl_filename_dequoting_function) ((char *)text, rl_completion_quote_character);
-+	      text = dtext;
-+	    }
-+
-+	  /* sort the list to get consistent answers. */
-+	  if (rl_sort_completion_matches)
-+	    qsort (match_list+1, matches, sizeof(char *), (QSFUNC *)_rl_qsort_string_compare);
-+
-+	  si = strlen (text);
-+	  lx = (si <= low) ? si : low;	/* check shorter of text and matches */
-+	  /* Try to preserve the case of what the user typed in the presence of
-+	     multiple matches: check each match for something that matches
-+	     what the user typed taking case into account; use it up to common
-+	     length of matches if one is found.  If not, just use first match. */
-+	  for (i = 1; i <= matches; i++)
-+	    if (strncmp (match_list[i], text, lx) == 0)
-+	      {
-+		strncpy (match_list[0], match_list[i], low);
-+		break;
-+	      }
-+	  /* no casematch, use first entry */
-+	  if (i > matches)
-+	    strncpy (match_list[0], match_list[1], low);
-+
-+	  FREE (dtext);
-+	}
-+      else
-+        strncpy (match_list[0], match_list[1], low);
-+
-+      match_list[0][low] = '\0';
-+    }
-+
-+  return matches;
-+}
-+
-+char *
-+_savestring (const char *s)
-+{
-+  char *ret;
-+
-+  ret = (char *)malloc (strlen (s) + 1);
-+  strcpy (ret, s);
-+  return ret;
-+}
-+
-+
-+/* Filter out duplicates in MATCHES.  This frees up the strings in
-+   MATCHES. */
-+static char **
-+remove_duplicate_matches (char **matches)
-+{
-+  char *lowest_common;
-+  int i, j, newlen;
-+  char dead_slot;
-+  char **temp_array;
-+
-+  /* Sort the items. */
-+  for (i = 0; matches[i]; i++)
-+    ;
-+
-+  /* Sort the array without matches[0], since we need it to
-+     stay in place no matter what. */
-+  if (i && rl_sort_completion_matches)
-+    qsort (matches+1, i-1, sizeof (char *), (QSFUNC *)_rl_qsort_string_compare);
-+
-+  /* Remember the lowest common denominator for it may be unique. */
-+  lowest_common = _savestring (matches[0]);
-+
-+  for (i = newlen = 0; matches[i + 1]; i++)
-+    {
-+      if (strcmp (matches[i], matches[i + 1]) == 0)
-+	{
-+	  FREE (matches[i]);
-+	  matches[i] = (char *)&dead_slot;
-+	}
-+      else
-+	newlen++;
-+    }
-+
-+  /* We have marked all the dead slots with (char *)&dead_slot.
-+     Copy all the non-dead entries into a new array. */
-+  temp_array = (char **)malloc ((3 + newlen) * sizeof (char *));
-+  for (i = j = 1; matches[i]; i++)
-+    {
-+      if (matches[i] != (char *)&dead_slot)
-+	temp_array[j++] = matches[i];
-+    }
-+  temp_array[j] = (char *)NULL;
-+
-+  if (matches[0] != (char *)&dead_slot)
-+    FREE (matches[0]);
-+
-+  /* Place the lowest common denominator back in [0]. */
-+  temp_array[0] = lowest_common;
-+
-+  /* If there is one string left, and it is identical to the
-+     lowest common denominator, then the LCD is the string to
-+     insert. */
-+  if (j == 2 && strcmp (temp_array[0], temp_array[1]) == 0)
-+    {
-+      FREE (temp_array[1]);
-+      temp_array[1] = (char *)NULL;
-+    }
-+  return (temp_array);
-+}
-+
-+static int
-+postprocess_matches (char ***matchesp, int matching_filenames)
-+{
-+  char *t, **matches, **temp_matches;
-+  int nmatch, i;
-+
-+  matches = *matchesp;
-+
-+  if (matches == 0)
-+    return 0;
-+
-+  /* It seems to me that in all the cases we handle we would like
-+     to ignore duplicate possibilities.  Scan for the text to
-+     insert being identical to the other completions. */
-+  if (rl_ignore_completion_duplicates)
-+    {
-+      temp_matches = remove_duplicate_matches (matches);
-+      FREE (matches);
-+      matches = temp_matches;
-+    }
-+
-+  /* If we are matching filenames, then here is our chance to
-+     do clever processing by re-examining the list.  Call the
-+     ignore function with the array as a parameter.  It can
-+     munge the array, deleting matches as it desires. */
-+  if (rl_ignore_some_completions_function && matching_filenames)
-+    {
-+      for (nmatch = 1; matches[nmatch]; nmatch++)
-+	;
-+      (void)(*rl_ignore_some_completions_function) (matches);
-+      if (matches == 0 || matches[0] == 0)
-+	{
-+	  FREE (matches);
-+	  *matchesp = (char **)0;
-+	  return 0;
-+        }
-+      else
-+	{
-+	  /* If we removed some matches, recompute the common prefix. */
-+	  for (i = 1; matches[i]; i++)
-+	    ;
-+	  if (i > 1 && i < nmatch)
-+	    {
-+	      t = matches[0];
-+	      /* compute_lcd_of_matches (matches, i - 1, t); */
-+	      FREE (t);
-+	    }
-+	}
-+    }
-+
-+  *matchesp = matches;
-+  return (1);
-+}
-+
-+/* Set default values for readline word completion.  These are the variables
-+   that application completion functions can change or inspect. */
-+static void
-+set_completion_defaults (int what_to_do)
-+{
-+  /* Only the completion entry function can change these. */
-+  rl_filename_completion_desired = 0;
-+  rl_filename_quoting_desired = 1;
-+  rl_completion_type = what_to_do;
-+  rl_completion_suppress_append = rl_completion_suppress_quote = 0;
-+  rl_completion_append_character = ' ';
-+
-+  /* The completion entry function may optionally change this. */
-+  rl_completion_mark_symlink_dirs = _rl_complete_mark_symlink_dirs;
-+  rl_completion_entry_function = NULL;
-+
-+  /* Reset private state. */
-+  /* _rl_complete_display_matches_interrupt = 0; */
-+
-+  rl_ignore_completion_duplicates = 1;
-+}
-+
-+static char **
-+gen_completion_matches (char *text, int start, int end, rl_compentry_func_t *our_func, int found_quote, int quote_char)
-+{
-+  char **matches;
-+
-+  rl_completion_found_quote = found_quote;
-+  rl_completion_quote_character = quote_char;
-+
-+  /* If the user wants to TRY to complete, but then wants to give
-+     up and use the default completion function, they set the
-+     variable rl_attempted_completion_function. */
-+  if (rl_attempted_completion_function)
-+    {
-+      matches = (*rl_attempted_completion_function) (text, start, end);
-+      /* if (RL_SIG_RECEIVED()) */
-+      /*   { */
-+      /*     _rl_free_match_list (matches); */
-+      /*     matches = 0; */
-+      /*     RL_CHECK_SIGNALS (); */
-+      /*   } */
-+
-+      if (matches || rl_attempted_completion_over)
-+	{
-+	  rl_attempted_completion_over = 0;
-+	  return (matches);
-+	}
-+    }
-+
-+  /* XXX -- filename dequoting moved into rl_filename_completion_function */
-+
-+  /* rl_completion_matches will check for signals as well to avoid a long
-+     delay while reading a directory. */
-+  matches = rl_completion_matches (text, our_func);
-+  /* if (RL_SIG_RECEIVED()) */
-+  /*   { */
-+  /*     _rl_free_match_list (matches); */
-+  /*     matches = 0; */
-+  /*     RL_CHECK_SIGNALS (); */
-+  /*   } */
-+  return matches;
-+}
-+
-+/* Compare a possibly-quoted filename TEXT from the line buffer and a possible
-+   MATCH that is the product of filename completion, which acts on the dequoted
-+   text. */
-+static int
-+compare_match (char *text, const char *match)
-+{
-+  char *temp;
-+  int r;
-+
-+  if (rl_filename_completion_desired && rl_filename_quoting_desired &&
-+      rl_completion_found_quote && rl_filename_dequoting_function)
-+    {
-+      temp = (*rl_filename_dequoting_function) (text, rl_completion_quote_character);
-+      r = strcmp (temp, match);
-+      free (temp);
-+      return r;
-+    }
-+  return (strcmp (text, match));
-+}
-+
-+// copied from rl_complete_internal
-+char **try_rl_completions(char *text, int start, int end) {
-+  char *orig_text = text;
-+  char **matches;
-+  rl_compentry_func_t *our_func;
-+  int delimiter, found_quote, i, nontrivial_lcd;
-+  char *saved_line_buffer;
-+  char quote_char;
-+  int tlen, mlen; //, saved_last_completion_failed;
-+
-+  RL_SETSTATE(RL_STATE_COMPLETING);
-+
-+  /* saved_last_completion_failed = last_completion_failed; */
-+
-+  set_completion_defaults ('*');
-+
-+  /* saved_line_buffer = rl_line_buffer ? savestring (rl_line_buffer) : (char *)NULL; */
-+  saved_line_buffer = rl_line_buffer;
-+  int backup_rl_point = rl_point;
-+  rl_point = 0;
-+  rl_line_buffer = savestring(text);
-+  rl_point = end;
-+
-+  our_func = rl_completion_entry_function
-+		? rl_completion_entry_function
-+		: rl_filename_completion_function;
-+  /* We now look backwards for the start of a filename/variable word. */
-+  found_quote = delimiter = 0;
-+  quote_char = '\0';
-+
-+  /* end = rl_point; */
-+
-+  if (end)
-+    /* This (possibly) changes rl_point.  If it returns a non-zero char,
-+       we know we have an open quote. */
-+    quote_char = _rl_find_completion_word (&found_quote, &delimiter);
-+
-+  start = rl_point;
-+
-+  /* text = _savestring (&text[start]); text[end] = '\0'; */
-+
-+  orig_text[start] = '\0';
-+  text = rl_copy_text (start, end);
-+
-+  matches = gen_completion_matches (text, start, end, our_func, found_quote, quote_char);
-+  /* nontrivial_lcd is set if the common prefix adds something to the word
-+     being completed. */
-+  nontrivial_lcd = matches && compare_match (text, matches[0]) != 0;
-+  /* if (what_to_do == '!' || what_to_do == '@') */
-+  /*   tlen = strlen (text); */
-+  FREE (text);
-+
-+  if (matches == 0)
-+    {
-+      /* rl_ding (); */
-+      char *rl_line_buffer_backup = rl_line_buffer;
-+      rl_line_buffer = saved_line_buffer;
-+      rl_point = backup_rl_point;
-+      FREE(rl_line_buffer_backup);
-+      rl_line_buffer_backup = NULL;
-+      /* FREE (saved_line_buffer); */
-+      /* completion_changed_buffer = 0; */
-+      /* last_completion_failed = 1; */
-+      RL_UNSETSTATE(RL_STATE_COMPLETING);
-+      _rl_reset_completion_state ();
-+      return (0);
-+    }
-+
-+  /* If we are matching filenames, the attempted completion function will
-+     have set rl_filename_completion_desired to a non-zero value.  The basic
-+     rl_filename_completion_function does this. */
-+  i = rl_filename_completion_desired;
-+
-+  if (postprocess_matches (&matches, i) == 0)
-+    {
-+      /* rl_ding (); */
-+      char *rl_line_buffer_backup = rl_line_buffer;
-+      rl_line_buffer = saved_line_buffer;
-+      rl_point = backup_rl_point;
-+      FREE(rl_line_buffer_backup);
-+      rl_line_buffer_backup = NULL;
-+      /* FREE (saved_line_buffer); */
-+      /* completion_changed_buffer = 0; */
-+      /* last_completion_failed = 1; */
-+      RL_UNSETSTATE(RL_STATE_COMPLETING);
-+      _rl_reset_completion_state ();
-+      return (0);
-+    }
-+
-+  /* if (matches && matches[0] && *matches[0]) */
-+  /*   last_completion_failed = 0; */
-+
-+  /* insert_all_matches (matches, start, &quote_char); */
-+
-+  /* /\* Check to see if the line has changed through all of this manipulation. *\/ */
-+  if (saved_line_buffer)
-+    {
-+      char *rl_line_buffer_backup = rl_line_buffer;
-+      rl_line_buffer = saved_line_buffer;
-+      rl_point = backup_rl_point;
-+      FREE(rl_line_buffer_backup);
-+      rl_line_buffer_backup = NULL;
-+      /* completion_changed_buffer = strcmp (rl_line_buffer, saved_line_buffer) != 0; */
-+      /* FREE (saved_line_buffer); */
-+    }
-+
-+  RL_UNSETSTATE(RL_STATE_COMPLETING);
-+  _rl_reset_completion_state ();
-+
-+  /* RL_CHECK_SIGNALS (); */
-+  return matches;
-+
-+}
-+
-+void my_rl_completion_display_matches_hook(char **matches, int len, int max) {
-+    if (!matches) return;
-+    while (*matches) {
-+        printf("hook %s\n", *matches);
-+        ++matches;
-+    }
-+}
-+
++#include <readline/readline.h>
++#include <readline/rlprivate.h>
++// non exported from readline
++char _rl_find_completion_word (int *fp, int *dp);
++/* int rl_complete_internal (int what_to_do); */
++
++char **try_rl_completions(char *text);
++void _rl_free_match_list (char **matches);
 +
 +int complete(char *to_complete, char *buff, size_t buff_len, size_t *out_len) {
 +    // results should be quoted seperated by spaces
 +    char **prog_complete_matches = NULL; //sample_matches;
 +
-+    int start = 0;
-+    int end = strlen(to_complete);
 +#ifdef DEBUG
-+    printf("completing : %s ...\n", &to_complete[start]);
++    printf("completing : %s ...\n", &to_complete);
 +#endif
-+    prog_complete_matches = try_rl_completions(to_complete, start, end);
++    prog_complete_matches = try_rl_completions(to_complete);
 +
 +    int res = fill_matches_to_buffer(to_complete, prog_complete_matches, buff, buff_len, out_len);
 +
@@ -560,7 +84,6 @@ index 0000000..901bc68
 +        }
 +        *current = *next; // last NULL
 +    }
-+
 +
 +    size_t to_complete_len = strlen(to_complete);
 +
@@ -652,7 +175,8 @@ index 0000000..901bc68
 +    }
 +    sprintf(response+strlen(response), "))\n");
 +
-+    if (strlen(response) > 0x1000000) {
++    // make sure fits %06X
++    if (strlen(response) >= 0x1000000) {
 +#ifdef DEBUG
 +        fprintf(stderr, "response too long to return\n");
 +#endif
@@ -957,6 +481,475 @@ index 0000000..901bc68
 +    "epc_completion",
 +    0
 +};
++
++
++/* Find the common prefix of the list of matches, and put it into
++   matches[0]. */
++static int
++compute_lcd_of_matches (char **match_list, int matches, const char *text)
++{
++  register int i, c1, c2, si;
++  int low;		/* Count of max-matched characters. */
++  int lx;
++  char *dtext;		/* dequoted TEXT, if needed */
++#if defined (HANDLE_MULTIBYTE)
++  int v;
++  size_t v1, v2;
++  mbstate_t ps1, ps2;
++  wchar_t wc1, wc2;
++#endif
++
++  /* If only one match, just use that.  Otherwise, compare each
++     member of the list with the next, finding out where they
++     stop matching. */
++  if (matches == 1)
++    {
++      match_list[0] = match_list[1];
++      match_list[1] = (char *)NULL;
++      return 1;
++    }
++
++  for (i = 1, low = 100000; i < matches; i++)
++    {
++#if defined (HANDLE_MULTIBYTE)
++      if (MB_CUR_MAX > 1 && rl_byte_oriented == 0)
++	{
++	  memset (&ps1, 0, sizeof (mbstate_t));
++	  memset (&ps2, 0, sizeof (mbstate_t));
++	}
++#endif
++      for (si = 0; (c1 = match_list[i][si]) && (c2 = match_list[i + 1][si]); si++)
++	{
++	    if (_rl_completion_case_fold)
++	      {
++	        c1 = _rl_to_lower (c1);
++	        c2 = _rl_to_lower (c2);
++	      }
++#if defined (HANDLE_MULTIBYTE)
++	    if (MB_CUR_MAX > 1 && rl_byte_oriented == 0)
++	      {
++		v1 = mbrtowc(&wc1, match_list[i]+si, strlen (match_list[i]+si), &ps1);
++		v2 = mbrtowc (&wc2, match_list[i+1]+si, strlen (match_list[i+1]+si), &ps2);
++		if (MB_INVALIDCH (v1) || MB_INVALIDCH (v2))
++		  {
++		    if (c1 != c2)	/* do byte comparison */
++		      break;
++		    continue;
++		  }
++		if (_rl_completion_case_fold)
++		  {
++		    wc1 = towlower (wc1);
++		   wc2 = towlower (wc2);
++		  }
++		if (wc1 != wc2)
++		  break;
++		else if (v1 > 1)
++		  si += v1 - 1;
++	      }
++	    else
++#endif
++	    if (c1 != c2)
++	      break;
++	}
++
++      if (low > si)
++	low = si;
++    }
++
++  /* If there were multiple matches, but none matched up to even the
++     first character, and the user typed something, use that as the
++     value of matches[0]. */
++  if (low == 0 && text && *text)
++    {
++      match_list[0] = (char *)malloc (strlen (text) + 1);
++      strcpy (match_list[0], text);
++    }
++  else
++    {
++      match_list[0] = (char *)malloc (low + 1);
++
++      /* XXX - this might need changes in the presence of multibyte chars */
++
++      /* If we are ignoring case, try to preserve the case of the string
++	 the user typed in the face of multiple matches differing in case. */
++      if (_rl_completion_case_fold)
++	{
++	  /* We're making an assumption here:
++		IF we're completing filenames AND
++		   the application has defined a filename dequoting function AND
++		   we found a quote character AND
++		   the application has requested filename quoting
++		THEN
++		   we assume that TEXT was dequoted before checking against
++		   the file system and needs to be dequoted here before we
++		   check against the list of matches
++		FI */
++	  dtext = (char *)NULL;
++	  if (rl_filename_completion_desired &&
++	      rl_filename_dequoting_function &&
++	      rl_completion_found_quote &&
++	      rl_filename_quoting_desired)
++	    {
++	      dtext = (*rl_filename_dequoting_function) ((char *)text, rl_completion_quote_character);
++	      text = dtext;
++	    }
++
++	  /* sort the list to get consistent answers. */
++	  if (rl_sort_completion_matches)
++	    qsort (match_list+1, matches, sizeof(char *), (QSFUNC *)_rl_qsort_string_compare);
++
++	  si = strlen (text);
++	  lx = (si <= low) ? si : low;	/* check shorter of text and matches */
++	  /* Try to preserve the case of what the user typed in the presence of
++	     multiple matches: check each match for something that matches
++	     what the user typed taking case into account; use it up to common
++	     length of matches if one is found.  If not, just use first match. */
++	  for (i = 1; i <= matches; i++)
++	    if (strncmp (match_list[i], text, lx) == 0)
++	      {
++		strncpy (match_list[0], match_list[i], low);
++		break;
++	      }
++	  /* no casematch, use first entry */
++	  if (i > matches)
++	    strncpy (match_list[0], match_list[1], low);
++
++	  FREE (dtext);
++	}
++      else
++        strncpy (match_list[0], match_list[1], low);
++
++      match_list[0][low] = '\0';
++    }
++
++  return matches;
++}
++
++char *
++_savestring (const char *s)
++{
++  char *ret;
++
++  ret = (char *)malloc (strlen (s) + 1);
++  strcpy (ret, s);
++  return ret;
++}
++
++
++/* Filter out duplicates in MATCHES.  This frees up the strings in
++   MATCHES. */
++static char **
++remove_duplicate_matches (char **matches)
++{
++  char *lowest_common;
++  int i, j, newlen;
++  char dead_slot;
++  char **temp_array;
++
++  /* Sort the items. */
++  for (i = 0; matches[i]; i++)
++    ;
++
++  /* Sort the array without matches[0], since we need it to
++     stay in place no matter what. */
++  if (i && rl_sort_completion_matches)
++    qsort (matches+1, i-1, sizeof (char *), (QSFUNC *)_rl_qsort_string_compare);
++
++  /* Remember the lowest common denominator for it may be unique. */
++  lowest_common = _savestring (matches[0]);
++
++  for (i = newlen = 0; matches[i + 1]; i++)
++    {
++      if (strcmp (matches[i], matches[i + 1]) == 0)
++	{
++	  FREE (matches[i]);
++	  matches[i] = (char *)&dead_slot;
++	}
++      else
++	newlen++;
++    }
++
++  /* We have marked all the dead slots with (char *)&dead_slot.
++     Copy all the non-dead entries into a new array. */
++  temp_array = (char **)malloc ((3 + newlen) * sizeof (char *));
++  for (i = j = 1; matches[i]; i++)
++    {
++      if (matches[i] != (char *)&dead_slot)
++	temp_array[j++] = matches[i];
++    }
++  temp_array[j] = (char *)NULL;
++
++  if (matches[0] != (char *)&dead_slot)
++    FREE (matches[0]);
++
++  /* Place the lowest common denominator back in [0]. */
++  temp_array[0] = lowest_common;
++
++  /* If there is one string left, and it is identical to the
++     lowest common denominator, then the LCD is the string to
++     insert. */
++  if (j == 2 && strcmp (temp_array[0], temp_array[1]) == 0)
++    {
++      FREE (temp_array[1]);
++      temp_array[1] = (char *)NULL;
++    }
++  return (temp_array);
++}
++
++static int
++postprocess_matches (char ***matchesp, int matching_filenames)
++{
++  char *t, **matches, **temp_matches;
++  int nmatch, i;
++
++  matches = *matchesp;
++
++  if (matches == 0)
++    return 0;
++
++  /* It seems to me that in all the cases we handle we would like
++     to ignore duplicate possibilities.  Scan for the text to
++     insert being identical to the other completions. */
++  if (rl_ignore_completion_duplicates)
++    {
++      temp_matches = remove_duplicate_matches (matches);
++      FREE (matches);
++      matches = temp_matches;
++    }
++
++  /* If we are matching filenames, then here is our chance to
++     do clever processing by re-examining the list.  Call the
++     ignore function with the array as a parameter.  It can
++     munge the array, deleting matches as it desires. */
++  if (rl_ignore_some_completions_function && matching_filenames)
++    {
++      for (nmatch = 1; matches[nmatch]; nmatch++)
++	;
++      (void)(*rl_ignore_some_completions_function) (matches);
++      if (matches == 0 || matches[0] == 0)
++	{
++	  FREE (matches);
++	  *matchesp = (char **)0;
++	  return 0;
++        }
++      else
++	{
++	  /* If we removed some matches, recompute the common prefix. */
++	  for (i = 1; matches[i]; i++)
++	    ;
++	  if (i > 1 && i < nmatch)
++	    {
++	      t = matches[0];
++	      /* compute_lcd_of_matches (matches, i - 1, t); */
++	      FREE (t);
++	    }
++	}
++    }
++
++  *matchesp = matches;
++  return (1);
++}
++
++/* Set default values for readline word completion.  These are the variables
++   that application completion functions can change or inspect. */
++static void
++set_completion_defaults (int what_to_do)
++{
++  /* Only the completion entry function can change these. */
++  rl_filename_completion_desired = 0;
++  rl_filename_quoting_desired = 1;
++  rl_completion_type = what_to_do;
++  rl_completion_suppress_append = rl_completion_suppress_quote = 0;
++  rl_completion_append_character = '\n';
++
++  /* The completion entry function may optionally change this. */
++  rl_completion_mark_symlink_dirs = _rl_complete_mark_symlink_dirs;
++  rl_completion_entry_function = NULL;
++
++  /* Reset private state. */
++  /* _rl_complete_display_matches_interrupt = 0; */
++
++  rl_ignore_completion_duplicates = 1;
++}
++
++static char **
++gen_completion_matches (char *text, int start, int end, rl_compentry_func_t *our_func, int found_quote, int quote_char)
++{
++  char **matches;
++
++  rl_completion_found_quote = found_quote;
++  rl_completion_quote_character = quote_char;
++
++  /* If the user wants to TRY to complete, but then wants to give
++     up and use the default completion function, they set the
++     variable rl_attempted_completion_function. */
++  if (rl_attempted_completion_function)
++    {
++      matches = (*rl_attempted_completion_function) (text, start, end);
++      /* if (RL_SIG_RECEIVED()) */
++      /*   { */
++      /*     _rl_free_match_list (matches); */
++      /*     matches = 0; */
++      /*     RL_CHECK_SIGNALS (); */
++      /*   } */
++
++      if (matches || rl_attempted_completion_over)
++	{
++	  rl_attempted_completion_over = 0;
++	  return (matches);
++	}
++    }
++
++  /* XXX -- filename dequoting moved into rl_filename_completion_function */
++
++  /* rl_completion_matches will check for signals as well to avoid a long
++     delay while reading a directory. */
++  matches = rl_completion_matches (text, our_func);
++  /* if (RL_SIG_RECEIVED()) */
++  /*   { */
++  /*     _rl_free_match_list (matches); */
++  /*     matches = 0; */
++  /*     RL_CHECK_SIGNALS (); */
++  /*   } */
++  return matches;
++}
++
++/* Compare a possibly-quoted filename TEXT from the line buffer and a possible
++   MATCH that is the product of filename completion, which acts on the dequoted
++   text. */
++static int
++compare_match (char *text, const char *match)
++{
++  char *temp;
++  int r;
++
++  if (rl_filename_completion_desired && rl_filename_quoting_desired &&
++      rl_completion_found_quote && rl_filename_dequoting_function)
++    {
++      temp = (*rl_filename_dequoting_function) (text, rl_completion_quote_character);
++      r = strcmp (temp, match);
++      free (temp);
++      return r;
++    }
++  return (strcmp (text, match));
++}
++
++// copied from rl_complete_internal
++char **try_rl_completions(char *text) {
++  int start = 0;
++  int end = strlen(text);
++  char *orig_text = text;
++  char **matches;
++  rl_compentry_func_t *our_func;
++  int delimiter, found_quote, i, nontrivial_lcd;
++  char *saved_line_buffer;
++  char quote_char;
++  int tlen, mlen; //, saved_last_completion_failed;
++
++  RL_SETSTATE(RL_STATE_COMPLETING);
++
++  /* saved_last_completion_failed = last_completion_failed; */
++
++  set_completion_defaults ('*');
++
++  /* saved_line_buffer = rl_line_buffer ? savestring (rl_line_buffer) : (char *)NULL; */
++  saved_line_buffer = rl_line_buffer;
++  int backup_rl_point = rl_point;
++  rl_point = 0;
++  rl_line_buffer = savestring(text);
++  rl_point = end;
++
++  our_func = rl_completion_entry_function
++		? rl_completion_entry_function
++		: rl_filename_completion_function;
++  /* We now look backwards for the start of a filename/variable word. */
++  found_quote = delimiter = 0;
++  quote_char = '\0';
++
++  /* end = rl_point; */
++
++  if (end)
++    /* This (possibly) changes rl_point.  If it returns a non-zero char,
++       we know we have an open quote. */
++    quote_char = _rl_find_completion_word (&found_quote, &delimiter);
++
++  start = rl_point;
++  rl_point = end;
++
++  /* text = _savestring (&text[start]); text[end] = '\0'; */
++
++  orig_text[start] = '\0';
++  text = rl_copy_text (start, end);
++
++  matches = gen_completion_matches (text, start, end, our_func, found_quote, quote_char);
++  /* nontrivial_lcd is set if the common prefix adds something to the word
++     being completed. */
++  nontrivial_lcd = matches && compare_match (text, matches[0]) != 0;
++  /* if (what_to_do == '!' || what_to_do == '@') */
++  /*   tlen = strlen (text); */
++  FREE (text);
++
++  if (matches == 0)
++    {
++      /* rl_ding (); */
++      char *rl_line_buffer_backup = rl_line_buffer;
++      rl_line_buffer = saved_line_buffer;
++      rl_point = backup_rl_point;
++      FREE(rl_line_buffer_backup);
++      rl_line_buffer_backup = NULL;
++      /* FREE (saved_line_buffer); */
++      /* completion_changed_buffer = 0; */
++      /* last_completion_failed = 1; */
++      RL_UNSETSTATE(RL_STATE_COMPLETING);
++      _rl_reset_completion_state ();
++      return (0);
++    }
++
++  /* If we are matching filenames, the attempted completion function will
++     have set rl_filename_completion_desired to a non-zero value.  The basic
++     rl_filename_completion_function does this. */
++  i = rl_filename_completion_desired;
++
++  if (postprocess_matches (&matches, i) == 0)
++    {
++      /* rl_ding (); */
++      char *rl_line_buffer_backup = rl_line_buffer;
++      rl_line_buffer = saved_line_buffer;
++      rl_point = backup_rl_point;
++      FREE(rl_line_buffer_backup);
++      rl_line_buffer_backup = NULL;
++      /* FREE (saved_line_buffer); */
++      /* completion_changed_buffer = 0; */
++      /* last_completion_failed = 1; */
++      RL_UNSETSTATE(RL_STATE_COMPLETING);
++      _rl_reset_completion_state ();
++      return (0);
++    }
++
++  /* if (matches && matches[0] && *matches[0]) */
++  /*   last_completion_failed = 0; */
++
++  /* insert_all_matches (matches, start, &quote_char); */
++
++  /* /\* Check to see if the line has changed through all of this manipulation. *\/ */
++  if (saved_line_buffer)
++    {
++      char *rl_line_buffer_backup = rl_line_buffer;
++      rl_line_buffer = saved_line_buffer;
++      rl_point = backup_rl_point;
++      FREE(rl_line_buffer_backup);
++      rl_line_buffer_backup = NULL;
++      /* completion_changed_buffer = strcmp (rl_line_buffer, saved_line_buffer) != 0; */
++      /* FREE (saved_line_buffer); */
++    }
++
++  RL_UNSETSTATE(RL_STATE_COMPLETING);
++  _rl_reset_completion_state ();
++
++  /* RL_CHECK_SIGNALS (); */
++  return matches;
++
++}
 diff --git a/examples/loadables/Makefile.in b/examples/loadables/Makefile.in
 index be46121..e1c919f 100644
 --- a/examples/loadables/Makefile.in
