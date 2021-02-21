@@ -119,7 +119,7 @@
     (cond
      (company-candidates
       (company--async-continue prefix ignore-case candidates))
-     (t ;  (company--should-complete)
+     ((company--should-complete)
       (company--async-begin-new prefix ignore-case candidates)))
     (company-ensure-emulation-alist)
     (company-enable-overriding-keymap company-active-map)
@@ -171,7 +171,8 @@
                  company-candidates -company-previous-candidates
                  company-point -company-point
                  company--point-max -company--point-max)
-           (let ((this-command 'company-complete-common))
+           (let ((this-command 'company-complete-common)
+                 (company-idle-delay 'now))
              (company--async-calculate-candidates prefix ignore-case candidates)
              (company--async-post-command prefix ignore-case candidates))
            )))
