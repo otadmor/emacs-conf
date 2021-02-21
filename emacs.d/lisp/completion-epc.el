@@ -491,17 +491,6 @@
         candidate))))
 
 
-(defun completion-epc-complete-deferred(prefix)
-  (cons :async
-        (lambda (callback)
-          (deferred:$
-            (epc-complete-deferred prefix)
-            (deferred:nextc it
-              (lambda (reply)
-                (let ((candidates
-                       (mapcar 'completion-epc-collect-candidates reply)))
-                    (funcall callback candidates))))))))
-
 (with-eval-after-load 'comint
   (add-hook 'comint-output-filter-functions 'completion--comint-output-filter nil nil))
 
@@ -523,7 +512,15 @@
                (interactive (company-begin-backend 'completion-func))
                (prefix (unless (null mngr-complete-epc)
                          (funcall prefix-cb)))
-               (candidates (completion-epc-complete-deferred arg))
+               (candidates (cons :async
+                                 (lambda (callback)
+                                   (deferred:$
+                                     (epc-complete-deferred arg)
+                                     (deferred:nextc it
+                                       (lambda (reply)
+                                         (let ((candidates
+                                                (mapcar 'completion-epc-collect-candidates reply)))
+                                           (funcall callback candidates))))))))
                (meta (get-text-property 0 :symbol arg))
                (doc-buffer (company-doc-buffer (get-text-property 0 :doc arg)))
                (annotation (get-text-property 0 :description arg))

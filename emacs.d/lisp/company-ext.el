@@ -53,11 +53,132 @@
                 )
     (company-complete-common)))
 
+
+(defun company--async-continue (prefix ignore-case candidates)
+  (when (company-call-backend 'no-cache company-prefix)
+    ;; Don't complete existing candidates, fetch new ones.
+    (setq company-candidates-cache nil))
+  (let* ((new-prefix prefix)
+         (c candidates))
+    (cond
+     ((company--unique-match-p c new-prefix ignore-case)
+      ;; Handle it like completion was aborted, to differentiate from user
+      ;; calling one of Company's commands to insert the candidate,
+      ;; not to trigger template expansion, etc.
+      (company-cancel 'unique))
+     ((consp c)
+      ;; incremental match
+      (setq company-prefix new-prefix)
+      (company-update-candidates c)
+      c)
+     ((and (characterp last-command-event)
+           (company-auto-complete-p (string last-command-event)))
+      ;; auto-complete
+      (save-excursion
+        (goto-char company-point)
+        (let ((company--auto-completion t))
+          (company-complete-selection))
+        nil))
+     ((not (company--incremental-p))
+      (company-cancel))
+     (t (company--continue-failed new-prefix)))))
+
+(defun company--async-begin-new (prefix ignore-case candidates)
+  (let ((c candidates))
+    (cond
+     ((and (company--unique-match-p c company-prefix ignore-case)
+           (if company--manual-action
+               ;; If `company-manual-begin' was called, the user
+               ;; really wants something to happen.  Otherwise...
+               (ignore (message "Sole completion"))
+             t))
+      ;; ...abort and run the hooks, e.g. to clear the cache.
+      (company-cancel 'unique))
+     ((null c)
+      (when company--manual-action
+        (message "No completion found")))
+     (t ;; We got completions!
+      (when company--manual-action
+        (setq company--manual-prefix prefix))
+      (company-update-candidates c)
+      (run-hook-with-args 'company-completion-started-hook
+                          (company-explicit-action-p))
+      (company-call-frontends 'show)))))
+
+(defun company--async-perform (prefix ignore-case candidates point point-max)
+  (if (not candidates)
+      (setq company-backend nil
+            company-candidates nil)
+    (cond
+     (company-candidates
+      (company--async-continue prefix ignore-case candidates))
+     (t ;  (company--should-complete)
+      (company--async-begin-new prefix ignore-case candidates)))
+    (setq company-point point
+          company--point-max point-max)
+    (company-ensure-emulation-alist)
+    (company-enable-overriding-keymap company-active-map)
+    (company-call-frontends 'update)))
+
+(defun company--async-post-command (prefix ignore-case candidates point point-max)
+  (condition-case-unless-debug err
+      (progn
+        (company--async-perform prefix ignore-case candidates point point-max)
+        (when company-candidates
+          (company-call-frontends 'post-command)))
+    (error (message "Company: An error occurred in post-command")
+           (message "%s" (error-message-string err))
+           (company-cancel)))
+  (company-install-map))
+
+(defun company--async-update-candidates (prefix ignore-case candidates point point-max)
+  (let ((candidates (company--preprocess-candidates candidates)))
+    (push (cons prefix candidates) company-candidates-cache)
+    (when candidates
+      (setq candidates (company--postprocess-candidates candidates)))
+    (company--async-post-command prefix ignore-case candidates point point-max)))
+
+(defun company--fetch-candidates-async (prefix)
+  (let* ((non-essential (not (company-explicit-action-p)))
+         (inhibit-redisplay t)
+         (c (if (or company-selection-changed
+                    ;; FIXME: This is not ideal, but we have not managed to deal
+                    ;; with these situations in a better way yet.
+                    (company-require-match-p))
+                (company-call-backend 'candidates prefix)
+              (company-call-backend-raw 'candidates prefix))))
+    (if (not (eq (car c) :async))
+        c
+      (funcall
+       (cdr c)
+       (lexical-let (
+                     (prefix prefix)
+                     (ignore-case (company-call-backend 'ignore-case))
+                     (-company-point (point))
+                     (-company--point-max (point-max))
+                     (-company-backend company-backend)
+                     (-company--manual-action company--manual-action)
+                     (-company-previous-candidates company-candidates)
+                     )
+         (lambda (candidates)
+           (setq company-prefix prefix
+                 company-backend -company-backend
+                 company--manual-action -company--manual-action
+                 company-candidates -company-previous-candidates)
+           (company--async-update-candidates prefix ignore-case candidates -company-point -company--point-max)
+           (when (null -company-previous-candidates)
+             (if (and (not (cdr company-candidates))
+                      (equal company-common (car company-candidates)))
+                 (company-complete-selection)
+               (company--insert-candidate company-common))))))
+      (setq company--manual-action nil)
+      nil)))
+
 (with-eval-after-load 'company
-  (add-hook 'after-init-hook 'global-company-mode)
   (add-to-list 'company-continue-commands 'comint-previous-matching-input-from-input t)
   (add-to-list 'company-continue-commands 'comint-next-matching-input-from-input t)
   (advice-add 'completion-file-name-table :around #'completion-file-name-table-fullpath-hook)
+  (defalias 'company--fetch-candidates 'company--fetch-candidates-async)
   (setq company-idle-delay nil)
   (setq company-require-match nil)
 
@@ -86,6 +207,7 @@
               (setq company-orig--completion-in-region-function
                     completion-in-region-function)
               (setq completion-in-region-function
-                    'completion-in-region-company-or-ivy))))
+                    'completion-in-region-company-or-ivy)
+              (global-company-mode))))
 
 (provide 'company-ext)
