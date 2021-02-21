@@ -101,11 +101,18 @@
       (when company--manual-action
         (setq company--manual-prefix prefix))
       (company-update-candidates c)
+      (if (and (not (cdr company-candidates))
+               (equal company-common (car company-candidates)))
+          (company-complete-selection)
+        (company--insert-candidate company-common)
+        (setq company-prefix company-common
+              company-point (point)
+              company--point-max (point-max)))
       (run-hook-with-args 'company-completion-started-hook
                           (company-explicit-action-p))
       (company-call-frontends 'show)))))
 
-(defun company--async-perform (prefix ignore-case candidates point point-max)
+(defun company--async-perform (prefix ignore-case candidates)
   (if (not candidates)
       (setq company-backend nil
             company-candidates nil)
@@ -114,16 +121,14 @@
       (company--async-continue prefix ignore-case candidates))
      (t ;  (company--should-complete)
       (company--async-begin-new prefix ignore-case candidates)))
-    (setq company-point point
-          company--point-max point-max)
     (company-ensure-emulation-alist)
     (company-enable-overriding-keymap company-active-map)
     (company-call-frontends 'update)))
 
-(defun company--async-post-command (prefix ignore-case candidates point point-max)
+(defun company--async-post-command (prefix ignore-case candidates)
   (condition-case-unless-debug err
       (progn
-        (company--async-perform prefix ignore-case candidates point point-max)
+        (company--async-perform prefix ignore-case candidates)
         (when company-candidates
           (company-call-frontends 'post-command)))
     (error (message "Company: An error occurred in post-command")
@@ -131,12 +136,11 @@
            (company-cancel)))
   (company-install-map))
 
-(defun company--async-update-candidates (prefix ignore-case candidates point point-max)
+(defun company--async-calculate-candidates (prefix ignore-case candidates)
   (let ((candidates (company--preprocess-candidates candidates)))
     (push (cons prefix candidates) company-candidates-cache)
     (when candidates
-      (setq candidates (company--postprocess-candidates candidates)))
-    (company--async-post-command prefix ignore-case candidates point point-max)))
+      (setq candidates (company--postprocess-candidates candidates)))))
 
 (defun company--fetch-candidates-async (prefix)
   (let* ((non-essential (not (company-explicit-action-p)))
@@ -164,13 +168,13 @@
            (setq company-prefix prefix
                  company-backend -company-backend
                  company--manual-action -company--manual-action
-                 company-candidates -company-previous-candidates)
-           (company--async-update-candidates prefix ignore-case candidates -company-point -company--point-max)
-           (when (null -company-previous-candidates)
-             (if (and (not (cdr company-candidates))
-                      (equal company-common (car company-candidates)))
-                 (company-complete-selection)
-               (company--insert-candidate company-common))))))
+                 company-candidates -company-previous-candidates
+                 company-point -company-point
+                 company--point-max -company--point-max)
+           (let ((this-command 'company-complete-common))
+             (company--async-calculate-candidates prefix ignore-case candidates)
+             (company--async-post-command prefix ignore-case candidates))
+           )))
       (setq company--manual-action nil)
       nil)))
 
