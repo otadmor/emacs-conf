@@ -163,19 +163,26 @@
                      (-company-backend company-backend)
                      (-company--manual-action company--manual-action)
                      (-company-previous-candidates company-candidates)
+                     (buf (current-buffer))
+                     (win (selected-window))
+                     (tick (buffer-chars-modified-tick))
+                     (pos (point))
                      )
          (lambda (candidates)
-           (setq company-prefix prefix
-                 company-backend -company-backend
-                 company--manual-action -company--manual-action
-                 company-candidates -company-previous-candidates
-                 company-point -company-point
-                 company--point-max -company--point-max)
-           (let ((this-command 'company-complete-common)
-                 (company-idle-delay 'now))
-             (company--async-calculate-candidates prefix ignore-case candidates)
-             (company--async-post-command prefix ignore-case candidates))
-           )))
+           (when (and (eq buf (current-buffer))
+                      (eq win (selected-window))
+                      (eq tick (buffer-chars-modified-tick))
+                      (eq pos (point)))
+             (setq company-prefix prefix
+                   company-backend -company-backend
+                   company--manual-action -company--manual-action
+                   company-candidates -company-previous-candidates
+                   company-point -company-point
+                   company--point-max -company--point-max)
+             (let ((this-command 'company-complete-common)
+                   (company-idle-delay 'now))
+               (company--async-calculate-candidates prefix ignore-case candidates)
+               (company--async-post-command prefix ignore-case candidates))))))
       (setq company--manual-action nil)
       nil)))
 
