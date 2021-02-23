@@ -112,6 +112,8 @@
 
 (define-key function-key-map [select] [end])
 
+(add-to-list 'auto-mode-alist '("\\.gdbinit\\'" . gdb-script-mode))
+
 (require 'server-hook)
 
 ;; (find-file (expand-file-name "~/.emacs.d/server.log"))
