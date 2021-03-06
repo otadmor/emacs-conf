@@ -107,10 +107,13 @@
         (company--insert-candidate company-common)
         (setq company-prefix company-common
               company-point (point)
-              company--point-max (point-max)))
-      (run-hook-with-args 'company-completion-started-hook
+              company--point-max (point-max))
+        (run-hook-with-args 'company-completion-started-hook
                           (company-explicit-action-p))
-      (company-call-frontends 'show)))))
+        (company-call-frontends 'show)
+        (company-ensure-emulation-alist)
+        (company-enable-overriding-keymap company-active-map)
+        (company-call-frontends 'update))))))
 
 (defun company--async-perform (prefix ignore-case candidates)
   (if (not candidates)
@@ -118,12 +121,12 @@
             company-candidates nil)
     (cond
      (company-candidates
-      (company--async-continue prefix ignore-case candidates))
+      (company--async-continue prefix ignore-case candidates)
+      (company-ensure-emulation-alist)
+      (company-enable-overriding-keymap company-active-map)
+      (company-call-frontends 'update))
      ((company--should-complete)
-      (company--async-begin-new prefix ignore-case candidates)))
-    (company-ensure-emulation-alist)
-    (company-enable-overriding-keymap company-active-map)
-    (company-call-frontends 'update)))
+      (company--async-begin-new prefix ignore-case candidates)))))
 
 (defun company--async-post-command (prefix ignore-case candidates)
   (condition-case-unless-debug err
