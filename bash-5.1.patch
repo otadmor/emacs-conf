@@ -1,9 +1,9 @@
 diff --git a/examples/loadables/epc_completion.c b/examples/loadables/epc_completion.c
 new file mode 100644
-index 0000000..edb62e1
+index 0000000..d6d3e18
 --- /dev/null
 +++ b/examples/loadables/epc_completion.c
-@@ -0,0 +1,946 @@
+@@ -0,0 +1,952 @@
 +#define DISABLE_MALLOC_WRAPPERS
 +
 +#include <limits.h>
@@ -23,6 +23,8 @@ index 0000000..edb62e1
 +#include <config.h>
 +#include "loadables.h"
 +#include "bashline.h"
++
++#include "jobs.h"
 +
 +#define MAX_REQUEST 0x1000
 +#define MAX_RESPONSE 0x10000
@@ -47,6 +49,10 @@ index 0000000..edb62e1
 +void _rl_free_match_list (char **matches);
 +
 +int complete(char *to_complete, char *buff, size_t buff_len, size_t *out_len) {
++    if (js.j_lastmade != NULL && js.j_lastmade->flags & J_FOREGROUND) {
++        out_len = 0;
++        return 0;
++    }
 +    // results should be quoted seperated by spaces
 +    char **prog_complete_matches = NULL; //sample_matches;
 +
