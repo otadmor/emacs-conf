@@ -7,7 +7,7 @@ fi
 GDB_VERSION=10.1
 PYTHON_VERSION=3.8
 GUILE_VERSION=2.0
-sudo apt-get install libipt-dev gcc-multilib guile-${GUILE_VERSION} guile-${GUILE_VERSION}-dev guile-${GUILE_VERSION}-libs python${PYTHON_VERSION}-dev libmpfr-dev || exit 1
+sudo apt-get install libipt-dev gcc-multilib guile-${GUILE_VERSION} guile-${GUILE_VERSION}-dev guile-${GUILE_VERSION}-libs python${PYTHON_VERSION}-dev libmpfr-dev texi2html texinfo || exit 1
 sudo apt-get install gcc-arm-linux-gnueabi g++-arm-linux-gnueabi || exit 1
 
 # to check --enable-gdbtk --enable-tui, --enable-gtk
