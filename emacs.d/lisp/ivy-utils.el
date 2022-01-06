@@ -250,6 +250,13 @@ Should be run via minibuffer `post-command-hook'."
            (ivy--filter ivy-text ivy--all-candidates))))
     (setq ivy--old-text ivy-text)))
 
+
+(defun counsel-bash-history ()
+  (interactive)
+  (require 'comint)
+  (counsel--browse-history (read-file-lines-reversed (wrap-file-name "~/.bash_history"))
+                           :caller #'counsel-bash-history))
+
 (with-eval-after-load 'ivy
   (setq ivy-format-function #'ivy-format-function-line)
   (setq ivy-magic-tilde nil)
@@ -269,6 +276,8 @@ Should be run via minibuffer `post-command-hook'."
   (advice-add 'ivy-mouse-offset :around #'ivy--mouse-hook)
 
   (advice-add 'ivy-next-history-element :around #'ignore-errors-hook)
-  (advice-add 'ivy-previous-history-element :around #'ignore-errors-hook))
+  (advice-add 'ivy-previous-history-element :around #'ignore-errors-hook)
+
+  (define-key comint-mode-map (kbd "M-r") 'counsel-bash-history))
 
 (provide 'ivy-utils)

@@ -23,4 +23,7 @@
 
   (advice-add 'delete-backward-char :around #'comint-delete-backward-char))
 
+(add-hook 'comint-mode-hook (lambda ()
+                              (setenv "PROMPT_COMMAND" (format "history -a"))))
+
 (provide 'comint-ext)

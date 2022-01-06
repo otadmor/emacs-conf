@@ -131,4 +131,26 @@ end-of-buffer signals; pass the rest to the default handler."
 (with-eval-after-load 'which-func
   (add-hook 'next-error-hook 'update-next-error-which-function))
 
+(with-eval-after-load 'which-func
+  (defun wrap-file-name (file-name)
+    (if (file-remote-p default-directory)
+        (with-parsed-tramp-file-name default-directory nil
+          (tramp-make-tramp-file-name
+           (tramp-file-name-method v)
+           (tramp-file-name-user v)
+           (tramp-file-name-domain v)
+           (tramp-file-name-host v)
+           (tramp-file-name-port v)
+           file-name))
+      file-name)))
+
+(defun read-file-lines-reversed (file-name)
+  (nreverse (split-string
+             (with-temp-buffer
+               (insert-file-contents file-name)
+               (buffer-substring-no-properties
+                (point-min)
+                (point-max)))
+             "\n" t)))
+
 (provide 'utils)
