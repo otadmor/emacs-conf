@@ -145,8 +145,8 @@
 ;; (defvar complete-key (kbd "C-SPC"))
 (defvar sc-status-key (kbd "M-h"))
 
-(global-set-key [f4] 'next-error)
-(global-set-key [(shift f4)] 'previous-error)
+;; (global-set-key [f4] 'next-error)
+;; (global-set-key [(shift f4)] 'previous-error)
 (global-set-key [f1] 'manual-entry)
 (global-set-key [f2] nil)
 (global-set-key [(shift f1)] 'info)
@@ -173,8 +173,8 @@
 (global-set-key (kbd "C-x C-z") (lambda() (interactive) (message "Dont minimize")))
 
 
-(global-set-key [(meta p)] 'run-python)
-(global-set-key [(meta shift p)] 'run-python)
+;(global-set-key [(meta p)] 'run-python)
+;(global-set-key [(meta shift p)] 'run-python)
 
 ;; ;; window resize (alt+shift)
 ;; (global-set-key [(meta shift left)] 'shrink-window-horizontally)
@@ -183,8 +183,8 @@
 ;; (global-set-key [(meta shift up)] 'shrink-window)
 
 (require 'shell)
-(define-key shell-mode-map [(meta p)] 'run-python)
-(define-key shell-mode-map [(meta shift p)] 'run-python)
+;(define-key shell-mode-map [(meta p)] 'run-python)
+;(define-key shell-mode-map [(meta shift p)] 'run-python)
 (define-key shell-mode-map [(shift return)] 'newline)
 
 (require 'windmove)
@@ -205,6 +205,8 @@
 (require 'comint) ; to set comint-output-filter-functions
 (define-key comint-mode-map [C-up] 'comint-previous-matching-input-from-input)
 (define-key comint-mode-map [C-down] 'comint-next-matching-input-from-input)
+(define-key comint-mode-map (kbd "C-p") 'comint-previous-matching-input-from-input)
+(define-key comint-mode-map (kbd "C-n") 'comint-next-matching-input-from-input)
 (define-key comint-mode-map [(shift return)] 'newline)
 (define-key comint-mode-map (kbd "C-c C-]") (lambda () (interactive) (insert (kbd "C-]")) (comint-send-input)))
 
@@ -315,7 +317,7 @@
   (define-key ivy-minibuffer-map [(control return)] #'ivy-done)
   (define-key ivy-minibuffer-map [(meta t)] 'ivy-shell)
   (define-key ivy-minibuffer-map [(meta shift t)] 'ivy-new-shell)
-  (define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
+;;  (define-key ivy-minibuffer-map [(meta p)] 'ivy-python)
   (define-key ivy-minibuffer-map sc-status-key 'ivy-magit-status)
   (define-key ivy-minibuffer-map (kbd "M-<up>") 'ivy-previous-history-element)
   (define-key ivy-minibuffer-map (kbd "M-<down>") 'ivy-next-history-element)
@@ -431,10 +433,10 @@
 (with-eval-after-load 'python-mode
   (require 'python-ext)
 
-  (global-set-key [(meta p)] 'old-python)
-  (global-set-key [(meta shift p)] 'new-python)
-  (define-key shell-mode-map [(meta p)] 'old-python)
-  (define-key shell-mode-map [(meta shift p)] 'new-python)
+;;  (global-set-key [(meta p)] 'old-python)
+;;  (global-set-key [(meta shift p)] 'new-python)
+;;  (define-key shell-mode-map [(meta p)] 'old-python)
+;;  (define-key shell-mode-map [(meta shift p)] 'new-python)
 
   (defalias 'py-complete-completion-at-point (lambda() nil))
 
