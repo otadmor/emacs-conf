@@ -108,9 +108,15 @@
 (setenv "EDITOR" "emacsclient")
 (setenv "VISUAL" "emacsclient")
 
-(with-eval-after-load 'select
-  (require 'xclip))
-
+;(with-eval-after-load 'select
+;  (require 'xclip2))
+(defun getenv-display-hook (orig-fun VARIABLE &optional FRAME)
+  (if (string= VARIABLE "DISPLAY")
+      (replace-regexp-in-string "\n$" "" (shell-command-to-string "[[ \"\$TMUX\" != \"\" ]] && tmux switch-client -r > /dev/null 2>&1 && tmux switch-client -r > /dev/null 2>&1 && tmux show-env DISPLAY 2> /dev/null | grep -oP \"(?<==)(.*)\" || echo $DISPLAY"))
+    (funcall orig-fun VARIABLE FRAME)))
+(advice-add 'getenv :around #'getenv-display-hook)
+(with-eval-after-load 'xclip
+  (xclip-mode 1))
 (xterm-mouse-mode)
 
 (define-key function-key-map [select] [end])
@@ -616,7 +622,7 @@
  ;; If there is more than one, they won't work right.
  '(package-selected-packages
    (quote
-    (which-key tern vdiff company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python swiper company-irony pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra ess))))
+    (xclip ivy which-key tern vdiff company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python swiper company-irony pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra ess))))
 
 (let (
       (need-install nil)
