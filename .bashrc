@@ -5,7 +5,7 @@ cd () {
 
 export ALTERNATE_EDITOR=""
 export EDITOR="emacsclient -t -a emacs"                  # $EDITOR should open in terminal
-export VISUAL="emacsclient -c -a emacs --display=localhost:current -a emacs" #  $VISUAL opens in GUI with non-daemon as alternate
+export VISUAL="emacsclient -c -a emacs -a emacs" #  $VISUAL opens in GUI with non-daemon as alternate
 
 
 # export EDITOR="emacsclient"
@@ -28,7 +28,8 @@ function stfu() {
     disown %%
 }
 
-alias ec="stfu emacsclient -c --display=localhost:current"
+alias emacsclient="export DISPLAY=\`[[ \"\$TMUX\" != \"\" ]] && tmux switch-client -r && tmux switch-client -r && tmux show-env DISPLAY | grep -oP \"(?<==)(.*)\"  || echo \$DISPLAY\`; echo TMUX Display: \$DISPLAY ; emacsclient --display=\$DISPLAY"
+alias ec="stfu emacsclient -c"
 alias start=nautilus
 
 fp () {

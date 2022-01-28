@@ -107,7 +107,8 @@
 (with-eval-after-load 'server
   (advice-add 'server-sentinel :before #'server-sentinel-hook)
   (advice-add 'server-create-window-system-frame :around #'server-create-window-system-frame-hook)
-  (advice-add 'server-create-tty-frame :around #'server-create-tty-frame-hook)
+  (advice-add 'server-create-tty-frame :around #'server-create-window-system-frame-hook)
+  ; (advice-add 'server-create-tty-frame :around #'server-create-tty-frame-hook)
   (setq initial-buffer-choice (lambda () (current-buffer)))
 
   (with-eval-after-load 'persp-mode

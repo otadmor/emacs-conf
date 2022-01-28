@@ -108,6 +108,9 @@
 (setenv "EDITOR" "emacsclient")
 (setenv "VISUAL" "emacsclient")
 
+(with-eval-after-load 'select
+  (require 'xclip))
+
 (xterm-mouse-mode)
 
 (define-key function-key-map [select] [end])
