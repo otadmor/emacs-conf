@@ -116,6 +116,8 @@
 (define-key function-key-map [select] [end])
 
 (add-to-list 'auto-mode-alist '("\\.gdbinit\\'" . gdb-script-mode))
+(add-to-list 'auto-mode-alist '("\\.mojo\\'" . idl-mode))
+(add-to-list 'auto-mode-alist '("\\.mojom\\'" . idl-mode))
 
 (require 'server-hook)
 
