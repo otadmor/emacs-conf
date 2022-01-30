@@ -43,4 +43,4 @@
         )
     (shell-command-to-string (format "xclip -selection c -o -display %s" display))))
 
-(provide 'xclip)
+(provide 'xclip2)
