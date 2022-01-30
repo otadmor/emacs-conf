@@ -29,7 +29,7 @@ function stfu() {
 }
 
 alias emacsclient="export DISPLAY=\`[[ \"\$TMUX\" != \"\" ]] && tmux switch-client -r && tmux switch-client -r && tmux show-env DISPLAY 2> /dev/null | grep -oP \"(?<==)(.*)\"  || echo \$DISPLAY\`; emacsclient --display=\$DISPLAY"
-alias ec="stfu emacsclient -c"
+alias ec="export DISPLAY=\`[[ \"\$TMUX\" != \"\" ]] && tmux switch-client -r && tmux switch-client -r && tmux show-env DISPLAY 2> /dev/null | grep -oP \"(?<==)(.*)\"  || echo \$DISPLAY\`; stfu emacsclient -c --display=\$DISPLAY"
 alias start="export DISPLAY=\`[[ \"\$TMUX\" != \"\" ]] && tmux switch-client -r && tmux switch-client -r && tmux show-env DISPLAY 2> /dev/null | grep -oP \"(?<==)(.*)\"  || echo \$DISPLAY\`; nautilus"
 alias bcompare="export DISPLAY=\`[[ \"\$TMUX\" != \"\" ]] && tmux switch-client -r && tmux switch-client -r && tmux show-env DISPLAY 2> /dev/null | grep -oP \"(?<==)(.*)\"  || echo \$DISPLAY\`; bcompare"
 
