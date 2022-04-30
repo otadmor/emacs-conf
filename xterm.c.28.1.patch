@@ -1,6 +1,6 @@
 diff --git a/src/xterm_orig.c b/src/xterm.c
 index 9a8c3e9..e022fb4 100644
---- a/src/xterm_orig.c
+--- a/src/xterm.c
 +++ b/src/xterm.c
 @@ -235,6 +235,117 @@ static void x_initialize (void);
  
