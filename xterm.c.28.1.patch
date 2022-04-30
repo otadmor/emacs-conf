@@ -1,0 +1,135 @@
+diff --git a/src/xterm_orig.c b/src/xterm.c
+index 9a8c3e9..e022fb4 100644
+--- a/src/xterm_orig.c
++++ b/src/xterm.c
+@@ -235,6 +235,117 @@ static void x_initialize (void);
+ 
+ static bool x_get_current_wm_state (struct frame *, Window, int *, bool *);
+ 
++
++#define CLOCKID CLOCK_REALTIME
++#define CONN_SIG (SIGRTMAX-1)
++#include <signal.h>
++#include "X11/Xlibint.h"
++
++static int connection_fd = -1;
++void
++connection_timeout_handler (int signum)
++{
++    if (connection_fd != -1) {
++        close(connection_fd);
++        connection_fd = -1;
++    }
++}
++Status
++XCheckConnection (
++    register Display *dpy,
++    Drawable d, int fd, double timeout)
++{
++
++    xGetGeometryReply rep;
++    register xResourceReq *req;
++    LockDisplay(dpy);
++    GetResReq(GetGeometry, d, req);
++    Status res = 0;
++
++    sigset_t origmask;
++    sigset_t sigmask;
++    sigemptyset(&sigmask);
++    pthread_sigmask(SIG_SETMASK, &sigmask, &origmask);
++
++    // Create the timer
++    timer_t timerid;
++    struct sigevent sev;
++    struct itimerspec its;
++    long long freq_nanosecs;
++
++    struct sigaction new_action, old_action;
++
++    new_action.sa_handler = connection_timeout_handler;
++    sigemptyset (&new_action.sa_mask);
++    new_action.sa_flags = 0;
++
++    sigaction (CONN_SIG, &new_action, &old_action);
++
++    sev.sigev_notify = SIGEV_SIGNAL;
++    sev.sigev_signo = CONN_SIG;
++    sev.sigev_value.sival_ptr = &timerid;
++    (void) timer_create(CLOCKID, &sev, &timerid);
++
++    freq_nanosecs  = (long long)(timeout * 1000000000);
++    its.it_value.tv_sec  = freq_nanosecs / 1000000000;
++    its.it_value.tv_nsec = freq_nanosecs % 1000000000;
++    its.it_interval.tv_sec = 0;
++    its.it_interval.tv_nsec = 0;
++
++    (void) timer_settime(timerid, 0, &its, NULL);
++    connection_fd = fd;
++
++    res = _XReply (dpy, (xReply *)&rep, 0, xTrue);
++
++    connection_fd = -1;
++    (void) timer_delete(timerid);
++    pthread_sigmask(SIG_SETMASK, &origmask, NULL);
++    sigaction (CONN_SIG, &old_action, NULL);
++
++    UnlockDisplay(dpy);
++    SyncHandle();
++    return (int)res;
++}
++
++int check_frame_connection(struct frame * frame, double timeout)
++{
++    block_input ();
++    int fd = ConnectionNumber (FRAME_X_DISPLAY (frame));
++    int res = XCheckConnection (
++        FRAME_X_DISPLAY (frame), FRAME_OUTER_WINDOW (frame), fd, timeout);
++    unblock_input ();
++    return res;
++}
++
++DEFUN ("x-check-frame", Fx_check_frame,
++       Sx_check_frame, 1, 1, 0,
++       doc: /* check the connection with the display of the given frame.  */)
++  (Lisp_Object f)
++{
++    if (!f)
++        return Qnil;
++
++    if (NILP (f))
++        return Qnil;
++
++    if (Fframep(f) != Qx)
++        return Qnil;
++
++    if (!FLOATP (Vx_check_frame_timeout))
++        return Qnil;
++
++    /* Default timeout is 0.5 second. This timeout will occur
++       only when the libx11 did not noticed the frame was
++       disconnected. */
++    double timeout = XFLOAT_DATA (Vx_check_frame_timeout);
++
++    struct frame *frame = XFRAME (f);
++    int ret = check_frame_connection (frame, timeout);
++    return ret ? Qt : Qnil;
++}
++
++
++
+ /* Flush display of frame F.  */
+ 
+ static void
+@@ -13813,6 +13924,12 @@ consuming frame position adjustments.  In newer versions of GTK, Emacs
+ always uses gtk_window_move and ignores the value of this variable.  */);
+   x_gtk_use_window_move = true;
+ 
++  defsubr (&Sx_check_frame);
++
++  DEFVAR_LISP ("x-check-frame-timeout", Vx_check_frame_timeout,
++    doc: /* How long to wait a display to response. */);
++  Vx_check_frame_timeout = make_float (0.5);
++
+   DEFSYM (Qexpose, "expose");
+ 
+   DEFVAR_LISP ("x-set-frame-visibility-more-laxly",
