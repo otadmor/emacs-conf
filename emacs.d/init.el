@@ -108,6 +108,15 @@
 (setenv "EDITOR" "emacsclient")
 (setenv "VISUAL" "emacsclient")
 
+(define-key input-decode-map "\e[D" [C-left])
+(define-key input-decode-map "\e[C" [C-right])
+(define-key input-decode-map "\e[A" [C-up])
+(define-key input-decode-map "\e[B" [C-down])
+(define-key input-decode-map (kbd "ESC M-O D") [(meta left)])
+(define-key input-decode-map (kbd "ESC M-O C") [(meta right)])
+(define-key input-decode-map (kbd "ESC M-O A") [(meta up)])
+(define-key input-decode-map (kbd "ESC M-O B") [(meta down)])
+
 ;(with-eval-after-load 'select
 ;  (require 'xclip2))
 (defun getenv-display-hook (orig-fun VARIABLE &optional FRAME)
@@ -505,8 +514,18 @@
 
 ;; (global-set-key complete-key 'completion-at-point)
 
-;;(with-eval-after-load 'bash-completion
-;;  (bash-completion-setup))
+(defun indent-or-complete ()
+  "Complete if point is at end of a word, otherwise indent line."
+  (interactive)
+  (if (looking-at "\\>")
+      (completion-at-point)
+    (indent-for-tab-command)
+    ))
+;;(global-set-key (kbd "TAB") 'indent-or-complete)
+
+
+;; (with-eval-after-load 'bash-completion
+;;   (bash-completion-setup))
 ;; (require 'bash-completion)
 
 (with-eval-after-load 'speedbar
@@ -620,6 +639,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(magit-log-section-arguments '("--graph" "--decorate" "-n256"))
  '(package-selected-packages
    (quote
     (xclip ivy which-key tern vdiff company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python swiper company-irony pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra ess))))

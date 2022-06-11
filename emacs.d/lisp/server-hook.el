@@ -58,14 +58,34 @@
                              (lockstep-and-prepare-persp))))
       frame)))
 
+;; (defun server-create-tty-frame-hook(orig-fun &rest args)
+;;   (setq server-inside-emacs-client t)
+;;   (let (
+;;         (frame (apply orig-fun args))
+;;         )
+;;     (run-at-time 0 nil (lambda ()
+;;                          (with-selected-frame frame
+;;                            (lockstep-and-prepare-persp))))
+;;     frame))
 (defun server-create-tty-frame-hook(orig-fun &rest args)
-  (setq server-inside-emacs-client t)
-  (let (
-        (frame (apply orig-fun args))
-        )
-    (run-at-time 0 nil (lambda ()
-                         (with-selected-frame frame
-                           (lockstep-and-prepare-persp))))
+  (let ((frame (apply 'server-create-window-system-frame-hook orig-fun args)))
+    ;(define-key input-decode-map "\eD" [left])
+    ;(define-key input-decode-map "\eC" [right])
+    ;; (define-key input-decode-map "\e[1;2D" [C-left])
+    ;; (define-key input-decode-map "\e[1;2C" [C-right])
+    ;; (define-key input-decode-map "\e[1;2A" [C-up])
+    ;; (define-key input-decode-map "\e[1;2B" [C-down])
+    (define-key input-decode-map "\e[D" [C-left])
+    (define-key input-decode-map "\e[C" [C-right])
+    (define-key input-decode-map "\e[A" [C-up])
+    (define-key input-decode-map "\e[B" [C-down])
+    (define-key input-decode-map (kbd "ESC M-O D") [(meta left)])
+    (define-key input-decode-map (kbd "ESC M-O C") [(meta right)])
+    (define-key input-decode-map (kbd "ESC M-O A") [(meta up)])
+    (define-key input-decode-map (kbd "ESC M-O B") [(meta down)])
+
+    ;(define-key input-decode-map "\eOD" [S-left])
+    ;(define-key input-decode-map "\eOC" [S-right])
     frame))
 
 (defun save-persp-on-delete-frame (frame)
@@ -107,8 +127,7 @@
 (with-eval-after-load 'server
   (advice-add 'server-sentinel :before #'server-sentinel-hook)
   (advice-add 'server-create-window-system-frame :around #'server-create-window-system-frame-hook)
-  (advice-add 'server-create-tty-frame :around #'server-create-window-system-frame-hook)
-  ; (advice-add 'server-create-tty-frame :around #'server-create-tty-frame-hook)
+  (advice-add 'server-create-tty-frame :around #'server-create-tty-frame-hook)
   (setq initial-buffer-choice (lambda () (current-buffer)))
 
   (with-eval-after-load 'persp-mode
