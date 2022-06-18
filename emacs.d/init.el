@@ -209,6 +209,7 @@
 (global-set-key [(meta f12)] 'edit-last-kbd-macro)
 (global-set-key [(control k)] 'kill-whole-line)
 (global-set-key [(control u)] 'yank-rectangle)
+(global-set-key [(control l)] 'erase-buffer)
 (global-set-key [(meta g)] 'goto-line)
 (global-set-key [f6] 'last-buffer)
 (global-set-key [(control tab)] 'next-buff)
