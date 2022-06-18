@@ -108,14 +108,46 @@
 (setenv "EDITOR" "emacsclient")
 (setenv "VISUAL" "emacsclient")
 
-(define-key input-decode-map "\e[D" [C-left])
-(define-key input-decode-map "\e[C" [C-right])
-(define-key input-decode-map "\e[A" [C-up])
-(define-key input-decode-map "\e[B" [C-down])
-(define-key input-decode-map (kbd "ESC M-O D") [(meta left)])
-(define-key input-decode-map (kbd "ESC M-O C") [(meta right)])
-(define-key input-decode-map (kbd "ESC M-O A") [(meta up)])
-(define-key input-decode-map (kbd "ESC M-O B") [(meta down)])
+ (defun setup-input-decode-map ()
+   (let ((map (if (boundp 'input-decode-map)
+                  input-decode-map function-key-map)))
+   ;; Fix CTRL + arrow keys inside screen/tmux
+   (define-key map "\e[1;2A" [S-up])
+   (define-key map "\e[1;2B" [S-down])
+   (define-key map "\e[1;2C" [S-right])
+   (define-key map "\e[1;2D" [S-left])
+   (define-key map "\e[1;5A" [C-up])
+   (define-key map "\e[1;5B" [C-down])
+   (define-key map "\e[1;5C" [C-right])
+   (define-key map "\e[1;5D" [C-left])
+
+   ;; Fix ALT + arrow keys inside screen/tmux
+   (define-key map "\e\e[1;3A" [M-up])
+   (define-key map "\e\e[1;3B" [M-down])
+   (define-key map "\e\e[1;3C" [M-right])
+   (define-key map "\e\e[1;3D" [M-left])
+   ;;(define-key input-decode-map (kbd "ESC M-[ 1 ; 3 D") [M-left])
+
+   (define-key map "\e\e[1;7A" [C-M-up])
+   (define-key map "\e\e[1;7B" [C-M-down])
+   (define-key map "\e\e[1;7C" [C-M-right])
+   (define-key map "\e\e[1;7D" [C-M-left])
+
+   (define-key map "\e\e[1;4A" [S-M-up])
+   (define-key map "\e\e[1;4B" [S-M-down])
+   (define-key map "\e\e[1;4C" [S-M-right])
+   (define-key map "\e\e[1;4D" [S-M-left])
+
+   (define-key map "\e[1;6A" [S-C-up])
+   (define-key map "\e[1;6B" [S-C-down])
+   (define-key map "\e[1;6C" [S-C-right])
+   (define-key map "\e[1;6D" [S-C-left])
+
+   (define-key map "\e\e[1;8A" [S-C-M-up])
+   (define-key map "\e\e[1;8B" [S-C-M-down])
+   (define-key map "\e\e[1;8C" [S-C-M-right])
+   (define-key map "\e\e[1;8D" [S-C-M-left])))
+(add-hook 'tty-setup-hook #'setup-input-decode-map)
 
 ;(with-eval-after-load 'select
 ;  (require 'xclip2))

@@ -1,3 +1,7 @@
-set enable-keypad on
-"\e[D": backward-word
-"\e[C": forward-word
+"\e\e[1;3C": shell-forward-word
+"\e\e[1;3D": shell-backward-word
+"\e[1;5A": history-search-backward
+"\e[1;5B": history-search-forward
+Control-Rubout: backward-kill-word
+Control-DEL: kill-word
+Control-Shift-e: edit-and-execute-command
