@@ -28,7 +28,7 @@
     (apply orig-fun args)))
 
 (defun epc:with-manager-for-connection (connection func)
-  (loop
+  (cl-loop
    for mngr in epc:live-connections collect
    (list (when (eq (epc:manager-connection mngr) connection )
            (funcall func mngr)))))

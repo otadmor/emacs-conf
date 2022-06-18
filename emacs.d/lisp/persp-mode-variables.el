@@ -22,7 +22,7 @@
 (push 'persp-variables-has-minibuffer pmv/specific-vars)
 (push 'persp-variables-has-minibuffer-focus pmv/specific-vars)
 
-;; (defun* pmv/store-current-state-in-persp (&optional (persp (get-current-persp)))
+;; (cl-defun pmv/store-current-state-in-persp (&optional (persp (get-current-persp)))
 ;;   (dolist (var pmv/specific-vars)
 ;;     (if (boundp var)
 ;;         (set-persp-parameter var (symbol-value var) persp)
@@ -30,13 +30,13 @@
 ;;       ))
 ;;   persp)
 
-;; (defun* persp-has-parameter
+;; (cl-defun persp-has-parameter
 ;;     (param-name &optional value (persp (get-current-persp)))
 ;;   (let* ((params (safe-persp-parameters persp))
 ;;          (old-cons (assq param-name params)))
 ;;     (not (null old-cons))))
 
-;; (defun* pmv/restore-state-from-persp (&optional (persp (get-current-persp)))
+;; (cl-defun pmv/restore-state-from-persp (&optional (persp (get-current-persp)))
 ;;   (dolist (var pmv/specific-vars)
 ;;     (if (persp-has-parameter var persp)
 ;;         (set var (persp-parameter var persp))
@@ -58,14 +58,14 @@
             (apply orig-fun args)))
       (apply orig-fun args))))
 
-(defun* pmv/store-current-state-in-persp (&optional (persp (get-current-persp)))
+(cl-defun pmv/store-current-state-in-persp (&optional (persp (get-current-persp)))
   (dolist (var pmv/specific-vars)
     (when (boundp var) (set-persp-parameter var (symbol-value var) persp)))
   (dolist (var pmv/saved-specific-vars)
     (when (boundp var) (set-persp-parameter var (symbol-value var) persp)))
   persp)
 
-(defun* pmv/restore-state-from-persp (&optional (persp (get-current-persp)))
+(cl-defun pmv/restore-state-from-persp (&optional (persp (get-current-persp)))
   (dolist (var pmv/specific-vars)
     (set var (persp-parameter var persp)))
   (dolist (var pmv/saved-specific-vars)

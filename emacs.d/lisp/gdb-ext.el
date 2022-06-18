@@ -9,7 +9,7 @@
 
 
 ; TODO use gdb-goto-breakpoint from gdb-mi
-(defun* mystoppedfun(res)
+(cl-defun mystoppedfun(res)
     ;(message "STOPPED %S" res)
 ;    (message (format "gdb-thread-num %S gdb-frame-number %S gud running %S, gdb update gud running %S gdb show run p %S gdb show stop %S #running %S #stopped %S" gdb-thread-number gdb-frame-number gud-running (gdb-update-gud-running) (gdb-show-run-p) (gdb-show-stop-p) gdb-running-threads-count gdb-stopped-threads-count))
 

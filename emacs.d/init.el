@@ -176,7 +176,6 @@
 
 (require 'scratch-util)
 
-(require 'cl) ; required for defun*
 (require 'utils)
 
 (global-set-key [(control x) (control c)] 'dont-kill-emacs)
@@ -565,19 +564,19 @@
   (with-eval-after-load 'sr-speedbar
     (require 'sr-speedbar-ext)
     ;; (global-set-key (kbd "C-e") 'sr-speedbar-toggle-keep-window)
+    (defun setup-speedbar-keymap ()
+      (define-key speedbar-mode-map (kbd "<backspace>") 'speedbar-up-directory)
+      (define-key speedbar-mode-map [right] 'speedbar-flush-expand-line)
+      (define-key speedbar-mode-map [left] 'speedbar-contract-line-or-go-up)
+      (define-key speedbar-mode-map [M-up] 'speedbar-restricted-prev)
+      (define-key speedbar-mode-map [M-down] 'speedbar-restricted-next)
+      (define-key speedbar-mode-map [up] 'speedbar-prev)
+      (define-key speedbar-mode-map [down] 'speedbar-next)
+      (define-key speedbar-mode-map (kbd "M-g") 'sr-speedbar-navigate)
+      (define-key speedbar-mode-map [(control meta p)] 'winstack-pop)
+      (define-key speedbar-mode-map [(control meta n)] 'winstack-next))
     (add-hook 'speedbar-reconfigure-keymaps-hook
-              '(lambda ()
-                 (define-key speedbar-mode-map (kbd "<backspace>") 'speedbar-up-directory)
-                 (define-key speedbar-mode-map [right] 'speedbar-flush-expand-line)
-                 (define-key speedbar-mode-map [left] 'speedbar-contract-line-or-go-up)
-                 (define-key speedbar-mode-map [M-up] 'speedbar-restricted-prev)
-                 (define-key speedbar-mode-map [M-down] 'speedbar-restricted-next)
-                 (define-key speedbar-mode-map [up] 'speedbar-prev)
-                 (define-key speedbar-mode-map [down] 'speedbar-next)
-                 (define-key speedbar-mode-map (kbd "M-g") 'sr-speedbar-navigate)
-                 (define-key speedbar-mode-map [(control meta p)] 'winstack-pop)
-                 (define-key speedbar-mode-map [(control meta n)] 'winstack-next)
-                 ))
+              #'setup-speedbar-keymap)
 
     (global-set-key (kbd "C-e") 'sr-speedbar-toggle)))
 

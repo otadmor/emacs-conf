@@ -8,13 +8,13 @@
     (apply fun args)))
 
 (defun persp-buffer-name-from-savelist (savelist)
-  (destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
+  (cl-destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
     buffer-name))
 
 (defun persp-load-variables-from-savelist (savelist)
-  (destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
+  (cl-destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
     (mapc #'(lambda (varcons)
-              (destructuring-bind (vname . vvalue) varcons
+              (cl-destructuring-bind (vname . vvalue) varcons
                 (unless (or (eq vname 'buffer-file-name)
                             (eq vname 'major-mode))
                   (set (make-local-variable vname) vvalue))))
@@ -22,11 +22,11 @@
     buffer-name))
 
 (defun persp-load-get-default-directory-from-savelist (savelist)
-  (destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
+  (cl-destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
     (alist-get 'default-directory vars-list)))
 
 (defun persp-is-same-major-mode-from-savelist (savelist mode)
-  (destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
+  (cl-destructuring-bind (buffer-name vars-list &rest _rest) (cdr savelist)
     (let ((buf-mmode (alist-get 'major-mode vars-list)))
       (eq buf-mmode mode))))
 

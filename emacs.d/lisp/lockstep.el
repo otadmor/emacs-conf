@@ -35,8 +35,8 @@
 
 (setq lockstep--recursion-protect t)
 (defun lockstep-needed ()
-  (setq lockstep-frames (remove-if-not 'frame-live-p lockstep-frames))
-  ;; (setq lockstep-frames (remove-if-not (lambda (frame) (eq (framep frame) 'x)) lockstep-frames))
+  (setq lockstep-frames (cl-remove-if-not 'frame-live-p lockstep-frames))
+  ;; (setq lockstep-frames (cl-remove-if-not (lambda (frame) (eq (framep frame) 'x)) lockstep-frames))
   (and lockstep--recursion-protect
        (> (length lockstep-frames) 1)
        (memq (selected-frame) lockstep-frames)))
@@ -48,12 +48,12 @@
     (unwind-protect
         (let* ((this-frame (or master-frame (selected-frame)))
                (other-frames (remove-if (lambda (frame) (equal this-frame frame)) lockstep-frames)))
-          (loop for other-frame in other-frames
+          (cl-loop for other-frame in other-frames
                 do (let ((this-frame-windows
-                          (remove-if-not 'window-live-p
+                          (cl-remove-if-not 'window-live-p
                                          (remove-if 'window-minibuffer-p (window-list this-frame))))
                          (other-frame-windows
-                          (remove-if-not 'window-live-p
+                          (cl-remove-if-not 'window-live-p
                                          (remove-if 'window-minibuffer-p (window-list other-frame)))))
 
                                         ; force this-frame and other-frame to have the same number of windows
@@ -193,7 +193,7 @@ windows can get as small as `window-safe-min-height' and
   (interactive)
   (let ((windows-list))
     (dolist (master-frame-window
-             (remove-if-not 'window-live-p (remove-if 'window-minibuffer-p (window-list (car lockstep-frames))))
+             (cl-remove-if-not 'window-live-p (remove-if 'window-minibuffer-p (window-list (car lockstep-frames))))
              windows-list)
       (push (list
              (window-state-get master-frame-window)
@@ -205,7 +205,7 @@ windows can get as small as `window-safe-min-height' and
   (interactive)
   (let* ((other-frame (selected-frame))
          (other-frame-windows
-          (remove-if-not 'window-live-p (remove-if 'window-minibuffer-p (window-list other-frame)))))
+          (cl-remove-if-not 'window-live-p (remove-if 'window-minibuffer-p (window-list other-frame)))))
     (while (not (equal (length lockstep--windows-backup) (length other-frame-windows)))
       (when (< (length lockstep--windows-backup) (length other-frame-windows))
         (delete-window (pop other-frame-windows)))
@@ -226,7 +226,7 @@ windows can get as small as `window-safe-min-height' and
 
 (with-eval-after-load 'persp-mode
 
-  (defun* lockstep-persp-before-switch (frame-or-window)
+  (cl-defun lockstep-persp-before-switch (frame-or-window)
     (when (and (lockstep-needed)
                (eq frame-or-window 'frame))
       (let* (
@@ -238,7 +238,7 @@ windows can get as small as `window-safe-min-height' and
              (lockstep--recursion-protect nil)
              )
         (persp-frame-save-state this-frame)
-        (loop for frame in other-frames
+        (cl-loop for frame in other-frames
               do (progn
                    (with-selected-frame frame
                      (setq persp-last-persp-name (safe-persp-name persp))
@@ -259,7 +259,7 @@ windows can get as small as `window-safe-min-height' and
                  (lockstep--recursion-protect nil)
                  )
             (persp-frame-save-state this-frame)
-            (loop for frame in other-frames
+            (cl-loop for frame in other-frames
                   do (progn
                        (with-selected-frame frame
                          (persp-restore-window-conf frame persp))))))))
@@ -358,11 +358,11 @@ windows can get as small as `window-safe-min-height' and
   (when (lockstep-needed)
     (let* ((this-frame (selected-frame))
            (other-frames (remove-if (lambda (frame) (equal this-frame frame)) lockstep-frames)))
-      (loop for window in
-            (remove-if-not (lambda (window)
+      (cl-loop for window in
+            (cl-remove-if-not (lambda (window)
                              (and (window-live-p window)
                                   (equal (window-buffer window) (current-buffer))))
-                           (loop for frame in other-frames nconcing (window-list frame)))
+                           (cl-loop for frame in other-frames nconcing (window-list frame)))
             do (unless (eq window (selected-window))
                  (let (
                        (current-point (point))
@@ -385,23 +385,23 @@ Invoke this if you want this behavior; it is useful for auto-complete.
 It would be better to only show the popup in a window synchronized in another frame, but that does
 not seem possible in Emacs 24."
   (interactive)
-  (defun* popup-create (point
-                        width
-                        height
-                        &key
-                        min-height
-                        around
-                        (face 'popup-face)
-                        mouse-face
-                        (selection-face face)
-                        (summary-face 'popup-summary-face)
-                        scroll-bar
-                        margin-left
-                        margin-right
-                        symbol
-                        parent
-                        parent-offset
-                        keymap)
+  (cl-defun popup-create (point
+                          width
+                          height
+                          &key
+                          min-height
+                          around
+                          (face 'popup-face)
+                          mouse-face
+                          (selection-face face)
+                          (summary-face 'popup-summary-face)
+                          scroll-bar
+                          margin-left
+                          margin-right
+                          symbol
+                          parent
+                          parent-offset
+                          keymap)
     "Create a popup instance at POINT with WIDTH and HEIGHT.
 
 MIN-HEIGHT is a minimal height of the popup. The default value is
@@ -477,22 +477,22 @@ KEYMAP is a keymap that will be put on the popup contents."
         (if overflow
             (if foldable
                 (progn
-                  (decf column (- popup-width margin-left margin-right))
+                  (cl-decf column (- popup-width margin-left margin-right))
                   (unless around (move-to-column column)))
               (when (not truncate-lines)
                 ;; Truncate.
                 (let ((d (1+ (- popup-width (- window-width column)))))
-                  (decf popup-width d)
-                  (decf width d)))
-              (decf column margin-left))
-          (decf column margin-left))
+                  (cl-decf popup-width d)
+                  (cl-decf width d)))
+              (cl-decf column margin-left))
+          (cl-decf column margin-left))
 
         ;; Case: no space at the left
         (when (and (null parent)
                    (< column 0))
           ;; Cancel margin left
           (setq column 0)
-          (decf popup-width margin-left)
+          (cl-decf popup-width margin-left)
           (setq margin-left-cancel t))
 
         (dotimes (i height)
@@ -518,7 +518,7 @@ KEYMAP is a keymap that will be put on the popup contents."
             (setq w (+ popup-width (length prefix)))
             (while (and (not (eolp)) (> w 0))
               (setq dangle nil)
-              (decf w (char-width (char-after)))
+              (cl-decf w (char-width (char-after)))
               (forward-char))
             (if (< w 0)
                 (setq postfix (make-string (- w) ? )))
@@ -532,7 +532,7 @@ KEYMAP is a keymap that will be put on the popup contents."
             (aset overlays
                   (if (> direction 0) i (- height i 1))
                   overlay)))
-        (loop for p from (- 10000 (* depth 1000))
+        (cl-loop for p from (- 10000 (* depth 1000))
               for overlay in (nreverse (append overlays nil))
               do (overlay-put overlay 'priority p))
         (let ((it (make-popup :point point
