@@ -458,8 +458,8 @@
 ; (global-set-key [(control f8)] 'ascope-find-all-symbol-assignments)
 ;(ascope-init "/home/ubuntu/sources/chromium/")
 
-(with-eval-after-load 'websocket
-  (require 'jss)) ; remote js debugger
+;(with-eval-after-load 'websocket
+;  (require 'jss)) ; remote js debugger
 
 ;(require 'webkit)
 
