@@ -327,7 +327,7 @@
   (define-key compilation-mode-map (kbd "n") 'next-error-no-select)
   (define-key compilation-mode-map (kbd "p") 'previous-error-no-select))
 
-(require 'ivy-rich-ext)
+;(require 'ivy-rich-ext)
 
 (require 'winstack-list)
 
@@ -667,6 +667,7 @@
 (setq vterm-always-compile-module nil)
 (require 'vterm)
 
+;  ivy-rich
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -675,7 +676,7 @@
  '(magit-log-section-arguments '("--graph" "--decorate" "-n256"))
  '(package-selected-packages
    (quote
-    (xclip ivy which-key tern vdiff company-jedi company-quickhelp persp-mode debbugs ivy-rich pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python swiper company-irony pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra ess))))
+    (xclip ivy which-key tern vdiff company-jedi company-quickhelp persp-mode debbugs pcre2el company-rtags company-math doom-themes demangle-mode daemons coverage charmap browse-at-remote bifocal powerline ag dumb-jump counsel sr-speedbar python swiper company-irony pungi bash-completion multiple-cursors magit-gerrit web-beautify json-mode websocket js-comint web-mode pyimport bind-key company-web company-irony-c-headers android-mode anaconda-mode company-shell company magit hydra ess))))
 
 (let (
       (need-install nil)
