@@ -157,6 +157,12 @@
     (funcall orig-fun VARIABLE FRAME)))
 (advice-add 'getenv :around #'getenv-display-hook)
 (with-eval-after-load 'xclip
+  (defun disable-xclip-on-tty ()
+    (xclip-mode 0)
+    (require 'osc52)
+    (with-eval-after-load 'osc52
+      (osc52-set-cut-function)))
+  (add-hook 'tty-setup-hook #'disable-xclip-on-tty)
   (xclip-mode 1))
 (xterm-mouse-mode)
 
@@ -218,6 +224,7 @@
 
 (global-set-key [(meta left)] 'backward-sexp)
 (global-set-key [(meta right)] 'forward-sexp)
+;(global-set-key (kbd "C-h") 'backward-kill-word)
 
 (global-set-key (kbd "C-x C-z") (lambda() (interactive) (message "Dont minimize")))
 

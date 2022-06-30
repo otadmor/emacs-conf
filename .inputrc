@@ -2,6 +2,7 @@
 "\e\e[1;3D": shell-backward-word
 "\e[1;5A": history-search-backward
 "\e[1;5B": history-search-forward
+"\C-h": backward-kill-word
 Control-Rubout: backward-kill-word
 Control-DEL: kill-word
 Control-Shift-e: edit-and-execute-command
