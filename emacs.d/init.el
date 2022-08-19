@@ -251,6 +251,7 @@
 
 (global-set-key (kbd "M-d") 'switch-to-minibuffer)
 
+(global-set-key (kbd "C-x ,") 'rename-buffer)
 
 
 ;; (require 'redo+)
