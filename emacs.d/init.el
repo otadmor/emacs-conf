@@ -189,7 +189,7 @@
 (global-set-key [(control x) (c)] 'exit-emacs-or-close-frame)
 (global-set-key [(control z)] 'undo)
 (global-set-key [f9] 'compile)
-(global-set-key (kbd "C-l") 'my-toggle-truncate-lines)
+;(global-set-key (kbd "C-l") 'my-toggle-truncate-lines)
 
 
 (defvar next-key (kbd "C-M-n"))
@@ -381,7 +381,7 @@
   (define-key ivy-minibuffer-map (kbd "C-d") 'ivy-occur)
   (define-key ivy-minibuffer-map (kbd "C-w") 'ivy-yank-word)
 
-  (define-key ivy-minibuffer-map (kbd "C-l") 'my-toggle-truncate-lines)
+  ;(define-key ivy-minibuffer-map (kbd "C-l") 'my-toggle-truncate-lines)
 
   (global-set-key (kbd "M-c") 'ivy-resume)
 
@@ -399,7 +399,7 @@
     (define-key swiper-map (kbd "C-s") 'ivy-next-line-or-history-and-call)
     (define-key swiper-map (kbd "C-r") 'ivy-previous-line-or-history-and-call)
 
-    (define-key swiper-map (kbd "C-l") 'my-toggle-truncate-lines)
+    ;(define-key swiper-map (kbd "C-l") 'my-toggle-truncate-lines)
     (define-key swiper-map (kbd "M-C-p") 'swiper--goto-original-point))
 
   (with-eval-after-load 'counsel
