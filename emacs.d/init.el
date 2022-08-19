@@ -244,10 +244,30 @@
 (define-key shell-mode-map [(shift return)] 'newline)
 
 (require 'windmove)
-(global-set-key (kbd "C-x <left>") 'windmove-left)
-(global-set-key (kbd "C-x <right>") 'windmove-right)
-(global-set-key (kbd "C-x <up>") 'windmove-up)
-(global-set-key (kbd "C-x <down>") 'windmove-down)
+(global-set-key (kbd "C-x <left>") (lambda (&optional arg) (interactive "P")
+                                     (condition-case err
+                                         (windmove-left arg)
+                                       (user-error (if (null (getenv "TMUX"))
+                                                       (message "%S" err)
+                                                     (shell-command-to-string "tmux select-pane -L"))))))
+(global-set-key (kbd "C-x <right>") (lambda (&optional arg) (interactive "P")
+                                     (condition-case err
+                                         (windmove-right arg)
+                                       (user-error (if (null (getenv "TMUX"))
+                                                       (message "%S" err)
+                                                     (shell-command-to-string "tmux select-pane -R"))))))
+(global-set-key (kbd "C-x <up>") (lambda (&optional arg) (interactive "P")
+                                     (condition-case err
+                                         (windmove-up arg)
+                                       (user-error (if (null (getenv "TMUX"))
+                                                       (message "%S" err)
+                                                     (shell-command-to-string "tmux select-pane -U"))))))
+(global-set-key (kbd "C-x <down>") (lambda (&optional arg) (interactive "P")
+                                     (condition-case err
+                                         (windmove-down arg)
+                                       (user-error (if (null (getenv "TMUX"))
+                                                       (message "%S" err)
+                                                     (shell-command-to-string "tmux select-pane -D"))))))
 
 (global-set-key (kbd "M-d") 'switch-to-minibuffer)
 

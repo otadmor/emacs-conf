@@ -23,6 +23,13 @@ if [[ "$TERM" == "dumb" ]] ; then
     # export PYTHONSTARTUP=~/.emacs.d/lisp/py_epc_completion.py
 fi
 
+if [[ "$TERM" != "dumb" ]] && [[ "$TMUX" != "" ]]; then
+    bind -x '"\C-x\e[C":"tmux select-pane -L"'
+    bind -x '"\C-x\e[D":"tmux select-pane -R"'
+    bind -x '"\C-x\e[A":"tmux select-pane -U"'
+    bind -x '"\C-x\e[B":"tmux select-pane -D"'
+fi
+
 function stfu() {
     $@ >/dev/null 2>&1 &
     disown %%
