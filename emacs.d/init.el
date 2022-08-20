@@ -161,6 +161,13 @@
     (xclip-mode 0)
     (require 'osc52)
     (with-eval-after-load 'osc52
+      ;; there might be a bug when calculating the actual length in the package osc52.
+      ;; currently it takes the utf-8 string and multiplies it by 3.
+      ;; the actual byte length of a utf-8 string is not easy to calculate (as each char have
+      ;; different encoding bytes). anyway, i couldnt find the limit in tmux or windows terminal
+      ;; and the number 2335289 is about the maximum i was able to copy, which is bigger than the
+      ;; default 100000
+      (setq osc52-max-sequence 2335289)
       (osc52-set-cut-function)))
   (add-hook 'tty-setup-hook #'disable-xclip-on-tty)
   (xclip-mode 1))
