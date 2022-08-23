@@ -60,9 +60,10 @@ and `shell-dirtrack-mode'."
 
   (advice-add 'delete-backward-char :around #'comint-delete-backward-char)
 
-;; (add-hook 'comint-mode-hook (lambda ()
-;;                               (setenv "PROMPT_COMMAND" (format "history -a"))))
-  (shell-dirtrack-mode 0)
-  (dirtrack-mode 0)
+  (add-hook 'comint-mode-hook (lambda ()
+                                (shell-dirtrack-mode 0)
+                                (dirtrack-mode 0)
+                                ;; (setenv "PROMPT_COMMAND" (format "history -a"))
+                                ))
   (add-hook 'comint-output-filter-functions #'comint-osc-process-output))
 (provide 'comint-ext)
