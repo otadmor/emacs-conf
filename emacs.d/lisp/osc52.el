@@ -45,14 +45,16 @@ clipboard.
 This function sends a raw OSC 52 sequence and will work on a bare terminal
 emulators.  It does not work on screen or tmux terminals, since they don't
 natively support OSC 52."
+  ;; (* (/ ((length string) + 2) 3) 4)
   (let ((b64-length (+ (* (length string) 3) 2)))
     (if (<= b64-length osc52-max-sequence)
         (send-string-to-terminal
          (concat "\e]52;c;"
                  (osc52-encode-utf8-base64 string t)
                  "\07"))
-        (message "Selection too long to send to terminal %d" b64-length)
-        (sit-for 2))))
+
+      (message "Selection too long to send to terminal %d" b64-length)
+      (sit-for 2))))
 (defun osc52-select-text-dcs (string &optional replace yank-handler)
   "Copy STRING to the system clipboard using the OSC 52 escape sequence, for
 screen users.
@@ -72,15 +74,44 @@ hitting screen's max DCS length."
                  (replace-regexp-in-string "\n" "\e\\\\\eP"
                                            (osc52-encode-utf8-base64 string))
                  "\07\e\\"))
-        (message "Selection too long to send to terminal %d" b64-length)
-        (sit-for 2))))
+      (message "Selection too long to send to terminal %d" b64-length)
+      (sit-for 2))))
+
+(defun osc52-select-text-tmux (string &optional replace yank-handler)
+  "Copy STRING to the system clipboard using the OSC 52 escape sequence, for
+tmux users.
+
+Set `interprogram-cut-function' to this when using the screen program, and your
+system clipboard will be updated whenever you copy a region of text in emacs.
+
+If the resulting OSC 52 sequence would be longer than
+`osc52-max-sequence', then the STRING is not sent to the system
+clipboard.
+
+This function wraps the OSC 52 in a Device Control String sequence.  This causes
+screen to pass the wrapped OSC 52 sequence along to the host termianl.  This
+function also chops long DCS sequences into multiple smaller ones to avoid
+hitting screen's max DCS length."
+  (let ((b64-length (+ (* (length string) 3) 2)))
+    (if (<= b64-length osc52-max-sequence)
+      (send-string-to-terminal
+       (concat "\ePtmux;\e"
+               (concat "\e]52;c;"
+                       (osc52-encode-utf8-base64 (encode-coding-string string 'binary))
+                       "\a")
+               "\e\\"))
+      (message "Selection too long to send to terminal %d" b64-length)
+      (sit-for 2))))
+
 (defun osc52-set-cut-function ()
   "Initialize the `interprogram-cut-function' based on the value of
 `window-system' and the TERM environment variable."
   (if (not window-system)
-      (setq interprogram-cut-function
-            (if (string-match "^screen"
-                              (getenv-internal "TERM" initial-environment))
-                'osc52-select-text-dcs
-                'osc52-select-text))))
+      (setq interprogram-cut-function 'osc52-select-text)))
+      ;; (setq interprogram-cut-function
+      ;;       (if (string-match "^screen" (getenv-internal "TERM" initial-environment))
+      ;;           'osc52-select-text-dcs
+      ;;         (if (string-match "^tmux" (getenv-internal "TERM" initial-environment))
+      ;;             'osc52-select-text-tmux
+      ;;           'osc52-select-text)))))
 (provide 'osc52)
