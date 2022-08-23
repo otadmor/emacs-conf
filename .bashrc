@@ -73,3 +73,13 @@ addr2sym () {
         -ex "python print(sym_info)" \
         -ex "quit" | tail -n 1
 }
+
+function myprompt () {
+  history -a
+  # printf "\e]7;file://%s%s\e\\" "$HOSTNAME" "$PWD"
+}
+PROMPT_COMMAND=myprompt
+if [[ "$TERM" == "dumb" ]] ; then
+    PS1="\e]7;file://\u@\h\$PWD\e\\ ${PS1}"
+    # PS1="\$(echo -ne '\033]7;adb://'`getprop ro.serialno`$PWD'\033\\') $PS1"
+fi

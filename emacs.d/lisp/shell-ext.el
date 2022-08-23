@@ -92,7 +92,7 @@
     (funcall orig-fun START END PROP VALUE OBJECT)))
 
 (with-eval-after-load 'shell
-  (add-hook 'shell-mode-hook 'track-shell-directory/procfs)
+  ;; (add-hook 'shell-mode-hook 'track-shell-directory/procfs)
   (advice-add 'font-lock-prepend-text-property :around #'font-lock-prepend-text-property--hook))
 
 (provide 'shell-ext)
