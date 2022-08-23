@@ -34,22 +34,35 @@ alias emacsclient="export DISPLAY=\`[[ \"\$TMUX\" != \"\" ]] && tmux switch-clie
 alias ec="export DISPLAY=\`[[ \"\$TMUX\" != \"\" ]] && tmux switch-client -r && tmux switch-client -r && tmux show-env DISPLAY 2> /dev/null | grep -oP \"(?<==)(.*)\"  || echo \$DISPLAY\`; stfu emacsclient -c --display=\$DISPLAY"
 alias start="export DISPLAY=\`[[ \"\$TMUX\" != \"\" ]] && tmux switch-client -r && tmux switch-client -r && tmux show-env DISPLAY 2> /dev/null | grep -oP \"(?<==)(.*)\"  || echo \$DISPLAY\`; nautilus"
 alias bcompare="export DISPLAY=\`[[ \"\$TMUX\" != \"\" ]] && tmux switch-client -r && tmux switch-client -r && tmux show-env DISPLAY 2> /dev/null | grep -oP \"(?<==)(.*)\"  || echo \$DISPLAY\`; bcompare"
-
+alias ps="ps -ww"
 fp () {
     grep -RP "$1"
+    # find . | xargs -I{} /bin/sh -c "python -c \"import sys; import os; sys.exit(not (os.path.isfile('{}') and b'$1' in open('{}', 'rb').read()))\" && echo {}"
 }
 
 ff () {
     find -path "*$1*"
+    # find . | grep $1
 }
 
 fs () {
-    find -name '*.so*' -exec nm -a --print-file-name --defined-only --dynamic {} \; 2> /dev/null | grep $1
+    find . -type f -regex '.*\.so*\|.*\.a' -exec nm --print-file-name --defined-only --dynamic {} \; 2> /dev/null | grep $1
+    # find -name '*.so*' -exec nm -a --print-file-name --defined-only --dynamic {} \; 2> /dev/null | grep $1
 }
 
 fstr () {
     find -type f | xargs strings --print-file-name | grep -E ".*?\:.*$1"
 }
+
+grepsymbol () {
+    readelf -s "$1" | grep "$2" | awk -v fn="$1" '{print fn ": " $0}'
+}
+
+ffs () {
+    find . -type f -regex '.*\.so*\|.*\.a' -exec /bin/bash -c "readelf -s \"{}\" | grep \"$1\" | awk -v fn=\"{}\" '{print fn \": \" \$0}'" "{}" "$1" 2> /dev/null \;
+}
+# readelf -s
+#  \| grep $1 \| awk '{print "{}: " $0}'
 
 addr2sym () {
     gdb -nh \
