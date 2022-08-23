@@ -35,7 +35,7 @@ and `shell-dirtrack-mode'."
                                                      ;; url-unhex-string
                                                      :localname (url-filename url))))))))
     (when fullpath
-       (message "FULL %S" fullpath)
+      ;; (message "FULL %S" fullpath)
       (ignore-errors (cd-absolute fullpath)))))
 
 (defun comint-delete-backward-char(fun &rest args)
