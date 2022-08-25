@@ -228,6 +228,7 @@
 (global-set-key (kbd "C-S-<iso-lefttab>") 'prev-buffer)
 (global-set-key [(pause)] 'kill-this-buffer)
 (global-set-key (kbd "C-M-k") 'kill-this-buffer)
+(global-set-key (kbd "C-x g") 'revert-buffer-quick)
 
 (global-set-key [(meta left)] 'backward-sexp)
 (global-set-key [(meta right)] 'forward-sexp)
