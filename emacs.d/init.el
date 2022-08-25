@@ -285,7 +285,8 @@
 ;; (require 'redo+)
 ;; (global-set-key [(control z)] 'undo)
 ;; (global-set-key [(control y)] 'redo)
-
+(setq-default explicit-shell-file-name "/bin/bash")
+;;(setq-default shell-file-name "/bin/bash")
 
 (require 'comint) ; to set comint-output-filter-functions
 (define-key comint-mode-map [C-up] 'comint-previous-matching-input-from-input)
