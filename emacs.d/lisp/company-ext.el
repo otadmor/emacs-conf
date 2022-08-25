@@ -206,8 +206,9 @@
                  start end collection predicate)
       (company-completion-in-region start end collection predicate)))
 
-  (define-key company-active-map (kbd "C-i") (lambda()
+  (define-key company-active-map (kbd "C-j") (lambda()
                                                (interactive)
+                                               (company-abort)
                                                (let ((completion-in-region-function company-orig--completion-in-region-function))
                                                  (completion-at-point))))
 

@@ -281,6 +281,13 @@ Should be run via minibuffer `post-command-hook'."
   (advice-add 'ivy-next-history-element :around #'ignore-errors-hook)
   (advice-add 'ivy-previous-history-element :around #'ignore-errors-hook)
 
-  (define-key comint-mode-map (kbd "M-r") 'counsel-bash-history))
+  (define-key comint-mode-map (kbd "M-r") 'counsel-bash-history)
+
+  (define-key ivy-minibuffer-map (kbd "C-j") (lambda ()
+                                               (interactive)
+                                               (ivy-quit-and-run
+                                                 (completion-at-point)
+                                                 ;;(company--continue)
+                                                 ))))
 
 (provide 'ivy-utils)
