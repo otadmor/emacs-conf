@@ -82,4 +82,5 @@ PROMPT_COMMAND=myprompt
 if [[ "$TERM" == "dumb" ]] ; then
     PS1="${PS1}\e]7;file://\u@\H\$PWD\e\\"
     # PS1="\$(echo -ne '\033]7;adb://'`getprop ro.serialno`$PWD'\033\\') $PS1"
+    alias adb=~/.local/bin/adb_osc7
 fi
