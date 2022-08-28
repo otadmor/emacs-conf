@@ -264,6 +264,12 @@
                                                       (call-interactively 'mouse-set-point)
                                                       (call-interactively 'find-file-at-point)))
 
+(with-eval-after-load 'ffap
+  (defun ffap-string-at-point--remove-asterisk-hook(orig-fun &rest args)
+    (let ((res (apply orig-fun args)))
+      (s-chop-suffix "*" (s-chop-suffix "$" res))))
+  (advice-add 'ffap-string-at-point :around #'ffap-string-at-point--remove-asterisk-hook))
+
 (require 'windmove)
 (global-set-key (kbd "C-x <left>") (lambda (&optional arg) (interactive "P")
                                      (condition-case err
