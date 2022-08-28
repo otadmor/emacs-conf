@@ -129,8 +129,9 @@
   (with-eval-after-load 'xterm
     ;; Fix S-insert mapping
     ;; (define-key global-map [xterm-paste] 'transient-xterm-paste))
-    (defalias 'xterm-paste 'transient-xterm-paste)
-
+    (defalias 'xterm-paste 'transient-xterm-paste))
+  (let ((map (if (boundp 'input-decode-map)
+                 input-decode-map function-key-map)))
     ;; Fix CTRL + arrow keys inside screen/tmux
     (define-key map "\e[1;2A" [S-up])
     (define-key map "\e[1;2B" [S-down])
