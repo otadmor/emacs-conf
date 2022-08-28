@@ -215,12 +215,6 @@ connection if a previous connection has died for some reason."
            (user (tramp-file-name-user vec))
            (device (tramp-adb-get-device vec)))
 
-      ;; Maybe we know already that "su" is not supported.  We cannot
-      ;; use a connection property, because we have not checked yet
-      ;; whether it is still the same device.
-      (when (and user (not (tramp-get-file-property vec "" "su-command-p" t)))
-        (tramp-error vec 'file-error "Cannot switch to user `%s'" user))
-
       (unless (process-live-p p)
         (save-match-data
 	  (when (and p (processp p)) (delete-process p))
@@ -258,6 +252,10 @@ connection if a previous connection has died for some reason."
 
 	      ;; Set connection-local variables.
 	      (tramp-set-connection-local-variables vec)
+
+	      ;; Change user if indicated.
+	      (when (tramp-get-file-property vec "" "su-command-p" t)
+	        (tramp-adb-send-command vec (format "su")))
 
 	      ;; Change prompt.
 	      (tramp-set-connection-property
