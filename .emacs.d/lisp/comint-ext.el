@@ -303,6 +303,29 @@ connection if a previous connection has died for some reason."
 	      ;; Mark it as connected.
 	      (tramp-set-connection-property p "connected" t)))))))
 
+  (defun tramp-adb-get-ls-command (vec)
+    "Determine `ls' command and its arguments."
+    (with-tramp-connection-property vec "ls"
+      (tramp-message vec 5 "Finding a suitable `ls' command")
+      (cond
+       ;; Support Android derived systems where "ls" command is provided
+       ;; by GNU Coreutils.  Force "ls" to print one column and set
+       ;; time-style to imitate other "ls" flavors.
+       ((tramp-adb-send-command-and-check
+         vec (concat "ls --time-style=long-iso "
+                     (tramp-get-remote-null-device vec)))
+        "ls -1 --time-style=long-iso")
+       ;; Can't disable coloring explicitly for toybox ls command.  We
+       ;; also must force "ls" to print just one column.
+       ((tramp-adb-send-command-and-check vec "toybox") "toybox ls -1")
+       ;; On CyanogenMod based system BusyBox is used and "ls" output
+       ;; coloring is enabled by default.  So we try to disable it when
+       ;; possible.
+       ((tramp-adb-send-command-and-check
+         vec (concat "ls --color=never -al " (tramp-get-remote-null-device vec)))
+        "ls --color=never")
+       (t "ls"))))
+
   (defun tramp-adb-handle-file-name-all-completions (filename directory)
     "Like `file-name-all-completions' for Tramp files."
     (all-completions
