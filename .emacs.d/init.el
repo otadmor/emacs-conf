@@ -263,7 +263,7 @@
                                                       (call-interactively 'find-file-at-point)))
 
 (with-eval-after-load 'ffap
-  (defun ffap-string-at-point--remove-asterisk-hook(orig-fun &rest args)
+  (defun ffap-string-at-point--remove-asterisk-hook (orig-fun &rest args)
     (let ((res (apply orig-fun args)))
       (s-chop-suffix "*" (s-chop-suffix "$" res))))
   (defun ffap-read-file-or-url--open-direct-hook (orig-fun prompt guess)
