@@ -108,11 +108,28 @@
 (setenv "EDITOR" "emacsclient")
 (setenv "VISUAL" "emacsclient")
 
+(defun transient-xterm-paste (event)
+  "Handle the start of a terminal paste operation."
+  (interactive "e")
+  (unless (eq (car-safe event) 'xterm-paste)
+    (error "xterm-paste must be found to xterm-paste event"))
+  (let ((pasted-text (nth 1 event)))
+    (when (and transient-mark-mode mark-active)
+      (delete-region (region-beginning) (region-end)))
+    (if xterm-store-paste-on-kill-ring
+        ;; Put the text onto the kill ring and then insert it into the
+        ;; buffer.
+        (let ((interprogram-paste-function (lambda () pasted-text)))
+          (call-interactively 'yank))
+      ;; Insert the text without putting it onto the kill ring.
+      (push-mark)
+      (insert-for-yank pasted-text))))
+
 (defun setup-input-decode-map ()
-  (let ((map (if (boundp 'input-decode-map)
-                 input-decode-map function-key-map)))
+  (with-eval-after-load 'xterm
     ;; Fix S-insert mapping
-    ;; (define-key global-map [xterm-paste] #'yank)
+    ;; (define-key global-map [xterm-paste] 'transient-xterm-paste))
+    (defalias 'xterm-paste 'transient-xterm-paste)
 
     ;; Fix CTRL + arrow keys inside screen/tmux
     (define-key map "\e[1;2A" [S-up])
