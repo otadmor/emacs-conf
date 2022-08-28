@@ -1,5 +1,7 @@
 #!/bin/bash
 
+ANDROID_HOST=$(hostname -f)
+ANDROID_PORT=5037
 ISSHELL=0
 NOTINTERACTIVESHELL=0
 POSITIONAL_ARGS=()
@@ -8,33 +10,66 @@ ARGS_TO_COMMAND=()
 
 while [[ $# -gt 0 ]]; do
     if [[ "$ISSHELL" == "1" ]]; then
-        NOTINTERACTIVESHELL=1
-        break
+        case $1 in
+            -e)
+                POSITIONAL_ARGS+=("$1")
+                shift # past argument
+                POSITIONAL_ARGS+=("$1")
+                shift # past value
+                ;;
+            -n|-T|-t|-x)
+                POSITIONAL_ARGS+=("$1")
+                shift # past value
+                ;;
+            *)
+                NOTINTERACTIVESHELL=1
+                break
+                ;;
+        esac
+    else
+        case $1 in
+            -s)
+                ANDROID_SERIAL="$2"
+                POSITIONAL_ARGS+=("$1")
+                ARGS_TO_COMMAND+=("$1")
+                shift # past argument
+                POSITIONAL_ARGS+=("$1")
+                ARGS_TO_COMMAND+=("$1")
+                shift # past value
+                ;;
+            -H)
+                ANDROID_HOST="$2"
+                POSITIONAL_ARGS+=("$1")
+                ARGS_TO_COMMAND+=("$1")
+                shift # past argument
+                POSITIONAL_ARGS+=("$1")
+                ARGS_TO_COMMAND+=("$1")
+                shift # past value
+                ;;
+            -P)
+                ANDROID_PORT="$2"
+                POSITIONAL_ARGS+=("$1")
+                ARGS_TO_COMMAND+=("$1")
+                shift # past argument
+                POSITIONAL_ARGS+=("$1")
+                ARGS_TO_COMMAND+=("$1")
+                shift # past value
+                ;;
+            shell)
+                ISSHELL=1
+                POSITIONAL_ARGS+=("$1")
+                shift # past value
+                ;;
+            devices|help|version|connect|disconnect|pair|forward|ppp|reverse|mdns|push|pull|sync|emu|install|install-multiple|install-multi-package|uninstall|backup|restore|bugreport|jdwp|logcat|disable-verity|enable-verity|keygen|wait-for-usb-device|wait-for-usb-recovery|wait-for-usb-rescue|wait-for-usb-sideload|wait-for-usb-bootloader|wait-for-usb-disconnect|wait-for-local-device|wait-for-local-recovery|wait-for-local-rescue|wait-for-local-sideload|wait-for-local-bootloader|wait-for-local-disconnect|wait-for-any-device|wait-for-any-recovery|wait-for-any-rescue|wait-for-any-sideload|wait-for-any-bootloader|wait-for-any-disconnect|wait-for-device|wait-for-recovery|wait-for-rescue|wait-for-sideload|wait-for-bootloader|wait-for-disconnect|get-state|get-serialno|get-devpath|remount|reboot|sideload|root|unroot|usb|tcpip|start-server|kill-server|reconnect)
+                break
+                ;;
+            *)
+                POSITIONAL_ARGS+=("$1") # save positional arg
+                ARGS_TO_COMMAND+=("$1")
+                shift # past argument
+                ;;
+        esac
     fi
-    case $1 in
-        -s)
-            ANDROID_SERIAL="$2"
-            POSITIONAL_ARGS+=("$1")
-            ARGS_TO_COMMAND+=("$1")
-            shift # past argument
-            POSITIONAL_ARGS+=("$1")
-            ARGS_TO_COMMAND+=("$1")
-            shift # past value
-            ;;
-        shell)
-            ISSHELL=1
-            POSITIONAL_ARGS+=("$1")
-            shift # past value
-            ;;
-        devices|help|version|connect|disconnect|forward|ppp|reverse|push|pull|sync|emu|install|uninstall|backup|restore|bugreport|jdwp|logcat|disable-verity|enable-verity|keygen|wait-for-usb-device|wait-for-usb-recovery|wait-for-usb-sideload|wait-for-usb-bootloader|wait-for-local-device|wait-for-local-recovery|wait-for-local-sideload|wait-for-local-bootloader|wait-for-any-device|wait-for-any-recovery|wait-for-any-sideload|wait-for-any-bootloader|get-state|get-serialno|get-devpath|remount|reboot|sideload|root|unroot|usb|tcpip|start-server|kill-server|reconnect)
-            break
-            ;;
-        *)
-            POSITIONAL_ARGS+=("$1") # save positional arg
-            ARGS_TO_COMMAND+=("$1")
-            shift # past argument
-            ;;
-    esac
 done
 
 while [[ $# -gt 0 ]]; do
@@ -52,9 +87,12 @@ if [[ "$ISSHELL" == "1" ]] && [[ "$NOTINTERACTIVESHELL" == "0" ]]; then
     fi
     if [[ "${ANDROID_SERIAL}" != "" ]]; then
         if adb "${ARGS_TO_COMMAND[@]}" devices | tail -n +2 | awk '{print $1}' | grep -E "^${ANDROID_SERIAL}\$"; then
-            FIRSTINPUT="PS1=\"\${PS1}\$(echo -ne '\\033]7;adb://${ANDROID_SERIAL}\$PWD\\033\\\\') \""
+            if [[ "${ANDROID_HOST}" == "" ]] || [[ "${ANDROID_HOST}" == "localhost" ]] || [[ "${ANDROID_HOST}" == "127.0.0.1" ]]; then
+                ANDROID_HOST=$(hostname -f)
+            fi
+            FIRSTINPUT="PS1=\"\${PS1}\$(echo -ne '\\033]7;adb://${ANDROID_SERIAL}@${ANDROID_HOST}:${ANDROID_PORT}\$PWD\\033\\\\') \""
             #(echo $FIRSTINPUT ; cat - ; echo -ne $'\04') | exec adb "$@"
-            exec adb "$@" < <(echo $FIRSTINPUT ; cat - ; echo -ne $'\04')
+            exec adb "$@" -tt < <(echo $FIRSTINPUT ; cat - ; echo -ne $'\04')
         fi
     fi
 fi

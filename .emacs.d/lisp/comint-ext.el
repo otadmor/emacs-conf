@@ -47,19 +47,19 @@ parses to
       ;; deactivate the mark of the current-buffer.
       (let ((deactivate-mark nil))
         (set-syntax-table url-parse-syntax-table)
-                (erase-buffer)
-                (insert url)
-                (goto-char (point-min))
+	(erase-buffer)
+	(insert url)
+	(goto-char (point-min))
         (let ((save-pos (point))
               scheme user pass host port file fragment full
               (inhibit-read-only t))
 
           ;; 3.1. Scheme
-                  ;; This is nil for a URI that is not fully specified.
+	  ;; This is nil for a URI that is not fully specified.
           (when (looking-at "\\([a-zA-Z][-a-zA-Z0-9+.]*\\):")
-                    (goto-char (match-end 0))
+	    (goto-char (match-end 0))
             (setq save-pos (point))
-                    (setq scheme (downcase (match-string 1))))
+	    (setq scheme (downcase (match-string 1))))
 
           ;; 3.2. Authority
           (when (looking-at "//")
@@ -68,7 +68,7 @@ parses to
             (setq save-pos (point))
             (skip-chars-forward "^/?#")
             (setq host (buffer-substring save-pos (point)))
-                    ;; 3.2.1 User Information
+	    ;; 3.2.1 User Information
             (if (string-match "^\\([^@]+\\)@" host)
                 (setq user (match-string 1 host)
                       host (substring host (match-end 0))))
@@ -76,47 +76,212 @@ parses to
                 (setq pass (match-string 2 user)
                       user (match-string 1 user)))
             (cond
-                     ;; IPv6 literal address.
-                     ((string-match "^\\(\\[[^]]+\\]\\)\\(?::\\([0-9]*\\)\\)?$" host)
-                      (setq port (match-string 2 host)
-                                    host (match-string 1 host)))
-                     ;; Registered name or IPv4 address.
-                     ((string-match ":\\([0-9]*\\)$" host)
-                      (setq port (match-string 1 host)
-                                    host (substring host 0 (match-beginning 0)))))
-                    (cond ((equal port "")
-                                   (setq port nil))
-                                  (port
-                                   (setq port (string-to-number port))))
+	     ;; IPv6 literal address.
+	     ((string-match "^\\(\\[[^]]+\\]\\)\\(?::\\([0-9]*\\)\\)?$" host)
+	      (setq port (match-string 2 host)
+		    host (match-string 1 host)))
+	     ;; Registered name or IPv4 address.
+	     ((string-match ":\\([0-9]*\\)$" host)
+	      (setq port (match-string 1 host)
+		    host (substring host 0 (match-beginning 0)))))
+	    (cond ((equal port "")
+		   (setq port nil))
+		  (port
+		   (setq port (string-to-number port))))
             (setq host host))
 
-                  ;; Now point is on the / ? or # which terminates the
-                  ;; authority, or at the end of the URI, or (if there is no
-                  ;; authority) at the beginning of the absolute path.
+	  ;; Now point is on the / ? or # which terminates the
+	  ;; authority, or at the end of the URI, or (if there is no
+	  ;; authority) at the beginning of the absolute path.
 
           (setq save-pos (point))
           (if (string= "data" scheme)
-                      ;; For the "data" URI scheme, all the rest is the FILE.
-                      (setq file (buffer-substring save-pos (point-max)))
-                    ;; For hysterical raisins, our data structure returns the
-                    ;; path and query components together in one slot.
-                    ;; 3.3. Path
-                    (skip-chars-forward "^?#")
-                    ;; 3.4. Query
-                    (when (looking-at "\\?")
-                      (skip-chars-forward "^#"))
-                    (setq file (buffer-substring save-pos (point)))
-                    ;; 3.5 Fragment
-                    (when (looking-at "#")
-                      (let ((opoint (point)))
-                                (forward-char 1)
+	      ;; For the "data" URI scheme, all the rest is the FILE.
+	      (setq file (buffer-substring save-pos (point-max)))
+	    ;; For hysterical raisins, our data structure returns the
+	    ;; path and query components together in one slot.
+	    ;; 3.3. Path
+	    (skip-chars-forward "^?#")
+	    ;; 3.4. Query
+	    (when (looking-at "\\?")
+	      (skip-chars-forward "^#"))
+	    (setq file (buffer-substring save-pos (point)))
+	    ;; 3.5 Fragment
+	    (when (looking-at "#")
+	      (let ((opoint (point)))
+		(forward-char 1)
                 (setq fragment (buffer-substring (point) (point-max)))
-                                (delete-region opoint (point-max)))))
+		(delete-region opoint (point-max)))))
 
           (if (and host (string-match "%[0-9][0-9]" host))
               (setq host (url-unhex-string host)))
           (url-parse-make-urlobj scheme user pass host port file
-                                                                fragment nil full))))))
+				 fragment nil full))))))
+(with-eval-after-load 'tramp-adb
+  (setq tramp-adb-program (car (split-string (shell-command-to-string "which adb") "\n")))
+  (defun tramp-adb-execute-adb-command (vec &rest args)
+    "Execute an adb command.
+Insert the result into the connection buffer.  Return nil on
+error and non-nil on success."
+    (when (and (> (length (tramp-file-name-host vec)) 0)
+	       ;; The -s switch is only available for ADB device commands.
+	       (not (member (car args) '("connect" "disconnect"))))
+      (let ((device (tramp-adb-get-device vec)))
+        (if (listp device)
+            (setq args (append (list "-s") (tramp-adb-get-device vec) args))
+          (setq args (append (list "-s" (tramp-adb-get-device vec)) args)))))
+    (with-current-buffer (tramp-get-connection-buffer vec)
+      ;; Clean up the buffer.  We cannot call `erase-buffer' because
+      ;; narrowing might be in effect.
+      (let ((inhibit-read-only t)) (delete-region (point-min) (point-max)))
+      (zerop (apply #'tramp-call-process vec tramp-adb-program nil t nil args))))
+
+
+  (defun tramp-adb-get-device (vec)
+    "Return full host name from VEC to be used in shell execution.
+E.g. a host name \"192.168.1.1#5555\" returns \"192.168.1.1:5555\"
+     a host name \"R38273882DE\" returns \"R38273882DE\"."
+    (with-tramp-connection-property (tramp-get-process vec) "device"
+      (let* ((host (tramp-file-name-host vec))
+	     (port (tramp-file-name-port-or-default vec))
+             (user (tramp-file-name-user vec))
+	     (devices (mapcar #'cadr (tramp-adb-parse-device-names nil))))
+        (if (not (null user))
+            (append
+             (list (tramp-compat-string-replace
+                    tramp-prefix-port-format ":" user))
+             (when (and host (not (string= host (system-name))))
+               (list "-H" host))
+             (when (and port (not (string= port "5037"))) (list "-P" port)))
+          (tramp-compat-string-replace
+           tramp-prefix-port-format ":"
+           (cond ((member host devices) host)
+	         ;; This is the case when the host is connected to the default port.
+	         ((member (format "%s%s%d" host tramp-prefix-port-format port)
+		          devices)
+	          (format "%s:%d" host port))
+	         ;; An empty host name shall be mapped as well, when there
+	         ;; is exactly one entry in `devices'.
+	         ((and (zerop (length host)) (= (length devices) 1))
+	          (car devices))
+	         ;; Try to connect device.
+	         ((and tramp-adb-connect-if-not-connected
+		       (not (zerop (length host)))
+		       (tramp-adb-execute-adb-command
+                        vec "connect"
+                        (tramp-compat-string-replace
+		         tramp-prefix-port-format ":" host)))
+	          ;; When new device connected, running other adb command (e.g.
+	          ;; adb shell) immediately will fail.  To get around this
+	          ;; problem, add sleep 0.1 second here.
+	          (sleep-for 0.1)
+	          host)
+	         (t (tramp-error
+		     vec 'file-error "Could not find device %s" host))))))))
+
+  (defun tramp-adb-maybe-open-connection (vec)
+    "Maybe open a connection VEC.
+Does not do anything if a connection is already open, but re-opens the
+connection if a previous connection has died for some reason."
+    ;; During completion, don't reopen a new connection.
+    (unless (tramp-connectable-p vec)
+      (throw 'non-essential 'non-essential))
+
+    (let* ((buf (tramp-get-connection-buffer vec))
+           (p (get-buffer-process buf))
+           (host (tramp-file-name-host vec))
+           (user (tramp-file-name-user vec))
+           (device (tramp-adb-get-device vec)))
+
+      ;; Maybe we know already that "su" is not supported.  We cannot
+      ;; use a connection property, because we have not checked yet
+      ;; whether it is still the same device.
+      (when (and user (not (tramp-get-file-property vec "" "su-command-p" t)))
+        (tramp-error vec 'file-error "Cannot switch to user `%s'" user))
+
+      (unless (process-live-p p)
+        (save-match-data
+	  (when (and p (processp p)) (delete-process p))
+	  (if (zerop (length device))
+	      (tramp-error vec 'file-error "Device %s not connected" host))
+	  (with-tramp-progress-reporter vec 3 "Opening adb shell connection"
+	    (let* ((coding-system-for-read 'utf-8-dos) ;is this correct?
+		   (process-connection-type tramp-process-connection-type)
+		   (args (if (> (length host) 0)
+                             (if (listp device)
+                                 (append (list "-s") device (list "shell"))
+			       (list "-s" device "shell"))
+			   (list "shell")))
+		   (p (let ((default-directory
+			      tramp-compat-temporary-file-directory))
+		        (apply #'start-process (tramp-get-connection-name vec) buf
+			       tramp-adb-program args)))
+		   (prompt (md5 (concat (prin1-to-string process-environment)
+				        (current-time-string)))))
+	      (tramp-message
+	       vec 6 "%s" (string-join (process-command p) " "))
+	      ;; Wait for initial prompt.  On some devices, it needs an
+	      ;; initial RET, in order to get it.
+              (sleep-for 0.1)
+	      (tramp-send-string vec tramp-rsh-end-of-line)
+	      (tramp-adb-wait-for-output p 30)
+	      (unless (process-live-p p)
+	        (tramp-error vec 'file-error "Terminated!"))
+
+	      ;; Set sentinel and query flag.  Initialize variables.
+	      (set-process-sentinel p #'tramp-process-sentinel)
+	      (process-put p 'vector vec)
+	      (process-put p 'adjust-window-size-function #'ignore)
+	      (set-process-query-on-exit-flag p nil)
+
+	      ;; Set connection-local variables.
+	      (tramp-set-connection-local-variables vec)
+
+	      ;; Change prompt.
+	      (tramp-set-connection-property
+	       p "prompt" (regexp-quote (format "///%s#$" prompt)))
+	      (tramp-adb-send-command
+	       vec (format "PS1=\"///\"\"%s\"\"#$\"" prompt))
+
+	      ;; Disable line editing.
+	      (tramp-adb-send-command
+	       vec "set +o vi +o vi-esccomplete +o vi-tabcomplete +o emacs")
+
+	      ;; Dump option settings in the traces.
+	      (when (>= tramp-verbose 9)
+	        (tramp-adb-send-command vec "set -o"))
+
+	      ;; Check whether the properties have been changed.  If
+	      ;; yes, this is a strong indication that we must expire all
+	      ;; connection properties.  We start again.
+	      (tramp-message vec 5 "Checking system information")
+	      (tramp-adb-send-command
+	       vec
+	       (concat
+	        "echo \\\"`getprop ro.product.model` "
+	        "`getprop ro.product.version` "
+	        "`getprop ro.build.version.release`\\\""))
+
+	      (let ((old-getprop
+		     (tramp-get-connection-property vec "getprop" nil))
+		    (new-getprop
+		     (tramp-set-connection-property
+		      vec "getprop"
+		      (with-current-buffer (tramp-get-connection-buffer vec)
+		        ;; Read the expression.
+		        (goto-char (point-min))
+		        (read (current-buffer))))))
+	        (when (and (stringp old-getprop)
+			   (not (string-equal old-getprop new-getprop)))
+		  (tramp-message
+		   vec 3
+		   "Connection reset, because remote host changed from `%s' to `%s'"
+		   old-getprop new-getprop)
+		  (tramp-cleanup-connection vec t)
+		  (tramp-adb-maybe-open-connection vec)))
+
+	      ;; Mark it as connected.
+	      (tramp-set-connection-property p "connected" t))))))))
 
 (defun comint-osc-directory-tracker (_ text)
   "Update `default-directory' from OSC 7 escape sequences.
@@ -152,10 +317,35 @@ and `shell-dirtrack-mode'."
                                            (string= (url-user url) user-login-name))))
                       (if (and is-filescheme is-localhost is-sameuser)
                           (url-filename url)
-                        (when (or (not is-filescheme) is-localhost (cl-member
-                                                                    (url-host url)
-                                                                    config-hosts
-                                                                    :test #'cl-equalp))
+                        (when (or is-localhost (cl-member (url-host url)
+                                                          config-hosts
+                                                          :test #'cl-equalp))
+                          (when (and (string= (url-type url) "adb") (not is-localhost))
+                            (let ((host (url-host url))
+                                  (port (let ((p (url-host url)))
+                                          (if (or (not (numberp p)) (= p 5037))
+                                              "5037"
+                                            (if (numberp p)
+                                                (number-to-string p) p)))))
+                              (let ((forward-buffer-name
+                                     (format "*tramp-adb-port-forward-%s#%s*" host port)))
+                                (unless (get-buffer forward-buffer-name)
+                                  (with-current-buffer (get-buffer-create forward-buffer-name)
+                                    (let ((default-directory "/"))
+                                      (start-process-shell-command forward-buffer-name
+                                                                   forward-buffer-name
+                                                                   (format "while [[ 1 ]]; do /bin/bash -c 'i=49152; while (echo \"\" > /dev/tcp/127.0.0.1/$i) >/dev/null 2>&1; do i=$[49152 + ($RANDOM %% 16384)]; done; sleep 0.1; ssh -L $i:localhost:%s %s \"echo ADBPORT=$i; while [[ 1 ]]; do sleep 100; done;\"'; done;" port host))
+                                      (goto-char (point-max))
+                                      (while (not (search-backward "ADBPORT=" nil t))
+                                        (sit-for 0.1)
+                                        (goto-char (point-max))))))
+                                (with-current-buffer (get-buffer forward-buffer-name)
+                                  (goto-char (point-max))
+                                  (search-backward "ADBPORT=")
+                                  (forward-char (length "ADBPORT="))
+                                  (setf (url-port url) (string-to-number (buffer-substring-no-properties
+                                                                          (point) (line-end-position))))
+                                  (setf (url-host url) (system-name))))))
                           (tramp-make-tramp-file-name (make-tramp-file-name
                                                        :method (if is-filescheme
                                                                    (if is-localhost "sudo" "ssh")
@@ -163,11 +353,16 @@ and `shell-dirtrack-mode'."
                                                        :user (if is-filescheme
                                                                  (or (url-user url) user-login-name)
                                                                (url-user url))
-                                                       :host (if is-filescheme
-                                                                 (or (url-host url) "localhost")
-                                                               (url-host url))
-                                                       :port (url-port-if-non-default url)
-                                                       ;; url-unhex-string
+                                                       :host (or (url-host url) (system-name))
+                                                       :port (let ((p (url-port-if-non-default url)))
+                                                               (if (string= (url-type url) "adb")
+                                                                   (if (or (not (numberp p)) (= p 5037))
+                                                                       "5037"
+                                                                     (if (numberp p)
+                                                                         (number-to-string p) p))
+                                                                 (if (numberp p)
+                                                                     (number-to-string p) p)))
+                                                      ;; url-unhex-string
                                                        :localname (url-filename url)))))))))
     (when (and fullpath
                (not (string= default-directory (expand-file-name fullpath))))
@@ -200,6 +395,5 @@ and `shell-dirtrack-mode'."
                                 (dirtrack-mode 0)
                                 ;; (setenv "PROMPT_COMMAND" (format "history -a"))
                                 ))
-
   (add-hook 'comint-output-filter-functions #'comint-osc-process-output))
 (provide 'comint-ext)
