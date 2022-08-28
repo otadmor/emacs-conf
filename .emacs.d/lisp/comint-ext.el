@@ -303,7 +303,30 @@ connection if a previous connection has died for some reason."
 		  (tramp-adb-maybe-open-connection vec)))
 
 	      ;; Mark it as connected.
-	      (tramp-set-connection-property p "connected" t))))))))
+	      (tramp-set-connection-property p "connected" t)))))))
+
+  (defun tramp-adb-handle-file-name-all-completions (filename directory)
+    "Like `file-name-all-completions' for Tramp files."
+    (all-completions
+     filename
+     (with-parsed-tramp-file-name (expand-file-name directory) nil
+       (with-tramp-file-property v localname "file-name-all-completions"
+         (tramp-adb-send-command
+	  v (format "%s -ap %s"
+		    (tramp-adb-get-ls-command v)
+		    (tramp-shell-quote-argument localname)))
+	 (with-current-buffer (tramp-get-buffer v)
+	   (delete-dups
+	    (append
+	     ;; In older Android versions, "." and ".." are not
+	     ;; included.  In newer versions (toybox, since Android 6)
+	     ;; they are.  We fix this by `delete-dups'.
+	     '("./" "../")
+	     (delq
+	      nil
+	      (mapcar
+	       (lambda (l) (and (not (string-match-p "^[[:space:]]*$" l)) l))
+	       (split-string (buffer-string) "\n")))))))))))
 
 (defun comint-osc-directory-tracker (_ text)
   "Update `default-directory' from OSC 7 escape sequences.
