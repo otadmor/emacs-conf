@@ -86,7 +86,7 @@ if [[ "$ISSHELL" == "1" ]] && [[ "$NOTINTERACTIVESHELL" == "0" ]]; then
         fi
     fi
     if [[ "${ANDROID_SERIAL}" != "" ]]; then
-        if adb "${ARGS_TO_COMMAND[@]}" devices | tail -n +2 | awk '{print $1}' | grep -E "^${ANDROID_SERIAL}\$"; then
+        if adb "${ARGS_TO_COMMAND[@]}" devices | tail -n +2 | awk '{print $1}' | grep -E "^${ANDROID_SERIAL}\$" > /dev/null 2>&1 ; then
             if [[ "${ANDROID_HOST}" == "" ]] || [[ "${ANDROID_HOST}" == "localhost" ]] || [[ "${ANDROID_HOST}" == "127.0.0.1" ]]; then
                 ANDROID_HOST=$(hostname -f)
             fi
