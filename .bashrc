@@ -74,13 +74,9 @@ addr2sym () {
         -ex "quit" | tail -n 1
 }
 
-function myprompt () {
-  history -a
-  # printf "\e]7;file://%s%s\e\\" "$HOSTNAME" "$PWD"
-}
-PROMPT_COMMAND=myprompt
+PROMPT_COMMAND='history -a'
 if [[ "$TERM" == "dumb" ]] ; then
-    PS1="${PS1}\e]7;file://\u@\H\$PWD\e\\"
+    PS1='\e]7;file://\u@\H'"\$PWD"'\e\\\\'"${PS1}"
     # PS1="\$(echo -ne '\033]7;adb://'`getprop ro.serialno`$PWD'\033\\') $PS1"
     alias adb=~/.local/bin/adb_osc7
 fi
