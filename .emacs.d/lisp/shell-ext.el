@@ -85,11 +85,42 @@
       (< (next-property-change START OBJECT END) END)))
 
 (defun font-lock-prepend-text-property--hook (orig-fun START END PROP VALUE &optional OBJECT)
+  (when (and (eq major-mode 'shell-mode)
+             (eq VALUE 'comint-highlight-prompt))
+    ;; (message "CURRENT DIR %S START %S END %S CURRENT LINE START %S BUFFER END %S" default-directory START END (point) (point-max))
+    (let ((old-default-directory-overlay (default-directory-overlay-at-point START)))
+      (when old-default-directory-overlay
+        (move-overlay old-default-directory-overlay
+                      (overlay-start old-default-directory-overlay)
+                      (1- START))))
+    (let ((default-directory-overlay (make-overlay START (point) nil t t)))
+      ;; default-directory is still the directory of the previous command
+      (overlay-put default-directory-overlay 'type 'default-directory)
+      (overlay-put default-directory-overlay 'evaporate t)
+      (overlay-put default-directory-overlay 'default-directory default-directory)))
   (when (or (not (eq major-mode 'shell-mode))
             (not (and (eq PROP 'font-lock-face)
                       (eq VALUE 'comint-highlight-prompt)))
             (null (text-has-property START END 'ansi-color-face)))
     (funcall orig-fun START END PROP VALUE OBJECT)))
+
+(defun default-directory-overlay-at-point (point)
+  (let ((overlays (overlays-at point))
+        found)
+    (while (and overlays
+                (not found))
+      (let ((overlay (car overlays)))
+        (if (eq (overlay-get overlay 'type) 'default-directory)
+            (setq found overlay)))
+      (setq overlays (cdr overlays)))
+    found))
+
+(defun default-directory-at-point (point)
+  (interactive "d")
+  (let ((default-directory-overlay (default-directory-overlay-at-point point)))
+    (if default-directory-overlay
+        (overlay-get default-directory-overlay 'default-directory)
+      default-directory)))
 
 (with-eval-after-load 'shell
   ;; (add-hook 'shell-mode-hook 'track-shell-directory/procfs)
