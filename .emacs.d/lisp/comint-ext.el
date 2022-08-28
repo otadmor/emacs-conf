@@ -119,6 +119,7 @@ parses to
 				 fragment nil full))))))
 
 (with-eval-after-load 'tramp
+  (setq tramp-allow-unsafe-temporary-files t)
   (defvar tramp-hide-from-history t
     "Dont show tramp commands on bash_history etc")
   (defun tramp-send-command (vec command &optional neveropen nooutput)
