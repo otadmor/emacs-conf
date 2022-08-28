@@ -1,0 +1,117 @@
+{
+    "$help": "https://aka.ms/terminal-documentation",
+    "$schema": "https://aka.ms/terminal-profiles-schema",
+    "actions":
+    [
+        {
+            "command":
+            {
+                "action": "copy",
+                "singleLine": false
+            },
+            "keys": "ctrl+c"
+        },
+        {
+            "command": "paste",
+            "keys": "ctrl+v"
+        },
+        {
+            "command": "unbound",
+            "keys": "alt+shift+down"
+        },
+        {
+            "command": "unbound",
+            "keys": "alt+shift+left"
+        },
+        {
+            "command": "unbound",
+            "keys": "alt+shift+right"
+        },
+        {
+            "command": "unbound",
+            "keys": "alt+shift+up"
+        },
+        {
+            "command": "unbound",
+            "keys": "ctrl+shift+end"
+        },
+        {
+            "command": "unbound",
+            "keys": "ctrl+shift+home"
+        },
+        {
+            "command": "find",
+            "keys": "ctrl+shift+f"
+        },
+        {
+            "command":
+            {
+                "action": "splitPane",
+                "split": "auto",
+                "splitMode": "duplicate"
+            },
+            "keys": "alt+shift+d"
+        },
+        {
+            "command":
+            {
+                "action": "sendInput",
+                "input": "\u001b[13;5u"
+            },
+            "keys": "ctrl+enter"
+        },
+        {
+            "command":
+            {
+                "action": "sendInput",
+                "input": "\u001b[13;2u"
+            },
+            "keys": "shift+enter"
+        },
+        {
+            "command":
+            {
+                "action": "sendInput",
+                "input": "\u001b[32;6u"
+            },
+            "keys": "ctrl+shift+space"
+        },
+        {
+            "command":
+            {
+                "action": "sendInput",
+                "input": "\u001b[32;5u"
+            },
+            "keys": "ctrl+space"
+        },
+        {
+            "command":
+            {
+                "action": "sendInput",
+                "input": "\u001b[32;2u"
+            },
+            "keys": "shift+space"
+        },
+        {
+            "command":
+            {
+                "action": "sendInput",
+                "input": "\u001b[13;6u"
+            },
+            "keys": "ctrl+shift+enter"
+        }
+    ],
+    "alwaysShowTabs": true,
+    "copyFormatting": "none",
+    "copyOnSelect": false,
+    "firstWindowPreference": "defaultProfile",
+    "launchMode": "default",
+    "profiles":
+    {
+        "defaults": {},
+        "list":
+        [
+        ]
+    },
+    "showTabsInTitlebar": true
+}

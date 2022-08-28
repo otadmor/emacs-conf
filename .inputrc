@@ -17,3 +17,4 @@ Control-Rubout: backward-kill-word
 Control-DEL: kill-word
 Control-Shift-e: edit-and-execute-command
 "\C-_": undo
+"\e[13;2u":""

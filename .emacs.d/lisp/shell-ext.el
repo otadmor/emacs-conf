@@ -122,8 +122,17 @@
         (overlay-get default-directory-overlay 'default-directory)
       default-directory)))
 
+(defun find-file-at-point--default-directory-hook (orig-fun &rest args)
+  (interactive)
+  (let ((assumed-default-directory (call-interactively 'default-directory-at-point)))
+    (if assumed-default-directory
+        (let ((default-directory assumed-default-directory))
+          (apply orig-fun args))
+      (apply orig-fun args))))
+
 (with-eval-after-load 'shell
   ;; (add-hook 'shell-mode-hook 'track-shell-directory/procfs)
-  (advice-add 'font-lock-prepend-text-property :around #'font-lock-prepend-text-property--hook))
+  (advice-add 'font-lock-prepend-text-property :around #'font-lock-prepend-text-property--hook)
+  (advice-add 'find-file-at-point :around #'find-file-at-point--default-directory-hook))
 
 (provide 'shell-ext)

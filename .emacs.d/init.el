@@ -126,7 +126,6 @@
    (define-key map "\e\e[1;3B" [M-down])
    (define-key map "\e\e[1;3C" [M-right])
    (define-key map "\e\e[1;3D" [M-left])
-   ;;(define-key input-decode-map (kbd "ESC M-[ 1 ; 3 D") [M-left])
 
    (define-key map "\e\e[1;7A" [C-M-up])
    (define-key map "\e\e[1;7B" [C-M-down])
@@ -146,7 +145,14 @@
    (define-key map "\e\e[1;8A" [S-C-M-up])
    (define-key map "\e\e[1;8B" [S-C-M-down])
    (define-key map "\e\e[1;8C" [S-C-M-right])
-   (define-key map "\e\e[1;8D" [S-C-M-left])))
+   (define-key map "\e\e[1;8D" [S-C-M-left])
+
+   (define-key map "\e[13;2u" [(shift return)])
+   (define-key map "\e[13;5u" [(control return)])
+   (define-key map "\e[13;6u" [(control shift return)])
+   (define-key map "\e[32;2u" [S-SPC])
+   (define-key map "\e[32;5u" [C-SPC])
+   (define-key map "\e[32;6u" [S-C-SPC])))
 (add-hook 'tty-setup-hook #'setup-input-decode-map)
 
 ;(with-eval-after-load 'select
@@ -250,6 +256,13 @@
 ;(define-key shell-mode-map [(meta p)] 'run-python)
 ;(define-key shell-mode-map [(meta shift p)] 'run-python)
 (define-key shell-mode-map [(shift return)] 'newline)
+(define-key shell-mode-map [(control return)] 'find-file-at-point)
+(define-key shell-mode-map (kbd "C-<mouse-1>") (lambda () (interactive)
+                                                 (call-interactively 'mouse-set-point)
+                                                 (call-interactively 'find-file-at-point)))
+(define-key shell-mode-map (kbd "C-<down-mouse-1>") (lambda () (interactive)
+                                                      (call-interactively 'mouse-set-point)
+                                                      (call-interactively 'find-file-at-point)))
 
 (require 'windmove)
 (global-set-key (kbd "C-x <left>") (lambda (&optional arg) (interactive "P")
