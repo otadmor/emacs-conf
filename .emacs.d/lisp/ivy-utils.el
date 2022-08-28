@@ -8,6 +8,16 @@
 ; (ivy-exit-with-action
 ;  (lambda (_) (pop-to-buffer buffer)))
 
+(defun ivy-dired ()
+  (interactive)
+  (if (eq (ivy-state-caller ivy-last) 'counsel-find-file)
+      (if ivy--directory
+          (ivy-quit-and-run
+            (dired (expand-file-name ivy--directory)))
+        (user-error
+         "Not completing files currently"))
+    (call-interactively 'ivy-occur)))
+
 (defun ivy-shell ()
   (interactive)
   (if ivy--directory

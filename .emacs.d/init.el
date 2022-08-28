@@ -408,7 +408,7 @@
   (define-key ivy-minibuffer-map (kbd "M-<up>") 'ivy-previous-history-element)
   (define-key ivy-minibuffer-map (kbd "M-<down>") 'ivy-next-history-element)
   (define-key ivy-minibuffer-map (kbd "C-r") 'ivy-previous-line-or-history-2)
-  (define-key ivy-minibuffer-map (kbd "C-d") 'ivy-occur)
+  (define-key ivy-minibuffer-map (kbd "C-d") 'ivy-dired)
   (define-key ivy-minibuffer-map (kbd "C-w") 'ivy-yank-word)
 
   ;(define-key ivy-minibuffer-map (kbd "C-l") 'my-toggle-truncate-lines)
