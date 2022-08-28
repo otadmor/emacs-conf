@@ -104,6 +104,7 @@ if [[ "$ISSHELL" == "1" ]] && [[ "$NOTINTERACTIVESHELL" == "0" ]]; then
             if [[ "$TERM" == "dumb" ]] ; then
                 FIRSTINPUT="$FIRSTINPUT PS1=\"\$(echo -ne '\\033]7;adb://${ANDROID_SERIAL}@${ANDROID_HOST}:${ANDROID_PORT}\$PWD\\033\\\\')\${PS1}\"; "
             fi
+            FIRSTINPUT=" $FIRSTINPUT"
             #(echo $FIRSTINPUT ; cat - ; echo -ne $'\04') | exec adb "$@"
             exec adb "$@" -tt < <(echo "$FIRSTINPUT" ; cat - ; echo -ne $'\04')
         fi
