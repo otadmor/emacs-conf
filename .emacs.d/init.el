@@ -266,7 +266,12 @@
   (defun ffap-string-at-point--remove-asterisk-hook(orig-fun &rest args)
     (let ((res (apply orig-fun args)))
       (s-chop-suffix "*" (s-chop-suffix "$" res))))
-  (advice-add 'ffap-string-at-point :around #'ffap-string-at-point--remove-asterisk-hook))
+  (defun ffap-read-file-or-url--open-direct-hook (orig-fun prompt guess)
+    (if (file-exists-p guess)
+        guess
+      (funcall orig-fun prompt guess)))
+  (advice-add 'ffap-string-at-point :around #'ffap-string-at-point--remove-asterisk-hook)
+  (advice-add 'ffap-read-file-or-url :around #'ffap-read-file-or-url--open-direct-hook))
 
 (require 'windmove)
 (global-set-key (kbd "C-x <left>") (lambda (&optional arg) (interactive "P")
