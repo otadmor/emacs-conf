@@ -274,30 +274,38 @@
   (advice-add 'ffap-read-file-or-url :around #'ffap-read-file-or-url--open-direct-hook))
 
 (require 'windmove)
-(global-set-key (kbd "C-x <left>") (lambda (&optional arg) (interactive "P")
-                                     (condition-case err
-                                         (windmove-left arg)
-                                       (user-error (if (null (getenv "TMUX"))
-                                                       (message "%S" err)
-                                                     (shell-command-to-string "if [ $(tmux display-message -p \"#{pane_at_left}\") -ne 1 ]; then tmux select-pane -L; fi"))))))
-(global-set-key (kbd "C-x <right>") (lambda (&optional arg) (interactive "P")
-                                     (condition-case err
-                                         (windmove-right arg)
-                                       (user-error (if (null (getenv "TMUX"))
-                                                       (message "%S" err)
-                                                     (shell-command-to-string "if [ $(tmux display-message -p \"#{pane_at_right}\") -ne 1 ]; then tmux select-pane -R; fi"))))))
-(global-set-key (kbd "C-x <up>") (lambda (&optional arg) (interactive "P")
-                                     (condition-case err
-                                         (windmove-up arg)
-                                       (user-error (if (null (getenv "TMUX"))
-                                                       (message "%S" err)
-                                                     (shell-command-to-string "if [ $(tmux display-message -p \"#{pane_at_top}\") -ne 1 ]; then tmux select-pane -U; fi"))))))
-(global-set-key (kbd "C-x <down>") (lambda (&optional arg) (interactive "P")
-                                     (condition-case err
-                                         (windmove-down arg)
-                                       (user-error (if (null (getenv "TMUX"))
-                                                       (message "%S" err)
-                                                     (shell-command-to-string "if [ $(tmux display-message -p \"#{pane_at_bottom}\") -ne 1 ]; then tmux select-pane -D; fi"))))))
+(defun windmove-tmux-left (&optional arg) (interactive "P")
+       (condition-case err
+           (windmove-left arg)
+         (user-error (if (null (getenv "TMUX"))
+                         (message "%S" err)
+                       (shell-command-to-string "if [ $(tmux display-message -p \"#{pane_at_left}\") -ne 1 ]; then tmux select-pane -L; fi")))))
+(defun windmove-tmux-right (&optional arg) (interactive "P")
+       (condition-case err
+           (windmove-right arg)
+         (user-error (if (null (getenv "TMUX"))
+                         (message "%S" err)
+                       (shell-command-to-string "if [ $(tmux display-message -p \"#{pane_at_right}\") -ne 1 ]; then tmux select-pane -R; fi")))))
+(defun windmove-tmux-up (&optional arg) (interactive "P")
+       (condition-case err
+           (windmove-up arg)
+         (user-error (if (null (getenv "TMUX"))
+                         (message "%S" err)
+                       (shell-command-to-string "if [ $(tmux display-message -p \"#{pane_at_top}\") -ne 1 ]; then tmux select-pane -U; fi")))))
+(defun windmove-tmux-down (&optional arg) (interactive "P")
+       (condition-case err
+           (windmove-down arg)
+         (user-error (if (null (getenv "TMUX"))
+                         (message "%S" err)
+                       (shell-command-to-string "if [ $(tmux display-message -p \"#{pane_at_bottom}\") -ne 1 ]; then tmux select-pane -D; fi")))))
+(global-set-key (kbd "C-x <left>") 'windmove-tmux-left)
+(global-set-key (kbd "C-x C-<left>") 'windmove-tmux-left)
+(global-set-key (kbd "C-x <right>") 'windmove-tmux-right)
+(global-set-key (kbd "C-x C-<right>") 'windmove-tmux-right)
+(global-set-key (kbd "C-x <up>") 'windmove-tmux-up)
+(global-set-key (kbd "C-x C-<up>") 'windmove-tmux-up)
+(global-set-key (kbd "C-x <down>") 'windmove-tmux-down)
+(global-set-key (kbd "C-x C-<down>") 'windmove-tmux-down)
 
 (global-set-key (kbd "M-d") 'switch-to-minibuffer)
 
