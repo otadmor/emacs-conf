@@ -142,17 +142,39 @@ error and non-nil on success."
 E.g. a host name \"192.168.1.1#5555\" returns \"192.168.1.1:5555\"
      a host name \"R38273882DE\" returns \"R38273882DE\"."
     (with-tramp-connection-property (tramp-get-process vec) "device"
-      (let* ((host (tramp-file-name-host vec))
+      (let* ((self-host (system-name))
+             (host (tramp-file-name-host vec))
 	     (port (tramp-file-name-port-or-default vec))
              (user (tramp-file-name-user vec))
 	     (devices (mapcar #'cadr (tramp-adb-parse-device-names nil))))
         (if (not (null user))
-            (append
-             (list (tramp-compat-string-replace
-                    tramp-prefix-port-format ":" user))
-             (when (and host (not (string= host (system-name))))
-               (list "-H" host))
-             (when (and port (not (string= port "5037"))) (list "-P" port)))
+            (progn
+              (when (not (string= host self-host))
+                (let ((forward-buffer-name
+                       (format "*tramp-adb-port-forward-%s#%s*" host port)))
+                  (unless (get-buffer forward-buffer-name)
+                    (with-current-buffer (get-buffer-create forward-buffer-name)
+                      (let ((default-directory "/"))
+                        (start-process-shell-command forward-buffer-name
+                                                     forward-buffer-name
+                                                     (format "while [[ 1 ]]; do /bin/bash -c 'i=49152; while (echo \"\" > /dev/tcp/127.0.0.1/$i) >/dev/null 2>&1; do i=$[49152 + ($RANDOM %% 16384)]; done; sleep 0.1; ssh -L $i:localhost:%s %s \"echo ADBPORT=$i; while [[ 1 ]]; do sleep 100; done;\"'; done;" port host))
+                        (goto-char (point-max))
+                        (while (not (search-backward "ADBPORT=" nil t))
+                          (sit-for 0.1)
+                          (goto-char (point-max))))))
+                  (with-current-buffer (get-buffer forward-buffer-name)
+                    (goto-char (point-max))
+                    (search-backward "ADBPORT=")
+                    (forward-char (length "ADBPORT="))
+                    (setq port (buffer-substring-no-properties
+                                (point) (line-end-position)))
+                    (setq host self-host))))
+              (append
+               (list (tramp-compat-string-replace
+                      tramp-prefix-port-format ":" user))
+               (when (and host (not (string= host self-host)))
+                 (list "-H" host))
+               (when (and port (not (string= port "5037"))) (list "-P" port))))
           (tramp-compat-string-replace
            tramp-prefix-port-format ":"
            (cond ((member host devices) host)
@@ -320,32 +342,6 @@ and `shell-dirtrack-mode'."
                         (when (or is-localhost (cl-member (url-host url)
                                                           config-hosts
                                                           :test #'cl-equalp))
-                          (when (and (string= (url-type url) "adb") (not is-localhost))
-                            (let ((host (url-host url))
-                                  (port (let ((p (url-host url)))
-                                          (if (or (not (numberp p)) (= p 5037))
-                                              "5037"
-                                            (if (numberp p)
-                                                (number-to-string p) p)))))
-                              (let ((forward-buffer-name
-                                     (format "*tramp-adb-port-forward-%s#%s*" host port)))
-                                (unless (get-buffer forward-buffer-name)
-                                  (with-current-buffer (get-buffer-create forward-buffer-name)
-                                    (let ((default-directory "/"))
-                                      (start-process-shell-command forward-buffer-name
-                                                                   forward-buffer-name
-                                                                   (format "while [[ 1 ]]; do /bin/bash -c 'i=49152; while (echo \"\" > /dev/tcp/127.0.0.1/$i) >/dev/null 2>&1; do i=$[49152 + ($RANDOM %% 16384)]; done; sleep 0.1; ssh -L $i:localhost:%s %s \"echo ADBPORT=$i; while [[ 1 ]]; do sleep 100; done;\"'; done;" port host))
-                                      (goto-char (point-max))
-                                      (while (not (search-backward "ADBPORT=" nil t))
-                                        (sit-for 0.1)
-                                        (goto-char (point-max))))))
-                                (with-current-buffer (get-buffer forward-buffer-name)
-                                  (goto-char (point-max))
-                                  (search-backward "ADBPORT=")
-                                  (forward-char (length "ADBPORT="))
-                                  (setf (url-port url) (string-to-number (buffer-substring-no-properties
-                                                                          (point) (line-end-position))))
-                                  (setf (url-host url) (system-name))))))
                           (tramp-make-tramp-file-name (make-tramp-file-name
                                                        :method (if is-filescheme
                                                                    (if is-localhost "sudo" "ssh")
@@ -355,14 +351,12 @@ and `shell-dirtrack-mode'."
                                                                (url-user url))
                                                        :host (or (url-host url) (system-name))
                                                        :port (let ((p (url-port-if-non-default url)))
-                                                               (if (string= (url-type url) "adb")
-                                                                   (if (or (not (numberp p)) (= p 5037))
-                                                                       "5037"
-                                                                     (if (numberp p)
-                                                                         (number-to-string p) p))
+                                                               (if (and (string= (url-type url) "adb")
+                                                                        (not (numberp p)))
+                                                                   "5037"
                                                                  (if (numberp p)
                                                                      (number-to-string p) p)))
-                                                      ;; url-unhex-string
+                                                       ;; url-unhex-string
                                                        :localname (url-filename url)))))))))
     (when (and fullpath
                (not (string= default-directory (expand-file-name fullpath))))
