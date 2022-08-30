@@ -292,7 +292,7 @@ def py_shell_completion_main():
                 target=connect_client,
                 name='PythonModeEPCCompletion',
                 kwargs={'s' : False})
-            rpc_complete_thread.setDaemon(True)
+            rpc_complete_thread.daemon = True
             rpc_complete_thread.start()
         create_completer_thread(s=False)
 
