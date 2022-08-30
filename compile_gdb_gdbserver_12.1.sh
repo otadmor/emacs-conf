@@ -29,11 +29,11 @@ if [[ ! -f gdb-$GDB_VERSION.tar.xz ]]; then
     wget https://ftp.gnu.org/gnu/gdb/gdb-$GDB_VERSION.tar.xz || exit 1
 fi
 
-if ! gpg --verify ~/Downloads/gdb-$GDB_VERSION.tar.xz.sig gdb-$GDB_VERSION.tar.xz; then
+if ! gpg --verify gdb-$GDB_VERSION.tar.xz.sig gdb-$GDB_VERSION.tar.xz; then
     echo redownload
     rm gdb-$GDB_VERSION.tar.xz || exit 1
     wget https://ftp.gnu.org/gnu/gdb/gdb-$GDB_VERSION.tar.xz || exit 1
-    if ! gpg --verify ~/Downloads/gdb-$GDB_VERSION.tar.xz.sig gdb-$GDB_VERSION.tar.xz; then
+    if ! gpg --verify gdb-$GDB_VERSION.tar.xz.sig gdb-$GDB_VERSION.tar.xz; then
         echo CANNOT DOWNLOAD GDB WITH THE CORRECT SIGNATURE
         exit 1
     fi
