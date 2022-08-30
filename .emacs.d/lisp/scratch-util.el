@@ -21,6 +21,7 @@
 (add-hook 'after-init-hook
           (lambda ()
             (init-scratch)
-            (add-hook 'kill-buffer-query-functions #'dont-kill-scratch)))
+            (add-hook 'kill-buffer-query-functions #'dont-kill-scratch)
+            (new-shell)))
 
 (provide 'scratch-util)
