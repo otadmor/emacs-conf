@@ -36,7 +36,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:family "Courier New" :weight semibold :height 100)))))
+ '(default ((t (:family "Courier New" :height 100))))) ;;  :weight semibold
 (setq-default line-spacing 1)
 
 (setq CONFIGURATION-PATH (expand-file-name "~/.emacs.d/lisp"))
