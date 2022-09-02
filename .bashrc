@@ -13,6 +13,8 @@ export VISUAL="emacsclient -c -a emacs" #  $VISUAL opens in GUI with non-daemon 
 
 if [[ "$TERM" == "dumb" ]] ; then
     export COLORTERM=1
+    export CLICOLOR_FORCE=1
+    # export PROMPT_TOOLKIT_COLOR_DEPTH=DEFAULT
     export PYTHONPATH=~/.emacs.d/lisp:$PYTHONPATH
     alias ipython='ipython --colors=LightBG --ext=ipython_emacs_colors'
     if [[ -f ~/.emacs.d/lisp/bash_epc_completion ]]; then
