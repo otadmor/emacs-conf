@@ -5,15 +5,15 @@ set colored-stats on
 set menu-complete-display-prefix on
 "\e[1;3C": shell-forward-word
 "\e[1;3D": shell-backward-word
-;"\e\e[1;3C": shell-forward-word
-;"\e\e[1;3D": shell-backward-word
+# "\e\e[1;3C": shell-forward-word
+# "\e\e[1;3D": shell-backward-word
 "\e[1;5A": history-search-backward
 "\e[1;5B": history-search-forward
 "\e[1;5C": forward-word
 "\e[1;5D": backward-word
 "\C-h": backward-kill-word
 Control-Rubout: backward-kill-word
-;"\e[3;5~": kill-word
+# "\e[3;5~": kill-word
 Control-DEL: kill-word
 Control-Shift-e: edit-and-execute-command
 "\C-_": undo
