@@ -51,7 +51,7 @@ def lo(addr=None):
 
 end
 
-source gdb-source.gdbinit
+source ~/gdb-source.gdbinit
 
 # python
 # def have_source(pc=None):
