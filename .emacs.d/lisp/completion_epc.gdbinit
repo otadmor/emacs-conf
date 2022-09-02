@@ -118,7 +118,7 @@ if os.environ.get("TERM", "") == 'dumb':
                         gdb.execute('gef config context.nb_lines_code_prev 10')
                         DISABLED_SOURCE = True
                 def stop_error(error):
-                    if error.args[0] != 'EPC-ERROR: No such method : debugger-stop-event':
+                    if error.args[0] != 'EPC-ERROR: No such method : debugger-stop-event' and not error.args[0].startswith("cannot connect ida server"):
                         print(error)
                 context = gdb.execute("context regs stack trace", to_string=True)
                 code = gdb.execute("context code", to_string=True)
