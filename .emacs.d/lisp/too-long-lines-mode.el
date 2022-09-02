@@ -44,7 +44,7 @@
 ;; too-long-lines-mode to enable the mode globally.
 
 ;;; Code:
-(defvar too-long-lines-threshold 10000
+(defvar too-long-lines-threshold 1000
   "The threshold after which `too-long-lines-hide' cuts of a line and hides the rest.")
 
 (defvar too-long-lines-show-number-of-characters 30
@@ -61,7 +61,7 @@ runs `too-long-lines-hide'.")
   "Set this to how many seconds emacs should be idle before
 `too-long-lines-run-with-idle-timer-in-special-buffers' runs `too-long-lines-hide'.")
 
-(defvar too-long-lines-special-buffer-modes '(shell-mode)
+(defvar too-long-lines-special-buffer-modes '(shell-mode comint-mode)
   "The modes which `too-long-lines-run-with-idle-timer-in-special-buffers' recognizes
 as special buffers in which `too-long-lines-hide' should be run periodically.")
 
