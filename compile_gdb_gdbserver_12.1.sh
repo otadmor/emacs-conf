@@ -46,6 +46,7 @@ tar -xf gdb-$GDB_VERSION.tar.xz
 
 cd gdb-${GDB_VERSION}
 
+sed -i 's/::kill (-signal_pid, SIGINT);/::kill (-signal_pid, SIGINT) \&\& ::kill (signal_pid, SIGINT);/g' gdbserver/linux-low.cc || exit 1
 
 mkdir build-multiarch
 cd build-multiarch && ../configure \
